@@ -3,8 +3,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { 
   Sun, CloudRain, Wind, Droplets, MapPin, Search, 
-  Eye, CloudSun, Loader2, RefreshCw, AlertCircle
+  Eye, Loader2, RefreshCw, AlertCircle, Calendar, AreaChart as ChartIcon
 } from 'lucide-react';
+import {
+  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
+} from 'recharts';
 
 const API_KEY = process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY || '';
 
@@ -21,10 +24,11 @@ export default function InteractiveWeatherPage() {
   const [searchInput, setSearchInput] = useState('');
   const [weatherData, setWeatherData] = useState(null);
   const [forecastData, setForecastData] = useState([]);
+  const [chartData, setChartData] = useState([]);
+  const [activeTab, setActiveTab] = useState('chart'); // 'chart' | '5day'
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Helper to interpret WMO Weather Codes into Hindi descriptions
   const getWeatherCondition = (code) => {
     if (code === 0) return 'साफ़ मौसम एवं खिली धूप';
     if (code >= 1 && code <= 3) return 'आंशिक रूप से बादल';
@@ -34,48 +38,37 @@ export default function InteractiveWeatherPage() {
     return 'मौसम सामान्य';
   };
 
-  // Fallback using free Open-Meteo & Geocoding API
   const fetchOpenMeteoFallback = async (queryCity, presetObj) => {
     let lat = presetObj?.lat;
     let lon = presetObj?.lon;
     let displayName = presetObj?.hindiName || queryCity;
 
-    // Dynamic Geocoding if city is not in preset list
     if (!lat || !lon) {
-      // First attempt searching with country bias
+      // Direct search without appended country string to fix API miss
       const geoRes = await fetch(
-        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(queryCity + ' India')}&count=5&language=en`
+        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(queryCity)}&count=5&language=en`
       );
       const geoData = await geoRes.json();
 
       if (!geoData.results || geoData.results.length === 0) {
-        // Retry search without country modifier
-        const retryRes = await fetch(
-          `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(queryCity)}&count=1`
-        );
-        const retryData = await retryRes.json();
-        
-        if (!retryData.results || retryData.results.length === 0) {
-          throw new Error('शहर नहीं मिला, कृपया दूसरा नाम खोजें');
-        }
-        lat = retryData.results[0].latitude;
-        lon = retryData.results[0].longitude;
-        displayName = retryData.results[0].name;
-      } else {
-        lat = geoData.results[0].latitude;
-        lon = geoData.results[0].longitude;
-        displayName = geoData.results[0].name;
+        throw new Error('शहर नहीं मिला, कृपया सही नाम खोजें (उदा. Neemuch, Indore)');
       }
+      
+      const match = geoData.results.find(r => r.country_code === 'IN') || geoData.results[0];
+      lat = match.latitude;
+      lon = match.longitude;
+      displayName = match.name;
     }
 
     const res = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FKolkata`
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&hourly=temperature_2m,precipitation_probability&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FKolkata`
     );
     if (!res.ok) throw new Error('मौसम डेटा प्राप्त नहीं हो सका');
     const data = await res.json();
 
     const current = data.current;
     const daily = data.daily;
+    const hourly = data.hourly;
 
     setWeatherData({
       name: displayName,
@@ -88,6 +81,19 @@ export default function InteractiveWeatherPage() {
       rainProbability: `${daily.precipitation_probability_max[0] || 0}%`,
       visibility: '10.0 km',
     });
+
+    // Generate Chart Data for next 24 Hours
+    if (hourly && hourly.time) {
+      const formattedHourly = hourly.time.slice(0, 24).map((timeStr, idx) => {
+        const hour = new Date(timeStr).getHours();
+        return {
+          time: `${hour}:00`,
+          temp: Math.round(hourly.temperature_2m[idx]),
+          rainProb: hourly.precipitation_probability[idx] || 0,
+        };
+      });
+      setChartData(formattedHourly);
+    }
 
     const formattedForecast = daily.time.slice(0, 5).map((dateStr, i) => {
       const dateObj = new Date(dateStr);
@@ -125,11 +131,6 @@ export default function InteractiveWeatherPage() {
       if (!weatherRes.ok) throw new Error('शहर का डेटा प्राप्त नहीं हो सका');
       const current = await weatherRes.json();
 
-      const forecastRes = await fetch(
-        `https://api.openweathermap.org/data/2.5/forecast?q=${queryCity},IN&units=metric&lang=hi&appid=${API_KEY}`
-      );
-      const forecast = await forecastRes.json();
-
       setWeatherData({
         name: current.name,
         temp: `${Math.round(current.main.temp)}°C`,
@@ -141,19 +142,6 @@ export default function InteractiveWeatherPage() {
         rainProbability: `${current.clouds?.all || 0}%`,
         visibility: `${(current.visibility / 1000).toFixed(1)} km`,
       });
-
-      if (forecast?.list) {
-        const dailyList = forecast.list
-          .filter((item) => item.dt_txt.includes('12:00:00'))
-          .map((item) => ({
-            day: new Date(item.dt * 1000).toLocaleDateString('hi-IN', { weekday: 'short', day: 'numeric', month: 'short' }),
-            minMax: `${Math.round(item.main.temp_max)}°C / ${Math.round(item.main.temp_min)}°C`,
-            condition: item.weather[0]?.description,
-            rainProb: `${Math.round((item.pop || 0) * 100)}%`,
-            wind: `${Math.round(item.wind.speed * 3.6)} km/h`,
-          }));
-        setForecastData(dailyList);
-      }
 
       setLoading(false);
     } catch (err) {
@@ -203,7 +191,7 @@ export default function InteractiveWeatherPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Header */}
+      {/* Header Bar */}
       <div className="bg-gradient-to-r from-sky-800 via-sky-700 to-blue-600 text-white p-6 sm:p-8 rounded-3xl shadow-md space-y-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
@@ -255,7 +243,7 @@ export default function InteractiveWeatherPage() {
         <div className="bg-sky-50 border border-sky-200 rounded-2xl p-4 text-xs text-sky-900 flex items-center gap-2">
           <AlertCircle className="w-4 h-4 shrink-0 text-sky-600" />
           <span>
-            <strong>सूचना:</strong> वर्तमान में नि:शुल्क Open-Meteo API द्वारा लाइव मौसम प्रदर्शित हो रहा है। OpenWeather API Key जोड़ने के लिए <code>.env.local</code> में <code>NEXT_PUBLIC_OPENWEATHER_API_KEY</code> जोड़ें।
+            <strong>सूचना:</strong> वर्तमान में नि:शुल्क Open-Meteo API द्वारा लाइव मौसम प्रदर्शित हो रहा है।
           </span>
         </div>
       )}
@@ -295,19 +283,19 @@ export default function InteractiveWeatherPage() {
                       अधिकतम / न्यूनतम: <strong className="text-white">{weatherData.minMax}</strong> — {weatherData.condition}
                     </p>
                   </div>
-                  <Sun className="w-16 h-16 sm:w-20 sm:h-20 text-amber-300 animate-spin-slow shrink-0" />
+                  <Sun className="w-16 h-16 sm:w-20 sm:h-20 text-amber-300 shrink-0" />
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-6 border-t border-white/20 text-xs sm:text-sm">
-                  <div className="flex items-center gap-2 bg-white/10 backdrop-blur-xs p-3 rounded-2xl">
+                  <div className="flex items-center gap-2 bg-white/10 p-3 rounded-2xl">
                     <Droplets className="w-5 h-5 text-sky-200 shrink-0" />
                     <div>
-                      <p className="text-sky-200 text-[10px]">आद्रता (Humidity)</p>
+                      <p className="text-sky-200 text-[10px]">आद्रता</p>
                       <p className="font-extrabold text-sm">{weatherData.humidity}</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 bg-white/10 backdrop-blur-xs p-3 rounded-2xl">
+                  <div className="flex items-center gap-2 bg-white/10 p-3 rounded-2xl">
                     <Wind className="w-5 h-5 text-sky-200 shrink-0" />
                     <div>
                       <p className="text-sky-200 text-[10px]">हवा की गति</p>
@@ -315,7 +303,7 @@ export default function InteractiveWeatherPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 bg-white/10 backdrop-blur-xs p-3 rounded-2xl">
+                  <div className="flex items-center gap-2 bg-white/10 p-3 rounded-2xl">
                     <CloudRain className="w-5 h-5 text-sky-200 shrink-0" />
                     <div>
                       <p className="text-sky-200 text-[10px]">वर्षा संभावना</p>
@@ -323,10 +311,10 @@ export default function InteractiveWeatherPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 bg-white/10 backdrop-blur-xs p-3 rounded-2xl">
+                  <div className="flex items-center gap-2 bg-white/10 p-3 rounded-2xl">
                     <Eye className="w-5 h-5 text-sky-200 shrink-0" />
                     <div>
-                      <p className="text-sky-200 text-[10px]">दृश्यता (Visibility)</p>
+                      <p className="text-sky-200 text-[10px]">दृश्यता</p>
                       <p className="font-extrabold text-sm">{weatherData.visibility}</p>
                     </div>
                   </div>
@@ -359,9 +347,63 @@ export default function InteractiveWeatherPage() {
               )}
             </div>
 
-            {forecastData.length > 0 && (
-              <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
-                <h3 className="text-base font-extrabold text-slate-900">अगले 5 दिनों का मौसम पूर्वानुमान</h3>
+            {/* Interactive Section Tabs */}
+            <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                  <ChartIcon className="w-5 h-5 text-sky-600" /> 24 घंटे का तापमान एवं वर्षा चार्ट
+                </h3>
+                <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-2xl">
+                  <button
+                    onClick={() => setActiveTab('chart')}
+                    className={`px-4 py-1.5 rounded-xl text-xs font-bold transition ${
+                      activeTab === 'chart' ? 'bg-white text-sky-700 shadow-xs' : 'text-slate-600'
+                    }`}
+                  >
+                    24 घंटे ट्रेंड
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('5day')}
+                    className={`px-4 py-1.5 rounded-xl text-xs font-bold transition ${
+                      activeTab === '5day' ? 'bg-white text-sky-700 shadow-xs' : 'text-slate-600'
+                    }`}
+                  >
+                    5 दिनों का पूर्वानुमान
+                  </button>
+                </div>
+              </div>
+
+              {/* Chart View */}
+              {activeTab === 'chart' && chartData.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs text-slate-500 font-medium">
+                    आगामी 24 घंटों में तापमान (°C) तथा वर्षा की संभावना (%) का ग्राफ:
+                  </p>
+                  <div className="h-64 w-full pt-4">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="tempGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#0284c7" stopOpacity={0.8}/>
+                            <stop offset="95%" stopColor="#0284c7" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                        <XAxis dataKey="time" tick={{ fontSize: 11, fill: '#64748b' }} />
+                        <YAxis tick={{ fontSize: 11, fill: '#64748b' }} />
+                        <Tooltip 
+                          contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '12px' }}
+                          formatter={(val, name) => [name === 'temp' ? `${val}°C` : `${val}%`, name === 'temp' ? 'तापमान' : 'वर्षा संभावना']}
+                        />
+                        <Area type="monotone" dataKey="temp" stroke="#0284c7" strokeWidth={3} fillOpacity={1} fill="url(#tempGradient)" />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              )}
+
+              {/* 5 Day Cards View */}
+              {(activeTab === '5day' || chartData.length === 0) && forecastData.length > 0 && (
                 <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
                   {forecastData.map((item, idx) => (
                     <div key={idx} className="bg-slate-50 border border-slate-200 p-4 rounded-2xl text-center space-y-2 hover:border-sky-400 transition">
@@ -378,8 +420,8 @@ export default function InteractiveWeatherPage() {
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         )
       )}

@@ -1,58 +1,93 @@
-import { NextResponse } from 'next/server';
+export const CROP_MAP = {
+  'लहसुन': 'Garlic',
+  'गेहूं': 'Wheat',
+  'सोयाबीन': 'Soyabean',
+  'प्याज': 'Onion',
+  'सरसों': 'Mustard',
+  'धनिया': 'Coriander',
+};
 
-export async function GET(request) {
-  const { searchParams } = new URL(request.url);
-  const state = searchParams.get('state') || 'Madhya Pradesh';
-  const district = searchParams.get('district') || 'Neemuch';
-  const mandi = searchParams.get('mandi') || 'Neemuch';
+const REVERSE_CROP_MAP = {
+  'garlic': 'लहसुन',
+  'wheat': 'गेहूं',
+  'soyabean': 'सोयाबीन',
+  'onion': 'प्याज',
+  'mustard': 'सरसों',
+  'coriander': 'धनिया',
+};
 
-  const API_KEY = process.env.DATA_GOV_IN_API_KEY;
-  const RESOURCE_ID = '9ef74138-d401-4350-9842-88f57f4955b2'; // Agmarknet dataset resource ID
-
-  if (!API_KEY) {
-    return NextResponse.json(
-      { success: false, message: 'API key is missing in environment variables.' },
-      { status: 500 }
-    );
-  }
-
+export async function getDynamicMandiRates({ state, district, mandi, crop }) {
   try {
-    const endpoint = `https://api.data.gov.in/resource/${RESOURCE_ID}?api-key=${API_KEY}&format=json&limit=100&filters[state]=${encodeURIComponent(
-      state
-    )}&filters[district]=${encodeURIComponent(district)}&filters[market]=${encodeURIComponent(mandi)}`;
-
-    const response = await fetch(endpoint, {
-      headers: { Accept: 'application/json' },
-      next: { revalidate: 3600 }, // Cache on server for 1 hour
-    });
-
-    if (!response.ok) {
-      throw new Error(`Government API response error: ${response.status}`);
+    const params = new URLSearchParams();
+    if (state && state !== 'all') params.append('state', state);
+    if (district && district !== 'all') params.append('district', district);
+    if (mandi && mandi !== 'all') params.append('market', mandi);
+    
+    if (crop) {
+      const englishCrop = CROP_MAP[crop] || crop;
+      params.append('commodity', englishCrop);
     }
 
+    const response = await fetch(`https://mandi-api.onrender.com/v1/prices?${params.toString()}`);
+    if (!response.ok) throw new Error(`API error: ${response.status}`);
+
     const json = await response.json();
-    const records = json.records || [];
+    const rawData = Array.isArray(json) ? json : json.data || json.records || [];
 
-    // Map government API keys to match your React UI model
-    const formattedRates = records.map((record, index) => ({
-      id: record.id || `${record.commodity}-${index}`,
-      crop: record.commodity || record.commodity_name || 'अनजान',
-      unit: 'क्विंटल', // Agmarknet prices are in ₹ per Quintal
-      minPrice: Number(record.min_price) || 0,
-      maxPrice: Number(record.max_price) || 0,
-      modalPrice: Number(record.modal_price) || 0,
-      arrivalDate: record.arrival_date || '',
-    }));
+    return rawData.map((record, index) => {
+      const rawCommodity = record.commodity || record.crop || record.commodity_name || 'अनजान';
+      const englishLower = rawCommodity.toLowerCase().trim();
+      const hindiName = REVERSE_CROP_MAP[englishLower] || rawCommodity;
 
-    return NextResponse.json({
-      success: true,
-      data: formattedRates,
+      return {
+        id: record.id || record._id || `${rawCommodity}-${index}`,
+        crop: hindiName,
+        cropEnglish: rawCommodity,
+        state: record.state || state || '',
+        district: record.district || district || '',
+        mandi: record.market || record.mandi || mandi || '',
+        unit: record.unit || 'क्विंटल',
+        minPrice: Number(record.min_price || record.minPrice) || 0,
+        maxPrice: Number(record.max_price || record.maxPrice) || 0,
+        modalPrice: Number(record.modal_price || record.modalPrice) || 0,
+        arrivalDate: record.arrival_date || record.date || new Date().toISOString().split('T')[0],
+      };
     });
   } catch (error) {
-    console.error('Mandi API Error:', error);
-    return NextResponse.json(
-      { success: false, message: 'Failed to fetch live mandi rates.' },
-      { status: 500 }
-    );
+    console.error('Failed to fetch mandi rates:', error);
+    return [];
+  }
+}
+
+export async function getMandiPriceHistory({ state, district, mandi, crop }) {
+  try {
+    const params = new URLSearchParams();
+    if (state && state !== 'all') params.append('state', state);
+    if (district && district !== 'all') params.append('district', district);
+    if (mandi && mandi !== 'all') params.append('market', mandi);
+    
+    if (crop) {
+      const englishCrop = CROP_MAP[crop] || crop;
+      params.append('commodity', englishCrop);
+    }
+
+    const response = await fetch(`https://mandi-api.onrender.com/v1/prices?${params.toString()}`);
+    if (!response.ok) throw new Error(`API error: ${response.status}`);
+
+    const json = await response.json();
+    const rawData = Array.isArray(json) ? json : json.data || json.records || [];
+
+    return rawData
+      .map((item) => ({
+        date: item.arrival_date || item.date || 'N/A',
+        minPrice: Number(item.min_price || item.minPrice) || 0,
+        maxPrice: Number(item.max_price || item.maxPrice) || 0,
+        modalPrice: Number(item.modal_price || item.modalPrice) || 0,
+        crop: item.commodity || item.crop || 'फसल',
+      }))
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+  } catch (error) {
+    console.error('Failed to fetch price history:', error);
+    return [];
   }
 }
