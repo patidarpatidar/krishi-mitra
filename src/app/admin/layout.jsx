@@ -18,6 +18,7 @@ import {
   LogOut,
   MessageCircle,
   ShieldCheck,
+  Users,
 } from "lucide-react";
 
 const TOKEN_KEY = "krishi_mitra_admin_token";
@@ -29,6 +30,11 @@ const menu = [
     title: "Dashboard",
     href: "/admin",
     icon: LayoutDashboard,
+  },
+  {
+    title: "पंजीकृत किसान",
+    href: "/admin/farmers",
+    icon: Users,
   },
   {
     title: "Crop Categories",

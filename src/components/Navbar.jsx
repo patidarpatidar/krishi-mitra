@@ -106,17 +106,20 @@ const [farmerLoggedIn, setFarmerLoggedIn] = useState(false);
   };
 
   useEffect(() => {
-  const stored = localStorage.getItem("krishi_mitra_farmer");
+    const token = typeof window !== "undefined" ? localStorage.getItem("krishi_mitra_farmer_token") : null;
+    const stored = typeof window !== "undefined" ? localStorage.getItem("krishi_mitra_farmer") : null;
 
-  if (stored) {
-    try {
-      const user = JSON.parse(stored);
-      setFarmerLoggedIn(Boolean(user?.loggedIn));
-    } catch {
+    if (token && stored) {
+      try {
+        const user = JSON.parse(stored);
+        setFarmerLoggedIn(Boolean(user?.loggedIn));
+      } catch {
+        setFarmerLoggedIn(false);
+      }
+    } else {
       setFarmerLoggedIn(false);
     }
-  }
-}, []);
+  }, [pathname]);
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-emerald-100 shadow-sm">

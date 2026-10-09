@@ -59,10 +59,3 @@ export function getAdminToken() {
 
   return localStorage.getItem("krishi_mitra_admin_token");
 }
-
-export function clearAdminSession() {
-  if (typeof window === "undefined") return;
-
-  localStorage.removeItem("krishi_mitra_admin_token");
-  localStorage.removeItem("krishi_mitra_admin");
-}

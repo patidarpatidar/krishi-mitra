@@ -61,38 +61,69 @@ const dashboardMenu = [
   },
 ];
 
+import {
+  farmerApi,
+  getFarmerToken,
+  getFarmerUser,
+  clearFarmerSession,
+} from "@/lib/farmerApi";
+
 export default function FarmerLayout({ children }) {
   const pathname = usePathname();
   const router = useRouter();
 
   const [farmer, setFarmer] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem("krishi_mitra_farmer");
+    let mounted = true;
 
-    if (!stored) {
-      router.replace("/login");
-      return;
-    }
+    async function checkAuth() {
+      const token = getFarmerToken();
 
-    try {
-      const user = JSON.parse(stored);
-
-      if (!user?.loggedIn) {
+      if (!token) {
+        clearFarmerSession();
         router.replace("/login");
         return;
       }
 
-      setFarmer(user);
-    } catch {
-      localStorage.removeItem("krishi_mitra_farmer");
-      router.replace("/login");
+      // First set cached user so UI loads fast
+      const localUser = getFarmerUser();
+      if (localUser && mounted) {
+        setFarmer(localUser);
+        setLoading(false);
+      }
+
+      // Verify and refresh with backend
+      try {
+        const res = await farmerApi.getProfile();
+        if (res.data?.user && mounted) {
+          setFarmer(res.data.user);
+        }
+      } catch (err) {
+        console.error("Farmer session expired or invalid:", err);
+        clearFarmerSession();
+        if (mounted) {
+          router.replace("/login");
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
     }
+
+    checkAuth();
+
+    return () => {
+      mounted = false;
+    };
   }, [router]);
 
-  function logout() {
-    localStorage.removeItem("krishi_mitra_farmer");
+  async function logout() {
+    await farmerApi.logout();
     router.push("/login");
+    router.refresh();
   }
 
   if (!farmer) {
