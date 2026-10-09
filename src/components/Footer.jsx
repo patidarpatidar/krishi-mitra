@@ -1,264 +1,963 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { 
-  Send, 
-  MapPin, 
-  Phone, 
-  Mail, 
-  Heart, 
-  Share2, 
+import { useState } from "react";
+import Link from "next/link";
+
+import {
+  Send,
+  MapPin,
+  Phone,
+  Mail,
+  Heart,
+  Share2,
   CheckCircle2,
-  Facebook,
-  Twitter,
-  Instagram,
-  Youtube,
-  MessageCircle
-} from 'lucide-react';
+  MessageCircle,
+  ChevronDown,
+  ArrowUp,
+  Sprout,
+  ShieldCheck,
+  UserCheck,
+  BookOpen,
+  Target,
+  HelpCircle,
+} from "lucide-react";
+
+/* =========================================================
+   FOOTER CONFIG
+   बाद में API / CMS से आसानी से replace किया जा सकता है।
+========================================================= */
+
+const FOOTER_CONFIG = {
+  brand: {
+    name: "कृषि मित्र",
+    tagline: "आपका डिजिटल कृषि साथी",
+    description:
+      "कृषि मित्र एक व्यक्तिगत कृषि information platform है, जहाँ किसानों के लिए मंडी भाव, मौसम, फसल जानकारी, कृषि ब्लॉग और उपयोगी farming information सरल हिंदी में उपलब्ध कराई जाती है।",
+  },
+
+  contact: {
+    region: "नीमच एवं मालवांचल क्षेत्र, मध्य प्रदेश",
+    phone: "18001801551",
+    email: "contact@krishimitra.in",
+  },
+
+  whatsapp: {
+    number: "919826000000",
+    display: "+91 98260 XXXXX",
+  },
+
+  social: [
+    {
+      name: "WhatsApp",
+      icon: MessageCircle,
+      href: "https://wa.me/919826000000",
+      className:
+        "hover:bg-emerald-500 hover:text-white hover:border-emerald-500",
+    },
+    {
+      name: "YouTube",
+      icon: MessageCircle,
+      href: "https://youtube.com",
+      className:
+        "hover:bg-red-600 hover:text-white hover:border-red-600",
+    },
+    {
+      name: "Facebook",
+      icon: MessageCircle,
+      href: "https://facebook.com",
+      className:
+        "hover:bg-blue-600 hover:text-white hover:border-blue-600",
+    },
+    {
+      name: "Instagram",
+      icon: MessageCircle,
+      href: "https://instagram.com",
+      className:
+        "hover:bg-pink-600 hover:text-white hover:border-pink-600",
+    },
+  ],
+};
+
+/* =========================================================
+   NAVIGATION DATA
+========================================================= */
+
+const MAIN_LINKS = [
+  {
+    label: "मंडी भाव",
+    href: "/mandi-bhav",
+  },
+  {
+    label: "मौसम पूर्वानुमान",
+    href: "/weather",
+  },
+  {
+    label: "कृषि ब्लॉग",
+    href: "/blog",
+  },
+  {
+    label: "फसल जानकारी",
+    href: "/crops",
+  },
+  {
+    label: "जैविक खेती",
+    href: "/organic-farming",
+  },
+  {
+    label: "पशुपालन",
+    href: "/pashupalan",
+  },
+  {
+    label: "सरकारी योजनाएं",
+    href: "/govt-schemes",
+  },
+];
+
+const CROP_LINKS = [
+  {
+    emoji: "🧄",
+    label: "लहसुन खेती",
+    href: "/crops/garlic",
+  },
+  {
+    emoji: "🌱",
+    label: "सोयाबीन",
+    href: "/crops/soyabean",
+  },
+  {
+    emoji: "🌾",
+    label: "गेहूं",
+    href: "/crops/wheat",
+  },
+  {
+    emoji: "🫘",
+    label: "चना",
+    href: "/crops/gram",
+  },
+  {
+    emoji: "🌽",
+    label: "मक्का",
+    href: "/crops/maize",
+  },
+];
+
+const IMPORTANT_LINKS = [
+  {
+    label: "हमारे बारे में",
+    href: "/about",
+  },
+  {
+    label: "संपर्क करें",
+    href: "/contact",
+  },
+  {
+    label: "Privacy Policy",
+    href: "/privacy-policy",
+  },
+  {
+    label: "Terms & Conditions",
+    href: "/terms",
+  },
+];
+
+/* =========================================================
+   WHATSAPP
+========================================================= */
+
+const whatsappMessage = encodeURIComponent(
+  "नमस्ते कृषि मित्र, मुझे खेती और मंडी भाव के संबंध में जानकारी चाहिए।"
+);
+
+const whatsappUrl = `https://wa.me/${FOOTER_CONFIG.whatsapp.number}?text=${whatsappMessage}`;
+
+/* =========================================================
+   FOOTER
+========================================================= */
 
 export default function Footer() {
   const [subscribed, setSubscribed] = useState(false);
-  const [phoneOrEmail, setPhoneOrEmail] = useState('');
+
+  const [emailOrPhone, setEmailOrPhone] = useState("");
+
+  const [openSection, setOpenSection] = useState(null);
+
+  /* =======================================================
+     NEWSLETTER
+  ======================================================== */
 
   const handleSubscribe = (e) => {
     e.preventDefault();
-    if (phoneOrEmail.trim()) {
-      setSubscribed(true);
-      setPhoneOrEmail('');
-    }
+
+    if (!emailOrPhone.trim()) return;
+
+    setSubscribed(true);
+    setEmailOrPhone("");
+
+    /*
+      Future API:
+
+      await fetch("/api/subscribe", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contact: emailOrPhone,
+        }),
+      });
+    */
   };
 
-  const socialLinks = [
-    {
-      name: 'WhatsApp Channel',
-      icon: MessageCircle,
-      href: 'https://whatsapp.com',
-      color: 'hover:bg-emerald-500 hover:text-white',
-    },
-    {
-      name: 'YouTube',
-      icon: Youtube,
-      href: 'https://youtube.com',
-      color: 'hover:bg-red-600 hover:text-white',
-    },
-    {
-      name: 'Facebook',
-      icon: Facebook,
-      href: 'https://facebook.com',
-      color: 'hover:bg-blue-600 hover:text-white',
-    },
-    {
-      name: 'Instagram',
-      icon: Instagram,
-      href: 'https://instagram.com',
-      color: 'hover:bg-pink-600 hover:text-white',
-    },
-    {
-      name: 'X (Twitter)',
-      icon: Twitter,
-      href: 'https://twitter.com',
-      color: 'hover:bg-sky-500 hover:text-white',
-    }
-  ];
+  /* =======================================================
+     ACCORDION
+  ======================================================== */
+
+  const toggleSection = (section) => {
+    setOpenSection((current) =>
+      current === section ? null : section
+    );
+  };
+
+  /* =======================================================
+     SCROLL TOP
+  ======================================================== */
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
 
   return (
-    <footer className="bg-slate-900 text-slate-300 pt-12 pb-6 border-t-4 border-emerald-600">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
-        
-        {/* Top Interactive Banner: Mandi Rate Alerts */}
-        <div className="bg-gradient-to-r from-emerald-800 to-emerald-950 rounded-2xl p-6 sm:p-8 shadow-xl border border-emerald-700/50 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="space-y-2 text-center md:text-left">
-            <span className="bg-amber-400 text-slate-950 font-bold text-[11px] px-3 py-1 rounded-full uppercase tracking-wider inline-block">
-              व्हाट्सएप एवं मंडी भाव अलर्ट
-            </span>
-            <h3 className="text-xl sm:text-2xl font-extrabold text-white">
-              किसान मित्र अपडेट्स से जुड़ें!
-            </h3>
-            <p className="text-xs sm:text-sm text-emerald-100 max-w-lg">
-              अपना मोबाइल नंबर या ईमेल दर्ज करें और सुबह-सुबह नीमच व आसपास की मंडियों के सटीक भाव सीधे प्राप्त करें।
-            </p>
-          </div>
+    <footer className="border-t-4 border-emerald-600 bg-slate-950 text-slate-300">
 
-          <div className="w-full md:w-auto">
-            {subscribed ? (
-              <div className="bg-emerald-900/80 border border-emerald-500 text-emerald-200 px-5 py-3 rounded-xl flex items-center gap-2 text-xs font-bold">
-                <CheckCircle2 className="w-5 h-5 text-amber-400" />
-                धन्यवाद! आपका नंबर सफलतापूर्वक रजिस्टर हो गया है।
-              </div>
-            ) : (
-              <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-2 w-full max-w-md">
-                <input
-                  type="text"
-                  required
-                  value={phoneOrEmail}
-                  onChange={(e) => setPhoneOrEmail(e.target.value)}
-                  placeholder="मोबाइल नंबर / Email दर्ज करें..."
-                  className="bg-white/10 border border-white/20 text-white placeholder-slate-400 text-xs sm:text-sm rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-amber-400 w-full"
-                />
-                <button
-                  type="submit"
-                  className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-6 py-3 rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 transition-all hover:scale-105 shrink-0 cursor-pointer"
-                >
-                  सब्सक्राइब <Send className="w-4 h-4" />
-                </button>
-              </form>
-            )}
-          </div>
-        </div>
+      <div className="mx-auto max-w-7xl px-4 pb-6 pt-10 sm:px-6 lg:px-8">
 
-        {/* Middle Main Content Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 pb-8 border-b border-slate-800">
-          
-          {/* Col 1: Kisan Mitra Branding & Social Links */}
-          <div className="space-y-4">
-            {/* Kisan Mitra Logo Header */}
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-emerald-600 border-2 border-amber-400 flex items-center justify-center text-xl shadow-md shrink-0">
-                🌱
+        {/* =================================================
+            TOP UPDATE BANNER
+        ================================================== */}
+
+        <div className="relative overflow-hidden rounded-3xl border border-emerald-700/50 bg-gradient-to-br from-emerald-900 via-green-900 to-slate-950 p-6 shadow-2xl sm:p-8">
+
+          <div className="absolute -right-20 -top-20 h-56 w-56 rounded-full bg-emerald-400/10" />
+
+          <div className="relative flex flex-col gap-7 lg:flex-row lg:items-center lg:justify-between">
+
+            {/* TEXT */}
+
+            <div className="max-w-2xl">
+
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-amber-300">
+
+                <Sprout size={15} />
+
+                किसान अपडेट्स
+
               </div>
-              <div>
-                <h2 className="text-xl font-bold text-white tracking-wide leading-tight">
-                  किसान <span className="text-emerald-400">मित्र</span>
-                </h2>
-                <p className="text-[10px] text-amber-400 font-medium">आपका सच्चा कृषि साथी</p>
-              </div>
+
+              <h3 className="text-2xl font-extrabold text-white sm:text-3xl">
+                कृषि मित्र से जुड़े रहें
+              </h3>
+
+              <p className="mt-3 text-sm leading-7 text-emerald-100">
+                मंडी भाव, मौसम, खेती और कृषि से जुड़ी नई जानकारी के
+                updates पाने के लिए अपना मोबाइल नंबर या email दर्ज करें।
+              </p>
+
             </div>
 
-            <p className="text-xs text-slate-400 leading-relaxed">
-              किसान मित्र - नीमच मंडी के सटीक भाव, मौसम पूर्वानुमान, फसल सुरक्षा एवं आधुनिक कृषि तकनीकों की सही जानकारी देने वाला भरोसेमंद डिजिटल मंच।
+            {/* SUBSCRIBE */}
+
+            <div className="w-full lg:max-w-md">
+
+              {subscribed ? (
+
+                <div className="rounded-2xl border border-emerald-400/40 bg-emerald-950/70 p-5">
+
+                  <div className="flex items-start gap-3">
+
+                    <CheckCircle2
+                      size={24}
+                      className="mt-0.5 shrink-0 text-emerald-400"
+                    />
+
+                    <div>
+
+                      <div className="font-bold text-white">
+                        धन्यवाद!
+                      </div>
+
+                      <p className="mt-1 text-sm leading-6 text-emerald-200">
+                        आपका contact update list में register हो गया है।
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setSubscribed(false)}
+                    className="mt-4 text-xs font-semibold text-amber-300 hover:text-amber-200"
+                  >
+                    दूसरा contact जोड़ें →
+                  </button>
+
+                </div>
+
+              ) : (
+
+                <form
+                  onSubmit={handleSubscribe}
+                  className="rounded-2xl border border-white/10 bg-white/5 p-3 backdrop-blur"
+                >
+
+                  <div className="flex flex-col gap-2 sm:flex-row">
+
+                    <input
+                      type="text"
+                      required
+                      value={emailOrPhone}
+                      onChange={(e) =>
+                        setEmailOrPhone(e.target.value)
+                      }
+                      placeholder="Mobile / Email"
+                      className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-400 focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20"
+                    />
+
+                    <button
+                      type="submit"
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:scale-[1.02] hover:bg-amber-400"
+                    >
+                      जुड़ें
+                      <Send size={16} />
+                    </button>
+
+                  </div>
+
+                  <p className="px-1 pt-2 text-[10px] text-slate-400">
+                    अभी यह frontend demo subscription flow है।
+                  </p>
+
+                </form>
+
+              )}
+
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* =================================================
+            BRAND + DESKTOP GRID
+        ================================================== */}
+
+        <div className="grid gap-10 border-b border-slate-800 py-12 md:grid-cols-2 lg:grid-cols-5">
+
+          {/* BRAND */}
+
+          <div className="lg:col-span-2">
+
+            <div className="flex items-center gap-3">
+
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border-2 border-amber-400 bg-emerald-700 text-2xl shadow-lg">
+                🌱
+              </div>
+
+              <div>
+
+                <h2 className="text-2xl font-extrabold text-white">
+                  किसान{" "}
+                  <span className="text-emerald-400">
+                    मित्र
+                  </span>
+                </h2>
+
+                <p className="text-[11px] font-medium text-amber-400">
+                  {FOOTER_CONFIG.brand.tagline}
+                </p>
+
+              </div>
+
+            </div>
+
+            <p className="mt-5 max-w-md text-sm leading-7 text-slate-400">
+              {FOOTER_CONFIG.brand.description}
             </p>
 
-            <div className="pt-2">
-              <p className="text-xs font-bold text-slate-200 mb-3 flex items-center gap-1.5">
-                <Share2 className="w-4 h-4 text-emerald-400" /> सोशल मीडिया पर जुड़ें:
-              </p>
+            {/* ONLINE BADGES */}
+
+            <div className="mt-6 grid grid-cols-2 gap-3">
+
+              <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
+
+                <div className="flex items-center gap-2 text-emerald-400">
+                  <UserCheck size={17} />
+                  <span className="text-xs font-bold">
+                    Self Managed
+                  </span>
+                </div>
+
+                <p className="mt-2 text-[11px] leading-5 text-slate-500">
+                  व्यक्तिगत रूप से संचालित
+                </p>
+
+              </div>
+
+              <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
+
+                <div className="flex items-center gap-2 text-amber-400">
+                  <Target size={17} />
+                  <span className="text-xs font-bold">
+                    Online
+                  </span>
+                </div>
+
+                <p className="mt-2 text-[11px] leading-5 text-slate-500">
+                  कोई physical center नहीं
+                </p>
+
+              </div>
+
+            </div>
+
+            {/* SOCIAL */}
+
+            <div className="mt-7">
+
+              <div className="mb-3 flex items-center gap-2 text-sm font-bold text-white">
+
+                <Share2
+                  size={17}
+                  className="text-emerald-400"
+                />
+
+                सोशल मीडिया पर जुड़ें
+
+              </div>
+
               <div className="flex flex-wrap gap-2">
-                {socialLinks.map((s) => {
-                  const Icon = s.icon;
+
+                {FOOTER_CONFIG.social.map((social) => {
+
+                  const Icon = social.icon;
+
                   return (
                     <a
-                      key={s.name}
-                      href={s.href}
+                      key={social.name}
+                      href={social.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      title={s.name}
-                      className={`p-2.5 bg-slate-800 border border-slate-700 text-slate-300 rounded-xl transition-all duration-200 hover:-translate-y-1 ${s.color}`}
+                      title={social.name}
+                      aria-label={social.name}
+                      className={`flex h-10 w-10 items-center justify-center rounded-xl border border-slate-800 bg-slate-900 text-slate-400 transition hover:-translate-y-1 ${social.className}`}
                     >
-                      <Icon className="w-4 h-4" />
+                      <Icon size={18} />
                     </a>
                   );
                 })}
+
               </div>
+
             </div>
+
           </div>
 
-          {/* Col 2: Navigation Links */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider border-b border-emerald-500/40 pb-2 inline-block">
+          {/* MAIN LINKS */}
+
+          <div className="hidden lg:block">
+
+            <h3 className="mb-5 inline-block border-b border-emerald-500/40 pb-2 text-sm font-bold uppercase tracking-wider text-white">
               मुख्य सेवाएं
             </h3>
-            <ul className="space-y-2 text-xs">
-              <li>
-                <Link href="/mandi-bhav" className="hover:text-emerald-400 transition-colors flex items-center gap-1.5">
-                  <span className="text-emerald-500">›</span> लाइव नीमच मंडी भाव
-                </Link>
-              </li>
-              <li>
-                <Link href="/weather" className="hover:text-emerald-400 transition-colors flex items-center gap-1.5">
-                  <span className="text-emerald-500">›</span> मौसम पूर्वानुमान
-                </Link>
-              </li>
-              <li>
-                <Link href="/blog" className="hover:text-emerald-400 transition-colors flex items-center gap-1.5">
-                  <span className="text-emerald-500">›</span> कृषि सलाह व ब्लॉग
-                </Link>
-              </li>
-              <li>
-                <Link href="/agri-tech" className="hover:text-emerald-400 transition-colors flex items-center gap-1.5">
-                  <span className="text-emerald-500">›</span> आधुनिक कृषि तकनीक
-                </Link>
-              </li>
-              <li>
-                <Link href="/organic-farming" className="hover:text-emerald-400 transition-colors flex items-center gap-1.5">
-                  <span className="text-emerald-500">›</span> जैविक खेती एवं जैविक खाद
-                </Link>
-              </li>
+
+            <ul className="space-y-3">
+
+              {MAIN_LINKS.map((item) => (
+                <li key={item.href}>
+
+                  <Link
+                    href={item.href}
+                    className="group flex items-center gap-2 text-xs text-slate-400 transition hover:text-emerald-400"
+                  >
+
+                    <span className="text-emerald-500 transition group-hover:translate-x-1">
+                      ›
+                    </span>
+
+                    {item.label}
+
+                  </Link>
+
+                </li>
+              ))}
+
             </ul>
+
           </div>
 
-          {/* Col 3: Popular Crops */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider border-b border-emerald-500/40 pb-2 inline-block">
+          {/* CROPS */}
+
+          <div className="hidden lg:block">
+
+            <h3 className="mb-5 inline-block border-b border-emerald-500/40 pb-2 text-sm font-bold uppercase tracking-wider text-white">
               फसल गाइड
             </h3>
-            <ul className="space-y-2 text-xs">
-              <li>
-                <Link href="/crops/garlic" className="hover:text-emerald-400 transition-colors flex items-center gap-1.5">
-                  🧄 लहसुन खेती एवं भाव
-                </Link>
-              </li>
-              <li>
-                <Link href="/crops/soyabean" className="hover:text-emerald-400 transition-colors flex items-center gap-1.5">
-                  🌱 सोयाबीन प्रबंधन
-                </Link>
-              </li>
-              <li>
-                <Link href="/crops/wheat" className="hover:text-emerald-400 transition-colors flex items-center gap-1.5">
-                  🌾 गेहूं उत्पादन तकनीक
-                </Link>
-              </li>
-              <li>
-                <Link href="/crops/gram" className="hover:text-emerald-400 transition-colors flex items-center gap-1.5">
-                  🫘 चना सुरक्षा टिप्स
-                </Link>
-              </li>
-              <li>
-                <Link href="/crops/maize" className="hover:text-emerald-400 transition-colors flex items-center gap-1.5">
-                  🌽 मक्का खेती गाइड
-                </Link>
-              </li>
+
+            <ul className="space-y-3">
+
+              {CROP_LINKS.map((item) => (
+                <li key={item.href}>
+
+                  <Link
+                    href={item.href}
+                    className="flex items-center gap-2 text-xs text-slate-400 transition hover:text-emerald-400"
+                  >
+
+                    <span>{item.emoji}</span>
+
+                    {item.label}
+
+                  </Link>
+
+                </li>
+              ))}
+
             </ul>
+
           </div>
 
-          {/* Col 4: Contact Information */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider border-b border-emerald-500/40 pb-2 inline-block">
+          {/* CONTACT */}
+
+          <div className="hidden lg:block">
+
+            <h3 className="mb-5 inline-block border-b border-emerald-500/40 pb-2 text-sm font-bold uppercase tracking-wider text-white">
               संपर्क करें
             </h3>
-            <div className="space-y-2.5 text-xs text-slate-400">
-              <div className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <span>कृषि उपज मंडी रोड, नीमच (म.प्र.) 458441</span>
+
+            <div className="space-y-4">
+
+              <div className="flex items-start gap-3">
+
+                <MapPin
+                  size={17}
+                  className="mt-0.5 shrink-0 text-emerald-400"
+                />
+
+                <div>
+
+                  <div className="text-xs font-semibold text-white">
+                    Online Platform
+                  </div>
+
+                  <div className="mt-1 text-xs leading-5 text-slate-500">
+                    {FOOTER_CONFIG.contact.region}
+                  </div>
+
+                </div>
+
               </div>
-              <div className="flex items-center gap-2">
-                <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>हेल्पलाइन: +91 98260 XXXXX</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>support@kisanmitra.com</span>
-              </div>
+
+              <a
+                href={`tel:${FOOTER_CONFIG.contact.phone}`}
+                className="flex items-center gap-3 text-xs text-slate-400 transition hover:text-emerald-400"
+              >
+
+                <Phone
+                  size={17}
+                  className="shrink-0 text-emerald-400"
+                />
+
+                <span>
+                  किसान कॉल सेंटर: 1800-180-1551
+                </span>
+
+              </a>
+
+              <a
+                href={`mailto:${FOOTER_CONFIG.contact.email}`}
+                className="flex items-start gap-3 text-xs text-slate-400 transition hover:text-emerald-400"
+              >
+
+                <Mail
+                  size={17}
+                  className="mt-0.5 shrink-0 text-emerald-400"
+                />
+
+                <span className="break-all">
+                  {FOOTER_CONFIG.contact.email}
+                </span>
+
+              </a>
+
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 text-xs text-slate-400 transition hover:text-emerald-400"
+              >
+
+                <MessageCircle
+                  size={17}
+                  className="shrink-0 text-emerald-400"
+                />
+
+                <span>
+                  WhatsApp सहायता
+                </span>
+
+              </a>
+
             </div>
+
           </div>
 
         </div>
 
-        {/* Bottom Bar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 pt-2">
-          <p className="flex items-center gap-1 text-center sm:text-left">
-            © {new Date().getFullYear()} किसान मित्र। सर्वाधिकार सुरक्षित। Made with <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500 inline" /> for Farmers.
-          </p>
-          <div className="flex items-center gap-4">
-            <Link href="/privacy-policy" className="hover:text-slate-300 transition">गोपनीयता नीति</Link>
-            <span>•</span>
-            <Link href="/terms" className="hover:text-slate-300 transition">नियम एवं शर्तें</Link>
-            <span>•</span>
-            <Link href="/contact" className="hover:text-slate-300 transition">संपर्क करें</Link>
+        {/* =================================================
+            MOBILE ACCORDIONS
+        ================================================== */}
+
+        <div className="border-b border-slate-800 lg:hidden">
+
+          {/* SERVICES */}
+
+          <div className="border-b border-slate-800">
+
+            <button
+              type="button"
+              onClick={() => toggleSection("services")}
+              className="flex w-full items-center justify-between py-5 text-left"
+            >
+
+              <span className="font-bold text-white">
+                मुख्य सेवाएं
+              </span>
+
+              <ChevronDown
+                size={19}
+                className={`transition-transform ${
+                  openSection === "services"
+                    ? "rotate-180"
+                    : ""
+                }`}
+              />
+
+            </button>
+
+            {openSection === "services" && (
+
+              <div className="grid grid-cols-2 gap-3 pb-5">
+
+                {MAIN_LINKS.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="rounded-xl bg-slate-900 px-3 py-3 text-xs text-slate-400 transition hover:text-emerald-400"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+
+              </div>
+
+            )}
+
           </div>
+
+          {/* CROPS */}
+
+          <div className="border-b border-slate-800">
+
+            <button
+              type="button"
+              onClick={() => toggleSection("crops")}
+              className="flex w-full items-center justify-between py-5 text-left"
+            >
+
+              <span className="font-bold text-white">
+                फसल गाइड
+              </span>
+
+              <ChevronDown
+                size={19}
+                className={`transition-transform ${
+                  openSection === "crops"
+                    ? "rotate-180"
+                    : ""
+                }`}
+              />
+
+            </button>
+
+            {openSection === "crops" && (
+
+              <div className="grid grid-cols-2 gap-3 pb-5">
+
+                {CROP_LINKS.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="rounded-xl bg-slate-900 px-3 py-3 text-xs text-slate-400 transition hover:text-emerald-400"
+                  >
+                    {item.emoji} {item.label}
+                  </Link>
+                ))}
+
+              </div>
+
+            )}
+
+          </div>
+
+          {/* CONTACT */}
+
+          <div className="border-b border-slate-800">
+
+            <button
+              type="button"
+              onClick={() => toggleSection("contact")}
+              className="flex w-full items-center justify-between py-5 text-left"
+            >
+
+              <span className="font-bold text-white">
+                संपर्क जानकारी
+              </span>
+
+              <ChevronDown
+                size={19}
+                className={`transition-transform ${
+                  openSection === "contact"
+                    ? "rotate-180"
+                    : ""
+                }`}
+              />
+
+            </button>
+
+            {openSection === "contact" && (
+
+              <div className="space-y-4 pb-5">
+
+                <div className="flex gap-3">
+
+                  <MapPin
+                    size={18}
+                    className="mt-0.5 shrink-0 text-emerald-400"
+                  />
+
+                  <div>
+                    <div className="text-xs font-bold text-white">
+                      Online Platform
+                    </div>
+
+                    <div className="mt-1 text-xs text-slate-500">
+                      {FOOTER_CONFIG.contact.region}
+                    </div>
+                  </div>
+
+                </div>
+
+                <a
+                  href={`tel:${FOOTER_CONFIG.contact.phone}`}
+                  className="flex items-center gap-3 text-xs text-slate-400"
+                >
+                  <Phone
+                    size={18}
+                    className="text-emerald-400"
+                  />
+                  1800-180-1551
+                </a>
+
+                <a
+                  href={`mailto:${FOOTER_CONFIG.contact.email}`}
+                  className="flex items-center gap-3 text-xs text-slate-400"
+                >
+                  <Mail
+                    size={18}
+                    className="text-emerald-400"
+                  />
+                  {FOOTER_CONFIG.contact.email}
+                </a>
+
+                <a
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 text-xs text-slate-400"
+                >
+                  <MessageCircle
+                    size={18}
+                    className="text-emerald-400"
+                  />
+                  WhatsApp सहायता
+                </a>
+
+              </div>
+
+            )}
+
+          </div>
+
+        </div>
+
+        {/* =================================================
+            IMPORTANT INFORMATION
+        ================================================== */}
+
+        <div className="border-b border-slate-800 py-8">
+
+          <div className="rounded-2xl border border-amber-400/10 bg-amber-400/5 p-5">
+
+            <div className="flex items-start gap-3">
+
+              <ShieldCheck
+                size={21}
+                className="mt-0.5 shrink-0 text-amber-400"
+              />
+
+              <div>
+
+                <h3 className="text-sm font-bold text-amber-300">
+                  महत्वपूर्ण सूचना
+                </h3>
+
+                <p className="mt-2 text-xs leading-6 text-slate-500">
+                  कृषि मित्र एक व्यक्तिगत online agricultural information
+                  platform है। यह सरकारी website या physical कृषि केंद्र
+                  नहीं है। मंडी भाव, मौसम, खेती और कृषि संबंधी जानकारी को
+                  महत्वपूर्ण निर्णय लेने से पहले संबंधित official source,
+                  कृषि विभाग या स्थानीय विशेषज्ञ से verify करें।
+                </p>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* =================================================
+            MOBILE CONTACT CTA
+        ================================================== */}
+
+        <div className="grid gap-3 py-7 sm:grid-cols-3">
+
+          <a
+            href={`tel:${FOOTER_CONFIG.contact.phone}`}
+            className="flex items-center justify-center gap-2 rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-xs font-bold text-slate-300 transition hover:border-emerald-500 hover:text-emerald-400"
+          >
+            <Phone size={16} />
+            किसान कॉल सेंटर
+          </a>
+
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-xs font-bold text-slate-300 transition hover:border-emerald-500 hover:text-emerald-400"
+          >
+            <MessageCircle size={16} />
+            WhatsApp
+          </a>
+
+          <Link
+            href="/contact"
+            className="flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-3 text-xs font-bold text-white transition hover:bg-emerald-600"
+          >
+            <Send size={16} />
+            Contact Form
+          </Link>
+
+        </div>
+
+        {/* =================================================
+            BOTTOM BAR
+        ================================================== */}
+
+        <div className="flex flex-col gap-5 border-t border-slate-800 pt-6 sm:flex-row sm:items-center sm:justify-between">
+
+          <p className="flex items-center gap-1 text-center text-xs text-slate-500 sm:text-left">
+
+            © {new Date().getFullYear()} कृषि मित्र।
+
+            <span className="hidden sm:inline">
+              सर्वाधिकार सुरक्षित।
+            </span>
+
+            <span className="ml-1">
+              Made with
+            </span>
+
+            <Heart
+              size={13}
+              className="text-red-500"
+              fill="currentColor"
+            />
+
+            <span>
+              for Farmers
+            </span>
+
+          </p>
+
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-slate-500">
+
+            {IMPORTANT_LINKS.map((item, index) => (
+              <div
+                key={item.href}
+                className="flex items-center gap-4"
+              >
+
+                <Link
+                  href={item.href}
+                  className="transition hover:text-emerald-400"
+                >
+                  {item.label}
+                </Link>
+
+                {index < IMPORTANT_LINKS.length - 1 && (
+                  <span className="text-slate-700">
+                    •
+                  </span>
+                )}
+
+              </div>
+            ))}
+
+          </div>
+
+        </div>
+
+        {/* =================================================
+            SCROLL TO TOP
+        ================================================== */}
+
+        <div className="flex justify-center pt-7">
+
+          <button
+            type="button"
+            onClick={scrollToTop}
+            aria-label="ऊपर जाएं"
+            className="group flex items-center gap-2 rounded-full border border-slate-800 bg-slate-900 px-4 py-2 text-xs font-semibold text-slate-400 transition hover:border-emerald-500 hover:text-emerald-400"
+          >
+
+            <ArrowUp
+              size={15}
+              className="transition-transform group-hover:-translate-y-1"
+            />
+
+            ऊपर जाएं
+
+          </button>
+
         </div>
 
       </div>
+
     </footer>
   );
 }

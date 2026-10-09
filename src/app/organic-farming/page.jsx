@@ -1,11 +1,35 @@
 'use client';
 
-import { useState } from 'react';
-import { 
-  Leaf, Calculator, ShieldCheck, Sparkles, Filter, 
-  ChevronDown, ChevronUp, Printer, CheckCircle2, Clock, 
-  AlertTriangle, DollarSign, Info
+import { useMemo, useState } from 'react';
+import {
+  Leaf,
+  Calculator,
+  Sparkles,
+  Filter,
+  ChevronDown,
+  ChevronUp,
+  Printer,
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
+  Info,
+  Search,
+  Heart,
+  Copy,
+  Check,
+  Droplets,
+  Scale,
+  FileDown,
+  X,
+  ShieldCheck,
+  IndianRupee,
+  FlaskConical,
+  BookOpen,
 } from 'lucide-react';
+
+/* =========================================================
+   ORGANIC RECIPES DATA
+========================================================= */
 
 const ORGANIC_RECIPES = [
   {
@@ -14,425 +38,1974 @@ const ORGANIC_RECIPES = [
     type: 'प्राकृतिक तरल खाद',
     category: 'fertilizer',
     target: 'मृदा स्वास्थ्य, सूक्ष्मजीव वृद्धि, फसल पोषण',
-    shelfLife: '10-12 दिन',
-    costPerAcre: '₹100 - ₹150',
-    baseWater: 200, // Base calculation for 1 Acre (200 Liters)
+    shelfLife: '10–12 दिन',
+    costMin: 100,
+    costMax: 150,
+    baseArea: 1,
+    baseWater: 200,
+
     baseIngredients: [
-      { name: 'देसी गाय का ताजा गोबर', amount: 10, unit: 'किग्रा' },
-      { name: 'पुराना गौमूत्र', amount: 10, unit: 'लीटर' },
-      { name: 'गुड़ (या गन्ने का रस)', amount: 2, unit: 'किग्रा' },
-      { name: 'बेसन (दलों का आटा)', amount: 2, unit: 'किग्रा' },
-      { name: 'मेड़ या पुराने बरगद के पेड़ की उपजाऊ मिट्टी', amount: 1, unit: 'किग्रा' }
+      {
+        name: 'देसी गाय का ताजा गोबर',
+        amount: 10,
+        unit: 'किग्रा',
+      },
+      {
+        name: 'पुराना गौमूत्र',
+        amount: 10,
+        unit: 'लीटर',
+      },
+      {
+        name: 'गुड़',
+        amount: 2,
+        unit: 'किग्रा',
+      },
+      {
+        name: 'बेसन',
+        amount: 2,
+        unit: 'किग्रा',
+      },
+      {
+        name: 'उपजाऊ मिट्टी',
+        amount: 1,
+        unit: 'किग्रा',
+      },
     ],
+
     processSteps: [
-      '200 लीटर प्लास्टिक ड्रम में स्वच्छ पानी भरें।',
-      'एक बाल्टी में गोबर और गौमूत्र का अच्छा घोल बनाएं और ड्रम में डालें।',
-      'गुड़ और बेसन को अलग पानी में घोलकर ड्रम में मिलाएं।',
-      'अंत में उपजाऊ मिट्टी डालकर मिश्रण को लकड़ी के डंडे से दाहिनी ओर (Clockwise) चलाएं।',
-      'दुकान या छायादार स्थान में जूट की बोरी से ढककर 48-72 घंटे रखें। दिन में दो बार 1-2 मिनट चलाएं।'
+      '200 लीटर ड्रम में स्वच्छ पानी भरें।',
+      'गोबर और गौमूत्र का घोल बनाकर ड्रम में मिलाएं।',
+      'गुड़ और बेसन को अलग पानी में घोलकर मिलाएं।',
+      'अंत में उपजाऊ मिट्टी मिलाएं।',
+      'छायादार स्थान पर रखें और समय-समय पर लकड़ी से चलाएं।',
     ],
-    usage: 'सिंचाई के पानी के साथ (Flooding / Drip) या छानकर फसल पर 10% घोल का छिड़काव करें।',
-    precautions: 'मिश्रण बनाने के 12 दिनों के भीतर उपयोग करें। सीधी धूप से बचाएं।'
+
+    usage:
+      'सिंचाई के पानी के साथ या उचित रूप से छानकर फसल पर प्रयोग किया जाता है।',
+
+    precautions:
+      'छायादार स्थान में रखें और तैयार घोल की गुणवत्ता, स्वच्छता तथा फसल के लिए उपयुक्त मात्रा का ध्यान रखें।',
   },
+
   {
     id: 'neemastra',
     title: 'नीमास्त्र (Neemastra)',
-    type: 'जैविक कीटनाशक',
+    type: 'जैविक कीट प्रबंधन',
     category: 'pesticide',
-    target: 'छोटे रसचूसक कीट, थ्रिप्स, सफेद मक्खी, हरी इल्ली',
-    shelfLife: '6 माह',
-    costPerAcre: '₹50 - ₹80',
+    target: 'रसचूसक कीट, थ्रिप्स, सफेद मक्खी आदि',
+    shelfLife: 'निर्माता निर्देश अनुसार',
+    costMin: 50,
+    costMax: 80,
+    baseArea: 1,
     baseWater: 100,
+
     baseIngredients: [
-      { name: 'देशी गाय का गौमूत्र', amount: 5, unit: 'लीटर' },
-      { name: 'देशी गाय का ताजा गोबर', amount: 1, unit: 'किग्रा' },
-      { name: 'नीम की पत्ती की चटनी (पेस्ट)', amount: 5, unit: 'किग्रा' }
+      {
+        name: 'गौमूत्र',
+        amount: 5,
+        unit: 'लीटर',
+      },
+      {
+        name: 'ताजा गोबर',
+        amount: 1,
+        unit: 'किग्रा',
+      },
+      {
+        name: 'नीम पत्ती पेस्ट',
+        amount: 5,
+        unit: 'किग्रा',
+      },
     ],
+
     processSteps: [
-      '100 लीटर पानी में गौमूत्र और गोबर को अच्छी तरह घोलें।',
-      'नीम की पत्तियों की बारीक पिसी चटनी डालकर अच्छी तरह मिलाएं।',
-      'मिश्रण को छाया में 24 घंटे के लिए रखें। दिन में 3-4 बार डंडे से चलाएं।',
-      '24 घंटे बाद बारीक कपड़े से छानकर प्रयोग हेतु तैयार करें।'
+      'पानी में गौमूत्र और गोबर मिलाएं।',
+      'नीम पत्ती का पेस्ट मिलाएं।',
+      'छायादार स्थान में मिश्रण रखें।',
+      'छानकर प्रयोग से पहले फसल और स्थानीय कृषि सलाह के अनुसार उपयोग करें।',
     ],
-    usage: 'प्रति एकड़ फसल पर सीधे बिना पानी मिलाए छिड़काव करें।',
-    precautions: 'छिड़काव शाम के समय करें ताकि कीटों पर अधिकतम असर हो।'
+
+    usage:
+      'उपयोग से पहले फसल, कीट और स्थानीय कृषि विशेषज्ञ की सलाह के अनुसार घोल की मात्रा निर्धारित करें।',
+
+    precautions:
+      'पहले छोटे हिस्से पर परीक्षण करें। तेज धूप, तेज हवा या बारिश के समय छिड़काव न करें।',
   },
+
   {
     id: 'brahmastra',
     title: 'ब्रह्मास्त्र (Brahmastra)',
-    type: 'तीव्र जैविक कीटनाशक',
+    type: 'प्राकृतिक कीट प्रबंधन',
     category: 'pesticide',
-    target: 'बड़ी इल्लियां, तना छेदक, फल छेदक कीट',
-    shelfLife: '6 माह',
-    costPerAcre: '₹120 - ₹180',
+    target: 'इल्लियां और अन्य कीट',
+    shelfLife: 'निर्माता निर्देश अनुसार',
+    costMin: 120,
+    costMax: 180,
+    baseArea: 1,
     baseWater: 100,
+
     baseIngredients: [
-      { name: 'देशी गाय का गौमूत्र', amount: 10, unit: 'लीटर' },
-      { name: 'नीम की पत्ती का पेस्ट', amount: 3, unit: 'किग्रा' },
-      { name: 'करंज या अरंडी के पत्ते का पेस्ट', amount: 2, unit: 'किग्रा' },
-      { name: 'सीताफल (शरीफा) पत्ती पेस्ट', amount: 2, unit: 'किग्रा' },
-      { name: 'धतूरा या बेल पत्ती पेस्ट', amount: 2, unit: 'किग्रा' }
+      {
+        name: 'गौमूत्र',
+        amount: 10,
+        unit: 'लीटर',
+      },
+      {
+        name: 'नीम पत्ती पेस्ट',
+        amount: 3,
+        unit: 'किग्रा',
+      },
+      {
+        name: 'करंज/अरंडी पत्ती पेस्ट',
+        amount: 2,
+        unit: 'किग्रा',
+      },
+      {
+        name: 'सीताफल पत्ती पेस्ट',
+        amount: 2,
+        unit: 'किग्रा',
+      },
+      {
+        name: 'अन्य कड़वी पत्तियों का पेस्ट',
+        amount: 2,
+        unit: 'किग्रा',
+      },
     ],
+
     processSteps: [
-      'सभी पत्तियों की चटनी को 10 लीटर गौमूत्र में मिलाएं।',
-      'मिश्रण को किसी बर्तन में धीमी आंच पर 4 बार उबाल आने तक गर्म करें।',
-      'उबालने के बाद 48 घंटे के लिए छाया में ठंडा होने व सड़ने दें।',
-      'दिन में दो बार चलाएं, तत्पश्चात कपड़े से छानकर रख लें।'
+      'सभी सामग्री को उचित पात्र में मिलाएं।',
+      'मिश्रण को छायादार स्थान पर रखें।',
+      'निर्धारित अवधि में मिश्रण को स्वच्छ तरीके से संभालें।',
+      'छानकर उपयोग से पहले स्थानीय कृषि सलाह लें।',
     ],
-    usage: '100 लीटर पानी में 2 से 3 लीटर तैयार ब्रह्मास्त्र मिलाकर प्रति एकड़ छिड़काव करें।',
-    precautions: 'उबालते समय चेहरे पर कपड़ा बांधें और बच्चों से दूर रखें।'
+
+    usage:
+      'फसल एवं कीट की स्थिति के अनुसार कृषि विशेषज्ञ की सलाह से उपयोग करें।',
+
+    precautions:
+      'किसी भी जैविक कीट-प्रबंधन घोल को पहले छोटे क्षेत्र पर परीक्षण करें और सुरक्षात्मक दस्ताने/कपड़े का उपयोग करें।',
   },
+
   {
     id: 'agniastra',
     title: 'अग्निअस्त्र (Agniastra)',
-    type: 'उग्र कीट-नियंत्रक',
+    type: 'प्राकृतिक कीट प्रबंधन',
     category: 'pesticide',
-    target: 'गुलाबी इल्ली, सूंडी, पत्ती मोड़क एवं गंभीर कीट प्रकोप',
-    shelfLife: '3 माह',
-    costPerAcre: '₹150 - ₹200',
+    target: 'इल्ली एवं पत्ती खाने वाले कीट',
+    shelfLife: 'निर्माता निर्देश अनुसार',
+    costMin: 150,
+    costMax: 200,
+    baseArea: 1,
     baseWater: 100,
+
     baseIngredients: [
-      { name: 'देशी गाय का गौमूत्र', amount: 10, unit: 'लीटर' },
-      { name: 'तंबाकू पाउडर या पत्ते पेस्ट', amount: 500, unit: 'ग्राम' },
-      { name: 'तीखी हरी मिर्च पेस्ट', amount: 500, unit: 'ग्राम' },
-      { name: 'देशी लहसुन पेस्ट', amount: 250, unit: 'ग्राम' },
-      { name: 'नीम पत्ती पेस्ट', amount: 2, unit: 'किग्रा' }
+      {
+        name: 'गौमूत्र',
+        amount: 10,
+        unit: 'लीटर',
+      },
+      {
+        name: 'तीखी मिर्च पेस्ट',
+        amount: 500,
+        unit: 'ग्राम',
+      },
+      {
+        name: 'लहसुन पेस्ट',
+        amount: 250,
+        unit: 'ग्राम',
+      },
+      {
+        name: 'नीम पत्ती पेस्ट',
+        amount: 2,
+        unit: 'किग्रा',
+      },
     ],
+
     processSteps: [
-      'गौमूत्र में सभी पिसी हुई सामग्री को अच्छी तरह घोलें।',
-      'मिश्रण को धीमी आंच पर 4 उबाल आने तक गर्म करें।',
-      '48 घंटे तक बर्तन को ढककर रखें और दिन में दो बार चलाएं।',
-      'बारीक कपड़े से छानकर सुरक्षित प्लास्टिक या कांच के कंटेनर में रखें।'
+      'सभी सामग्री को उचित पात्र में मिलाएं।',
+      'मिश्रण को सुरक्षित स्थान पर रखें।',
+      'छानकर प्रयोग से पहले उचित dilution और crop-safety की पुष्टि करें।',
     ],
-    usage: '100 लीटर पानी में 2 लीटर अग्निअस्त्र मिलाकर प्रति एकड़ छिड़काव करें।',
-    precautions: 'छिड़काव करते समय दस्ताने और मास्क अवश्य पहनें।'
+
+    usage:
+      'फसल और कीट की स्थिति के अनुसार कृषि विशेषज्ञ/लेबल निर्देश के अनुसार उपयोग करें।',
+
+    precautions:
+      'आंखों, त्वचा और सांस के संपर्क से बचें। दस्ताने और अन्य उचित सुरक्षा उपकरण पहनें। बच्चों से दूर रखें।',
   },
+
   {
     id: 'dashparni',
     title: 'दशपर्णी अर्क (Dashparni Arka)',
-    type: 'सर्व-कीट नाशक अर्क',
+    type: 'प्राकृतिक कीट प्रबंधन अर्क',
     category: 'pesticide',
-    target: 'समस्त प्रकार के कीट, फफूंद व सूक्ष्मजीव रोग',
-    shelfLife: '6 माह',
-    costPerAcre: '₹200 - ₹250',
+    target: 'विभिन्न प्रकार के कीट',
+    shelfLife: 'निर्माता निर्देश अनुसार',
+    costMin: 200,
+    costMax: 250,
+    baseArea: 1,
     baseWater: 200,
+
     baseIngredients: [
-      { name: 'स्वच्छ पानी', amount: 200, unit: 'लीटर' },
-      { name: 'गौमूत्र', amount: 20, unit: 'लीटर' },
-      { name: 'गायों का ताजा गोबर', amount: 2, unit: 'किग्रा' },
-      { name: '10 कड़वी व औषधीय पत्तियों का पेस्ट (नीम, धतूरा, करंज, पपीता, बेल, आदि)', amount: 2, unit: 'किग्रा प्रति पत्ती' },
-      { name: 'हल्दी पाउडर', amount: 500, unit: 'ग्राम' },
-      { name: 'अदरक / सोंठ पेस्ट', amount: 500, unit: 'ग्राम' }
+      {
+        name: 'पानी',
+        amount: 200,
+        unit: 'लीटर',
+      },
+      {
+        name: 'गौमूत्र',
+        amount: 20,
+        unit: 'लीटर',
+      },
+      {
+        name: 'गोबर',
+        amount: 2,
+        unit: 'किग्रा',
+      },
+      {
+        name: 'कड़वी/औषधीय पत्तियों का मिश्रण',
+        amount: 20,
+        unit: 'किग्रा',
+      },
+      {
+        name: 'हल्दी',
+        amount: 500,
+        unit: 'ग्राम',
+      },
+      {
+        name: 'अदरक/सोंठ',
+        amount: 500,
+        unit: 'ग्राम',
+      },
     ],
+
     processSteps: [
-      'पानी व गौमूत्र में गोबर और 10 पत्तियों का पेस्ट घोलें।',
-      'हल्दी व अदरक पेस्ट डालकर लकड़ी से अच्छी तरह हिलाएं।',
-      '30-45 दिनों तक छाया में जूट की बोरी से ढककर किण्वन (Fermentation) होने दें।',
-      'प्रतिदिन सुबह-शाम 2 मिनट चलाएं, तत्पश्चात छानकर उपयोग करें।'
+      'सामग्री को स्वच्छ पात्र में मिलाएं।',
+      'छायादार स्थान पर fermentation के लिए रखें।',
+      'मिश्रण को स्वच्छ तरीके से संभालें।',
+      'उपयोग से पहले अच्छी तरह छानें।',
     ],
-    usage: '200 लीटर पानी में 6-8 लीटर दशपर्णी अर्क मिलाकर 1 एकड़ में स्प्रे करें।',
-    precautions: 'लंबे किण्वन समय की आवश्यकता होती है, पूर्व योजना बनाकर तैयार करें।'
+
+    usage:
+      'फसल एवं कीट स्थिति के अनुसार कृषि विशेषज्ञ की सलाह से उपयोग करें।',
+
+    precautions:
+      'लंबे fermentation के दौरान पात्र को स्वच्छ रखें और बच्चों/पशुओं की पहुंच से दूर रखें।',
   },
+
   {
     id: 'sont-astra',
-    title: 'सोंठ-दूध अर्क / छाछ फफूंदनाशक',
-    type: 'प्राकृतिक फफूंदनाशक (Fungicide)',
+    title: 'सोंठ-दूध / छाछ फफूंद प्रबंधन',
+    type: 'प्राकृतिक फफूंद प्रबंधन',
     category: 'fungicide',
-    target: 'फफूंदजन्य रोग, झुलसा, धब्बा रोग, पाउडर व डाउनी मिल्ड्यू',
-    shelfLife: '1 माह',
-    costPerAcre: '₹80 - ₹120',
+    target: 'कुछ फफूंदजनित समस्याएं',
+    shelfLife: 'ताजा तैयार करना बेहतर',
+    costMin: 80,
+    costMax: 120,
+    baseArea: 1,
     baseWater: 100,
+
     baseIngredients: [
-      { name: 'देशी गाय का दूध (या खट्टी छाछ)', amount: 5, unit: 'लीटर' },
-      { name: 'सोंठ (सूखा अदरक) पाउडर', amount: 200, unit: 'ग्राम' },
-      { name: 'पानी', amount: 100, unit: 'लीटर' }
+      {
+        name: 'दूध / छाछ',
+        amount: 5,
+        unit: 'लीटर',
+      },
+      {
+        name: 'सोंठ पाउडर',
+        amount: 200,
+        unit: 'ग्राम',
+      },
+      {
+        name: 'पानी',
+        amount: 100,
+        unit: 'लीटर',
+      },
     ],
+
     processSteps: [
-      '5 लीटर दूध में 200 ग्राम सोंठ पाउडर मिलाकर 15 मिनट उबालें।',
-      'ठंडा होने पर इसे 2-3 दिन तक जमने / खट्टा होने दें।',
-      '100 लीटर पानी में इस तैयार घोल को मिलाकर चलाएं।'
+      'सामग्री को स्वच्छ पात्र में मिलाएं।',
+      'घोल को अच्छी तरह मिश्रित करें।',
+      'उपयोग से पहले छानें।',
+      'पहले छोटे क्षेत्र पर परीक्षण करें।',
     ],
-    usage: 'प्रति एकड़ फसल पर फफूंद के शुरुआती लक्षण दिखते ही स्प्रे करें।',
-    precautions: 'छाछ का उपयोग करते समय तांबे के बर्तन में 3-4 दिन रखी खट्टी छाछ सर्वोत्तम परिणाम देती है।'
-  }
+
+    usage:
+      'फसल में समस्या के लक्षण दिखने पर स्थानीय कृषि सलाह के अनुसार उपयोग करें।',
+
+    precautions:
+      'प्राकृतिक घोल को रासायनिक fungicide का स्वतः विकल्प न मानें। रोग की सही पहचान जरूरी है।',
+  },
 ];
 
-export default function OrganicFarmingPage() {
-  const [landArea, setLandArea] = useState(1); // Default 1 Acre
-  const [filterCategory, setFilterCategory] = useState('all');
-  const [expandedCard, setExpandedCard] = useState(null);
-  const [savedRecipes, setSavedRecipes] = useState([]);
+/* =========================================================
+   HELPERS
+========================================================= */
 
-  // Filter Logic
-  const filteredRecipes = ORGANIC_RECIPES.filter(recipe => {
-    if (filterCategory === 'all') return true;
-    return recipe.category === filterCategory;
+const UNIT_OPTIONS = [
+  {
+    value: 'acre',
+    label: 'एकड़',
+    short: 'Acre',
+  },
+  {
+    value: 'hectare',
+    label: 'हेक्टेयर',
+    short: 'Hectare',
+  },
+  {
+    value: 'bigha',
+    label: 'बीघा',
+    short: 'Bigha',
+  },
+];
+
+const CATEGORY_OPTIONS = [
+  {
+    value: 'all',
+    label: 'सभी',
+  },
+  {
+    value: 'fertilizer',
+    label: 'प्राकृतिक खाद',
+  },
+  {
+    value: 'pesticide',
+    label: 'कीट प्रबंधन',
+  },
+  {
+    value: 'fungicide',
+    label: 'फफूंद प्रबंधन',
+  },
+];
+
+/*
+  Important:
+  Bigha differs by region.
+  Here default is configurable.
+  Change BIGHA_IN_ACRE according to local measurement.
+*/
+
+const BIGHA_IN_ACRE = 0.625;
+
+const convertToAcres = (value, unit) => {
+  const number = Number(value) || 0;
+
+  if (unit === 'acre') {
+    return number;
+  }
+
+  if (unit === 'hectare') {
+    return number * 2.47105;
+  }
+
+  if (unit === 'bigha') {
+    return number * BIGHA_IN_ACRE;
+  }
+
+  return number;
+};
+
+const formatNumber = (value) => {
+  if (!Number.isFinite(value)) {
+    return '0';
+  }
+
+  return Number(value).toLocaleString('hi-IN', {
+    maximumFractionDigits: 2,
   });
+};
+
+const formatAmount = (amount, unit) => {
+  const value = Number(amount) || 0;
+
+  if (unit === 'ग्राम' && value >= 1000) {
+    return `${formatNumber(value / 1000)} किग्रा`;
+  }
+
+  if (unit === 'मिलीलीटर' && value >= 1000) {
+    return `${formatNumber(value / 1000)} लीटर`;
+  }
+
+  return `${formatNumber(value)} ${unit}`;
+};
+
+const getCategoryLabel = (category) => {
+  const item = CATEGORY_OPTIONS.find(
+    (x) => x.value === category
+  );
+
+  return item?.label || category;
+};
+
+/* =========================================================
+   MAIN PAGE
+========================================================= */
+
+export default function OrganicFarmingPage() {
+  const [landArea, setLandArea] = useState(1);
+  const [landUnit, setLandUnit] = useState('acre');
+
+  const [filterCategory, setFilterCategory] =
+    useState('all');
+
+  const [searchTerm, setSearchTerm] =
+    useState('');
+
+  const [expandedCard, setExpandedCard] =
+    useState(null);
+
+  const [savedRecipes, setSavedRecipes] =
+    useState([]);
+
+  const [selectedRecipeId, setSelectedRecipeId] =
+    useState(null);
+
+  const [copiedRecipe, setCopiedRecipe] =
+    useState(null);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Convert selected land into acre
+  |--------------------------------------------------------------------------
+  */
+
+  const areaInAcres = useMemo(() => {
+    return convertToAcres(
+      landArea,
+      landUnit
+    );
+  }, [landArea, landUnit]);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Filter recipes
+  |--------------------------------------------------------------------------
+  */
+
+  const filteredRecipes = useMemo(() => {
+    const search =
+      searchTerm.trim().toLowerCase();
+
+    return ORGANIC_RECIPES.filter(
+      (recipe) => {
+        const categoryMatch =
+          filterCategory === 'all' ||
+          recipe.category ===
+            filterCategory;
+
+        const searchMatch =
+          !search ||
+          recipe.title
+            .toLowerCase()
+            .includes(search) ||
+          recipe.type
+            .toLowerCase()
+            .includes(search) ||
+          recipe.target
+            .toLowerCase()
+            .includes(search);
+
+        return (
+          categoryMatch &&
+          searchMatch
+        );
+      }
+    );
+  }, [
+    filterCategory,
+    searchTerm,
+  ]);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Total cost
+  |--------------------------------------------------------------------------
+  */
+
+  const totalCost = useMemo(() => {
+    return filteredRecipes.reduce(
+      (total, recipe) => {
+        return (
+          total +
+          recipe.costMin *
+            areaInAcres
+        );
+      },
+      0
+    );
+  }, [
+    filteredRecipes,
+    areaInAcres,
+  ]);
+
+  const totalMaxCost = useMemo(() => {
+    return filteredRecipes.reduce(
+      (total, recipe) => {
+        return (
+          total +
+          recipe.costMax *
+            areaInAcres
+        );
+      },
+      0
+    );
+  }, [
+    filteredRecipes,
+    areaInAcres,
+  ]);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Toggle expand
+  |--------------------------------------------------------------------------
+  */
 
   const toggleExpand = (id) => {
-    setExpandedCard(expandedCard === id ? null : id);
+    setExpandedCard(
+      expandedCard === id
+        ? null
+        : id
+    );
   };
 
+  /*
+  |--------------------------------------------------------------------------
+  | Save recipe
+  |--------------------------------------------------------------------------
+  */
+
+  const toggleSave = (id) => {
+    setSavedRecipes((prev) =>
+      prev.includes(id)
+        ? prev.filter(
+            (item) => item !== id
+          )
+        : [...prev, id]
+    );
+  };
+
+  /*
+  |--------------------------------------------------------------------------
+  | Copy recipe
+  |--------------------------------------------------------------------------
+  */
+
+  const copyRecipe = async (
+    recipe
+  ) => {
+    const lines = [];
+
+    lines.push(recipe.title);
+    lines.push(
+      `क्षेत्रफल: ${formatNumber(
+        areaInAcres
+      )} एकड़`
+    );
+    lines.push(
+      `पानी: ${formatNumber(
+        recipe.baseWater *
+          areaInAcres
+      )} लीटर`
+    );
+
+    lines.push('');
+    lines.push('आवश्यक सामग्री:');
+
+    recipe.baseIngredients.forEach(
+      (ingredient) => {
+        lines.push(
+          `• ${
+            ingredient.name
+          }: ${formatAmount(
+            ingredient.amount *
+              areaInAcres,
+            ingredient.unit
+          )}`
+        );
+      }
+    );
+
+    lines.push('');
+    lines.push('बनाने की विधि:');
+
+    recipe.processSteps.forEach(
+      (step, index) => {
+        lines.push(
+          `${index + 1}. ${step}`
+        );
+      }
+    );
+
+    lines.push('');
+    lines.push(
+      `उपयोग: ${recipe.usage}`
+    );
+
+    lines.push(
+      `सावधानी: ${recipe.precautions}`
+    );
+
+    try {
+      await navigator.clipboard.writeText(
+        lines.join('\n')
+      );
+
+      setCopiedRecipe(
+        recipe.id
+      );
+
+      setTimeout(() => {
+        setCopiedRecipe(null);
+      }, 2000);
+    } catch (error) {
+      console.error(
+        'Copy failed:',
+        error
+      );
+    }
+  };
+
+  /*
+  |--------------------------------------------------------------------------
+  | Print / PDF
+  |--------------------------------------------------------------------------
+  */
+
   const handlePrint = () => {
+    /*
+      CSS below makes every recipe's full details visible
+      in print mode, even when accordion is closed.
+    */
+
     window.print();
   };
 
-  return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 print:p-0">
-      
-      {/* Banner */}
-      <div className="bg-gradient-to-r from-emerald-800 via-teal-700 to-green-700 text-white p-6 sm:p-8 rounded-3xl shadow-lg relative overflow-hidden print:bg-none print:text-black print:p-0">
-        <div className="relative z-10 space-y-3">
-          <span className="bg-amber-400 text-slate-950 font-black text-xs px-3.5 py-1.5 rounded-full uppercase tracking-wider inline-flex items-center gap-1.5 shadow-xs">
-            <Sparkles className="w-3.5 h-3.5 text-slate-950" /> कृषि मित्र - प्राकृतिक एवं जैविक खेती
-          </span>
-          <h1 className="text-2xl sm:text-4xl font-black tracking-tight">
-            जैविक खाद एवं प्राकृतिक कीटनाशक निर्माण गाइड
-          </h1>
-          <p className="text-teal-100 text-xs sm:text-sm max-w-2xl leading-relaxed print:text-slate-700">
-            ज़ीरो बजट प्राकृतिक खेती (ZBNF) तकनीकों के आधार पर बिना रसायन कम लागत में विषमुक्त फसल उत्पादन करें और मिट्टी की उर्वरकता बढ़ाएं।
-          </p>
-        </div>
-      </div>
+  /*
+  |--------------------------------------------------------------------------
+  | Quick land selection
+  |--------------------------------------------------------------------------
+  */
 
-      {/* Interactive Controls Bar */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 print:hidden">
-        
-        {/* Land Area Calculator Input */}
-        <div className="md:col-span-2 bg-emerald-50 border border-emerald-200 rounded-3xl p-5 shadow-xs flex flex-col justify-between space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-extrabold text-emerald-950 flex items-center gap-2">
-              <Calculator className="w-4 h-4 text-emerald-700" /> अपनी जमीन (एकड़) अनुसार मात्रा कैलकुलेटर
-            </h3>
-            <span className="text-xs bg-emerald-200 text-emerald-900 font-bold px-2.5 py-1 rounded-full">
-              ऑटो-स्केलिंग
-            </span>
+  const setQuickArea = (
+    value,
+    unit = 'acre'
+  ) => {
+    setLandArea(value);
+    setLandUnit(unit);
+  };
+
+  /*
+  |--------------------------------------------------------------------------
+  | Selected recipe
+  |--------------------------------------------------------------------------
+  */
+
+  const selectedRecipe =
+    ORGANIC_RECIPES.find(
+      (recipe) =>
+        recipe.id ===
+        selectedRecipeId
+    );
+
+  return (
+    <>
+      {/* ======================================================
+          PRINT STYLES
+      ====================================================== */}
+
+      <style jsx global>{`
+        @media print {
+          @page {
+            size: A4;
+            margin: 12mm;
+          }
+
+          body {
+            background: white !important;
+          }
+
+          .print-hidden {
+            display: none !important;
+          }
+
+          .print-only {
+            display: block !important;
+          }
+
+          .recipe-card {
+            break-inside: avoid;
+            page-break-inside: avoid;
+            box-shadow: none !important;
+            border: 1px solid #111827 !important;
+            margin-bottom: 16px !important;
+          }
+
+          .recipe-full-details {
+            display: block !important;
+          }
+
+          .recipe-toggle {
+            display: none !important;
+          }
+
+          .print-page-break {
+            page-break-before: always;
+          }
+
+          .print-no-shadow {
+            box-shadow: none !important;
+          }
+
+          .print-white {
+            background: white !important;
+            color: black !important;
+          }
+        }
+
+        .print-only {
+          display: none;
+        }
+      `}</style>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+        {/* ====================================================
+            HERO
+        ==================================================== */}
+
+        <section className="bg-gradient-to-br from-emerald-900 via-teal-800 to-green-700 text-white p-6 sm:p-8 rounded-3xl shadow-lg relative overflow-hidden">
+
+          <div className="absolute -right-20 -top-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+
+          <div className="relative">
+
+            <div className="flex flex-col lg:flex-row justify-between gap-6">
+
+              <div>
+
+                <span className="inline-flex items-center gap-2 bg-amber-400 text-slate-950 font-black text-xs px-3 py-1.5 rounded-full">
+
+                  <Sparkles className="w-4 h-4" />
+
+                  कृषि मित्र • जैविक खेती
+
+                </span>
+
+                <h1 className="text-2xl sm:text-4xl font-black mt-3">
+
+                  जैविक खाद एवं प्राकृतिक खेती गाइड
+
+                </h1>
+
+                <p className="text-emerald-100 text-sm mt-2 max-w-3xl leading-relaxed">
+
+                  अपनी जमीन के क्षेत्रफल के अनुसार
+                  सामग्री की मात्रा, पानी, अनुमानित लागत
+                  और पूरी विधि एक ही जगह देखें।
+
+                </p>
+
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+
+                <button
+                  onClick={handlePrint}
+                  className="print-hidden inline-flex items-center gap-2 bg-white text-emerald-900 px-4 py-2.5 rounded-xl text-xs font-black hover:bg-emerald-50"
+                >
+                  <FileDown className="w-4 h-4" />
+                  PDF / प्रिंट
+                </button>
+
+              </div>
+
+            </div>
+
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="flex-1">
-              <label className="block text-xs font-semibold text-slate-600 mb-1">
-                जमीन का क्षेत्रफल (एकड़ में):
-              </label>
-              <div className="flex items-center gap-2">
+        </section>
+
+        {/* ====================================================
+            CALCULATOR
+        ==================================================== */}
+
+        <section className="bg-white border border-emerald-200 rounded-3xl shadow-sm overflow-hidden">
+
+          <div className="bg-emerald-50 p-5 sm:p-6 border-b border-emerald-100">
+
+            <div className="flex flex-col md:flex-row justify-between gap-4">
+
+              <div>
+
+                <div className="flex items-center gap-2">
+
+                  <div className="bg-emerald-700 text-white p-2 rounded-xl">
+                    <Calculator className="w-5 h-5" />
+                  </div>
+
+                  <div>
+
+                    <h2 className="font-black text-emerald-950">
+                      किसान मात्रा कैलकुलेटर
+                    </h2>
+
+                    <p className="text-xs text-emerald-700 mt-0.5">
+                      जमीन के अनुसार सभी मात्रा अपने आप बदलें
+                    </p>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+              <div className="bg-white border border-emerald-200 px-4 py-2 rounded-2xl">
+
+                <p className="text-[10px] text-slate-500">
+                  गणना के लिए क्षेत्रफल
+                </p>
+
+                <p className="font-black text-emerald-800">
+                  {formatNumber(
+                    areaInAcres
+                  )}{' '}
+                  एकड़
+                </p>
+
+              </div>
+
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-5">
+
+              {/* Area */}
+
+              <div>
+
+                <label className="text-xs font-bold text-slate-600 block mb-1.5">
+                  जमीन का क्षेत्रफल
+                </label>
+
                 <input
                   type="number"
-                  min="0.25"
-                  step="0.25"
+                  min="0.1"
+                  step="0.1"
                   value={landArea}
-                  onChange={(e) => setLandArea(Math.max(0.1, parseFloat(e.target.value) || 0.1))}
-                  className="w-28 px-3 py-2 bg-white border border-emerald-300 rounded-xl text-sm font-bold text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
+                  onChange={(e) =>
+                    setLandArea(
+                      Math.max(
+                        0.1,
+                        Number(
+                          e.target.value
+                        ) || 0.1
+                      )
+                    )
+                  }
+                  className="w-full px-4 py-3 border border-emerald-200 rounded-xl bg-white font-black text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500"
                 />
-                <span className="text-xs font-bold text-slate-700">एकड़ (Acre)</span>
+
               </div>
-            </div>
 
-            {/* Quick Select Preset Buttons */}
-            <div className="flex flex-wrap gap-1.5 pt-4">
-              {[0.5, 1, 2, 5, 10].map((acre) => (
-                <button
-                  key={acre}
-                  onClick={() => setLandArea(acre)}
-                  className={`text-xs font-bold px-3 py-1.5 rounded-xl transition ${
-                    landArea === acre 
-                      ? 'bg-emerald-700 text-white shadow-xs' 
-                      : 'bg-white text-emerald-900 border border-emerald-200 hover:bg-emerald-100'
-                  }`}
+              {/* Unit */}
+
+              <div>
+
+                <label className="text-xs font-bold text-slate-600 block mb-1.5">
+                  जमीन की इकाई
+                </label>
+
+                <select
+                  value={landUnit}
+                  onChange={(e) =>
+                    setLandUnit(
+                      e.target.value
+                    )
+                  }
+                  className="w-full px-4 py-3 border border-emerald-200 rounded-xl bg-white font-bold text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500"
                 >
-                  {acre} एकड़
-                </button>
-              ))}
-            </div>
-          </div>
-          <p className="text-[11px] text-emerald-800 font-medium">
-            💡 नीचे दिए गए सभी नुस्खों में लगने वाली सामग्री की मात्रा आपके चुने गए <strong>{landArea} एकड़</strong> क्षेत्रफल के अनुसार स्वचालित रूप से बदल गई है।
-          </p>
-        </div>
 
-        {/* Category Filter & Print Actions */}
-        <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs flex flex-col justify-between space-y-4">
-          <div>
-            <label className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5 mb-2">
-              <Filter className="w-4 h-4 text-emerald-600" /> श्रेणी चुनें:
-            </label>
+                  {UNIT_OPTIONS.map(
+                    (unit) => (
+                      <option
+                        key={
+                          unit.value
+                        }
+                        value={
+                          unit.value
+                        }
+                      >
+                        {unit.label}
+                      </option>
+                    )
+                  )}
+
+                </select>
+
+              </div>
+
+              {/* Converted */}
+
+              <div className="bg-white border border-emerald-200 rounded-xl px-4 py-3">
+
+                <p className="text-[10px] text-slate-500">
+                  एकड़ में converted area
+                </p>
+
+                <p className="text-xl font-black text-emerald-800">
+                  {formatNumber(
+                    areaInAcres
+                  )}{' '}
+                  Acre
+                </p>
+
+              </div>
+
+            </div>
+
+            {/* Quick buttons */}
+
+            <div className="flex flex-wrap gap-2 mt-4">
+
+              <span className="text-xs font-bold text-slate-500 py-2">
+                Quick:
+              </span>
+
+              {[0.5, 1, 2, 5, 10].map(
+                (value) => (
+                  <button
+                    key={value}
+                    onClick={() =>
+                      setQuickArea(
+                        value
+                      )
+                    }
+                    className={`px-3 py-1.5 rounded-xl text-xs font-black border transition ${
+                      landUnit ===
+                        'acre' &&
+                      landArea ===
+                        value
+                        ? 'bg-emerald-700 text-white border-emerald-700'
+                        : 'bg-white text-emerald-800 border-emerald-200 hover:bg-emerald-100'
+                    }`}
+                  >
+                    {value} एकड़
+                  </button>
+                )
+              )}
+
+            </div>
+
+            <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-900 flex gap-2">
+
+              <Info className="w-4 h-4 shrink-0 text-amber-600" />
+
+              <span>
+                <strong>बीघा ध्यान दें:</strong>{' '}
+                बीघा का माप क्षेत्र के अनुसार बदलता
+                है। यहां calculator में 1 बीघा =
+                {BIGHA_IN_ACRE} एकड़ मानकर गणना की गई है।
+                अपने स्थानीय राजस्व/कृषि माप के अनुसार
+                इसे बदलें।
+              </span>
+
+            </div>
+
+          </div>
+
+          {/* Calculator summary */}
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 p-5">
+
+            <SummaryCard
+              icon={<Scale />}
+              label="कुल क्षेत्रफल"
+              value={`${formatNumber(
+                areaInAcres
+              )} Acre`}
+            />
+
+            <SummaryCard
+              icon={<Droplets />}
+              label="कुल अनुमानित लागत"
+              value={`₹${formatNumber(
+                totalCost
+              )} – ₹${formatNumber(
+                totalMaxCost
+              )}`}
+            />
+
+            <SummaryCard
+              icon={<FlaskConical />}
+              label="कुल नुस्खे"
+              value={filteredRecipes.length}
+            />
+
+            <SummaryCard
+              icon={<Heart />}
+              label="Saved"
+              value={savedRecipes.length}
+            />
+
+          </div>
+
+        </section>
+
+        {/* ====================================================
+            FILTERS
+        ==================================================== */}
+
+        <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 print-hidden">
+
+          {/* Search */}
+
+          <div className="lg:col-span-2 relative">
+
+            <Search className="absolute left-4 top-3.5 w-4 h-4 text-slate-400" />
+
+            <input
+              value={searchTerm}
+              onChange={(e) =>
+                setSearchTerm(
+                  e.target.value
+                )
+              }
+              placeholder="जीवामृत, नीमास्त्र, कीट, खाद खोजें..."
+              className="w-full pl-11 pr-10 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-medium text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+
+            {searchTerm && (
+              <button
+                onClick={() =>
+                  setSearchTerm('')
+                }
+                className="absolute right-4 top-3.5"
+              >
+                <X className="w-4 h-4 text-slate-400" />
+              </button>
+            )}
+
+          </div>
+
+          {/* Category */}
+
+          <div className="relative">
+
+            <Filter className="absolute left-4 top-3.5 w-4 h-4 text-emerald-600" />
+
             <select
               value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 outline-hidden focus:ring-2 focus:ring-emerald-500"
+              onChange={(e) =>
+                setFilterCategory(
+                  e.target.value
+                )
+              }
+              className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500"
             >
-              <option value="all">सभी नुस्खे (All Formulations)</option>
-              <option value="fertilizer">प्राकृतिक खाद (Fertilizer)</option>
-              <option value="pesticide">जैविक कीटनाशक (Pesticides)</option>
-              <option value="fungicide">फफूंदनाशक (Fungicide)</option>
+
+              {CATEGORY_OPTIONS.map(
+                (item) => (
+                  <option
+                    key={
+                      item.value
+                    }
+                    value={
+                      item.value
+                    }
+                  >
+                    {item.label}
+                  </option>
+                )
+              )}
+
             </select>
+
+          </div>
+
+        </section>
+
+        {/* ====================================================
+            RESULTS INFO
+        ==================================================== */}
+
+        <div className="flex flex-col sm:flex-row justify-between gap-3 items-start sm:items-center">
+
+          <div>
+
+            <h2 className="text-xl font-black text-slate-900">
+              जैविक नुस्खे
+            </h2>
+
+            <p className="text-xs text-slate-500 mt-1">
+              {filteredRecipes.length} नुस्खे मिले •{' '}
+              {formatNumber(
+                areaInAcres
+              )}{' '}
+              एकड़ के अनुसार गणना
+            </p>
+
           </div>
 
           <button
             onClick={handlePrint}
-            className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition"
+            className="print-hidden inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2.5 rounded-xl text-xs font-bold"
           >
-            <Printer className="w-4 h-4 text-amber-400" /> गाइड प्रिंट / PDF सेव करें
+            <Printer className="w-4 h-4" />
+            पूरी गाइड PDF / Print
           </button>
+
         </div>
-      </div>
 
-      {/* Recipes Interactive Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {filteredRecipes.map((item) => {
-          const isExpanded = expandedCard === item.id;
+        {/* ====================================================
+            RECIPE GRID
+        ==================================================== */}
 
-          return (
-            <div 
-              key={item.id} 
-              className={`bg-white border transition-all duration-200 rounded-3xl p-6 shadow-xs flex flex-col justify-between space-y-5 print:border-black ${
-                isExpanded ? 'border-emerald-500 ring-2 ring-emerald-100' : 'border-slate-200 hover:border-emerald-300'
-              }`}
-            >
-              <div className="space-y-4">
-                {/* Header */}
-                <div className="flex justify-between items-start gap-2">
-                  <div>
-                    <span className="text-[10px] uppercase font-black tracking-wider bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full inline-block mb-1">
-                      {item.type}
-                    </span>
-                    <h2 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
-                      <Leaf className="w-5 h-5 text-emerald-600 shrink-0" /> {item.title}
-                    </h2>
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+          {filteredRecipes.map(
+            (recipe) => {
+              const isExpanded =
+                expandedCard ===
+                recipe.id;
+
+              const isSaved =
+                savedRecipes.includes(
+                  recipe.id
+                );
+
+              const scaledWater =
+                recipe.baseWater *
+                areaInAcres;
+
+              const scaledCostMin =
+                recipe.costMin *
+                areaInAcres;
+
+              const scaledCostMax =
+                recipe.costMax *
+                areaInAcres;
+
+              return (
+                <article
+                  key={recipe.id}
+                  className={`recipe-card bg-white border rounded-3xl p-5 sm:p-6 shadow-sm transition ${
+                    isExpanded
+                      ? 'border-emerald-500 ring-2 ring-emerald-100'
+                      : 'border-slate-200 hover:border-emerald-300'
+                  }`}
+                >
+
+                  {/* Header */}
+
+                  <div className="flex justify-between gap-3">
+
+                    <div>
+
+                      <span className="inline-block bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full text-[10px] font-black">
+                        {recipe.type}
+                      </span>
+
+                      <h3 className="text-xl font-black text-slate-900 mt-2 flex items-center gap-2">
+
+                        <Leaf className="w-5 h-5 text-emerald-600 shrink-0" />
+
+                        {recipe.title}
+
+                      </h3>
+
+                    </div>
+
+                    <button
+                      onClick={() =>
+                        toggleSave(
+                          recipe.id
+                        )
+                      }
+                      className={`print-hidden shrink-0 p-2.5 rounded-xl border ${
+                        isSaved
+                          ? 'bg-rose-50 text-rose-600 border-rose-200'
+                          : 'bg-slate-50 text-slate-500 border-slate-200'
+                      }`}
+                      title="Save"
+                    >
+
+                      <Heart
+                        className="w-4 h-4"
+                        fill={
+                          isSaved
+                            ? 'currentColor'
+                            : 'none'
+                        }
+                      />
+
+                    </button>
+
                   </div>
-                  <div className="text-right">
-                    <span className="text-xs font-extrabold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-xl block">
-                      अनुमानित खर्च: {item.costPerAcre}
-                    </span>
-                  </div>
-                </div>
 
-                {/* Target & Shelf Life Metadata */}
-                <div className="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-2xl text-xs font-semibold text-slate-700">
-                  <div>
-                    <span className="text-[10px] text-slate-500 block uppercase">मुख्य प्रभाव / लक्षित कीट:</span>
-                    <span className="text-slate-900 font-bold">{item.target}</span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-slate-500 block uppercase">संरक्षण अवधि (Shelf Life):</span>
-                    <span className="text-emerald-800 font-bold flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5 text-emerald-600" /> {item.shelfLife}
-                    </span>
-                  </div>
-                </div>
+                  {/* Cost */}
 
-                {/* Scaled Ingredients Table */}
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
-                      आवश्यक सामग्री ({landArea} एकड़ हेतु):
-                    </h3>
-                    <span className="text-[11px] text-emerald-700 font-bold">
-                      पानी: {item.baseWater * landArea} लीटर
-                    </span>
+                  <div className="grid grid-cols-2 gap-3 mt-4">
+
+                    <div className="bg-amber-50 border border-amber-100 rounded-2xl p-3">
+
+                      <p className="text-[10px] text-amber-700 font-bold">
+                        अनुमानित लागत
+                      </p>
+
+                      <p className="text-sm font-black text-amber-900 mt-1">
+                        ₹
+                        {formatNumber(
+                          scaledCostMin
+                        )}{' '}
+                        – ₹
+                        {formatNumber(
+                          scaledCostMax
+                        )}
+                      </p>
+
+                    </div>
+
+                    <div className="bg-sky-50 border border-sky-100 rounded-2xl p-3">
+
+                      <p className="text-[10px] text-sky-700 font-bold">
+                        पानी
+                      </p>
+
+                      <p className="text-sm font-black text-sky-900 mt-1">
+                        {formatNumber(
+                          scaledWater
+                        )}{' '}
+                        लीटर
+                      </p>
+
+                    </div>
+
                   </div>
 
-                  <ul className="divide-y divide-slate-100 border border-slate-100 rounded-2xl overflow-hidden text-xs">
-                    {item.baseIngredients.map((ing, idx) => {
-                      const scaledAmount = (ing.amount * landArea).toLocaleString('hi-IN', { maximumFractionDigits: 2 });
-                      return (
-                        <li key={idx} className="flex justify-between items-center p-2.5 bg-slate-50/50 hover:bg-emerald-50/50 transition">
-                          <span className="font-medium text-slate-800">{ing.name}</span>
-                          <span className="font-black text-emerald-950 bg-white px-2 py-0.5 rounded-lg border border-slate-200 shadow-2xs">
-                            {scaledAmount} {ing.unit}
-                          </span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
+                  {/* Target */}
 
-                {/* Expandable Preparation & Application Steps */}
-                {isExpanded && (
-                  <div className="space-y-4 pt-3 border-t border-slate-100 animate-fadeIn">
-                    
-                    {/* Process Steps */}
-                    <div className="space-y-2">
-                      <h4 className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600" /> बनाने की क्रमबद्ध विधि:
+                  <div className="mt-4 bg-slate-50 rounded-2xl p-3">
+
+                    <p className="text-[10px] text-slate-500 font-bold">
+                      मुख्य उपयोग
+                    </p>
+
+                    <p className="text-xs font-bold text-slate-800 mt-1">
+                      {recipe.target}
+                    </p>
+
+                  </div>
+
+                  {/* Ingredients */}
+
+                  <div className="mt-5">
+
+                    <div className="flex justify-between items-center mb-2">
+
+                      <h4 className="text-xs font-black text-slate-900">
+                        सामग्री —{' '}
+                        {formatNumber(
+                          areaInAcres
+                        )}{' '}
+                        एकड़
                       </h4>
-                      <ol className="list-decimal list-inside space-y-1.5 text-xs text-slate-700 pl-1">
-                        {item.processSteps.map((step, idx) => (
-                          <li key={idx} className="leading-relaxed font-medium">
-                            {step}
-                          </li>
-                        ))}
-                      </ol>
+
+                      <span className="text-[10px] text-emerald-700 font-bold">
+                        Auto Calculated
+                      </span>
+
                     </div>
 
-                    {/* Usage Method */}
-                    <div className="bg-emerald-50 p-3 rounded-2xl border border-emerald-100 text-xs text-emerald-950 space-y-1">
-                      <span className="font-extrabold block text-emerald-900">उपयोग एवं छिड़काव का तरीका:</span>
-                      <p className="leading-relaxed font-medium">{item.usage}</p>
+                    <div className="border border-slate-200 rounded-2xl overflow-hidden">
+
+                      {recipe.baseIngredients.map(
+                        (
+                          ingredient,
+                          index
+                        ) => {
+                          const amount =
+                            ingredient.amount *
+                            areaInAcres;
+
+                          return (
+                            <div
+                              key={
+                                index
+                              }
+                              className="flex justify-between items-center gap-3 px-3 py-2.5 border-b last:border-b-0 border-slate-100 bg-slate-50/50"
+                            >
+
+                              <span className="text-xs font-medium text-slate-700">
+                                {
+                                  ingredient.name
+                                }
+                              </span>
+
+                              <span className="shrink-0 bg-white border border-slate-200 px-2 py-1 rounded-lg text-xs font-black text-emerald-900">
+                                {formatAmount(
+                                  amount,
+                                  ingredient.unit
+                                )}
+                              </span>
+
+                            </div>
+                          );
+                        }
+                      )}
+
                     </div>
 
-                    {/* Precautions */}
-                    <div className="bg-amber-50 p-3 rounded-2xl border border-amber-200 text-xs text-amber-950 flex items-start gap-2">
-                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                      <div>
-                        <span className="font-bold block">सावधानी:</span>
-                        <p className="font-medium leading-relaxed">{item.precautions}</p>
-                      </div>
-                    </div>
                   </div>
+
+                  {/* Details */}
+
+                  <div
+                    className={`recipe-full-details ${
+                      isExpanded
+                        ? 'block'
+                        : 'hidden'
+                    } mt-5 pt-5 border-t border-slate-100`}
+                  >
+
+                    {/* Process */}
+
+                    <div>
+
+                      <h4 className="flex items-center gap-2 text-sm font-black text-slate-900">
+
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+
+                        बनाने की पूरी विधि
+
+                      </h4>
+
+                      <ol className="mt-3 space-y-2">
+
+                        {recipe.processSteps.map(
+                          (
+                            step,
+                            index
+                          ) => (
+                            <li
+                              key={
+                                index
+                              }
+                              className="flex gap-3 text-xs text-slate-700 leading-relaxed"
+                            >
+
+                              <span className="shrink-0 w-5 h-5 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center text-[10px] font-black">
+                                {index +
+                                  1}
+                              </span>
+
+                              <span>
+                                {
+                                  step
+                                }
+                              </span>
+
+                            </li>
+                          )
+                        )}
+
+                      </ol>
+
+                    </div>
+
+                    {/* Usage */}
+
+                    <div className="mt-5 bg-emerald-50 border border-emerald-100 rounded-2xl p-4">
+
+                      <h4 className="text-xs font-black text-emerald-900">
+                        उपयोग
+                      </h4>
+
+                      <p className="text-xs text-emerald-950 mt-1 leading-relaxed">
+                        {recipe.usage}
+                      </p>
+
+                    </div>
+
+                    {/* Precaution */}
+
+                    <div className="mt-3 bg-amber-50 border border-amber-200 rounded-2xl p-4">
+
+                      <div className="flex gap-2">
+
+                        <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+
+                        <div>
+
+                          <h4 className="text-xs font-black text-amber-900">
+                            सावधानी
+                          </h4>
+
+                          <p className="text-xs text-amber-950 mt-1 leading-relaxed">
+                            {
+                              recipe.precautions
+                            }
+                          </p>
+
+                        </div>
+
+                      </div>
+
+                    </div>
+
+                    {/* Meta */}
+
+                    <div className="grid grid-cols-2 gap-3 mt-4">
+
+                      <div className="bg-slate-50 rounded-xl p-3">
+
+                        <p className="text-[10px] text-slate-500">
+                          संरक्षण अवधि
+                        </p>
+
+                        <p className="text-xs font-black text-slate-800 mt-1 flex gap-1 items-center">
+
+                          <Clock className="w-3.5 h-3.5 text-emerald-600" />
+
+                          {recipe.shelfLife}
+
+                        </p>
+
+                      </div>
+
+                      <div className="bg-slate-50 rounded-xl p-3">
+
+                        <p className="text-[10px] text-slate-500">
+                          श्रेणी
+                        </p>
+
+                        <p className="text-xs font-black text-slate-800 mt-1">
+                          {getCategoryLabel(
+                            recipe.category
+                          )}
+                        </p>
+
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                  {/* Actions */}
+
+                  <div className="print-hidden flex flex-wrap gap-2 mt-5">
+
+                    <button
+                      onClick={() =>
+                        toggleExpand(
+                          recipe.id
+                        )
+                      }
+                      className="flex-1 min-w-[180px] bg-slate-100 hover:bg-slate-200 text-slate-900 py-2.5 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-2"
+                    >
+
+                      {isExpanded ? (
+                        <>
+                          संक्षिप्त करें
+                          <ChevronUp className="w-4 h-4" />
+                        </>
+                      ) : (
+                        <>
+                          पूरी विधि देखें
+                          <ChevronDown className="w-4 h-4" />
+                        </>
+                      )}
+
+                    </button>
+
+                    <button
+                      onClick={() =>
+                        copyRecipe(
+                          recipe
+                        )
+                      }
+                      className="px-3 py-2.5 rounded-xl bg-blue-50 text-blue-700 border border-blue-100 text-xs font-bold flex items-center gap-1.5"
+                    >
+
+                      {copiedRecipe ===
+                      recipe.id ? (
+                        <>
+                          <Check className="w-4 h-4" />
+                          Copied
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4" />
+                          Copy
+                        </>
+                      )}
+
+                    </button>
+
+                    <button
+                      onClick={() =>
+                        setSelectedRecipeId(
+                          recipe.id
+                        )
+                      }
+                      className="px-3 py-2.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100 text-xs font-bold flex items-center gap-1.5"
+                    >
+
+                      <BookOpen className="w-4 h-4" />
+
+                      Detail
+
+                    </button>
+
+                  </div>
+
+                </article>
+              );
+            }
+          )}
+
+        </section>
+
+        {/* No result */}
+
+        {filteredRecipes.length ===
+          0 && (
+          <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center">
+
+            <Search className="w-10 h-10 text-slate-300 mx-auto" />
+
+            <h3 className="font-black text-slate-800 mt-3">
+              कोई नुस्खा नहीं मिला
+            </h3>
+
+            <p className="text-xs text-slate-500 mt-1">
+              Search या category filter बदलकर देखें।
+            </p>
+
+          </div>
+        )}
+
+        {/* ====================================================
+            COST SUMMARY
+        ==================================================== */}
+
+        <section className="bg-slate-950 text-white rounded-3xl p-6 sm:p-8">
+
+          <div className="flex items-start gap-3">
+
+            <div className="bg-emerald-500 text-slate-950 p-2.5 rounded-xl">
+
+              <IndianRupee className="w-5 h-5" />
+
+            </div>
+
+            <div>
+
+              <h2 className="text-xl font-black">
+                आपकी जमीन के लिए लागत सारांश
+              </h2>
+
+              <p className="text-xs text-slate-400 mt-1">
+                वर्तमान में दिख रहे {filteredRecipes.length}{' '}
+                नुस्खों की अनुमानित लागत।
+              </p>
+
+            </div>
+
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+
+              <p className="text-xs text-slate-400">
+                क्षेत्रफल
+              </p>
+
+              <p className="text-2xl font-black mt-1">
+                {formatNumber(
+                  areaInAcres
+                )}{' '}
+                Acre
+              </p>
+
+            </div>
+
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+
+              <p className="text-xs text-slate-400">
+                न्यूनतम अनुमान
+              </p>
+
+              <p className="text-2xl font-black text-emerald-400 mt-1">
+                ₹
+                {formatNumber(
+                  totalCost
                 )}
+              </p>
+
+            </div>
+
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+
+              <p className="text-xs text-slate-400">
+                अधिकतम अनुमान
+              </p>
+
+              <p className="text-2xl font-black text-amber-400 mt-1">
+                ₹
+                {formatNumber(
+                  totalMaxCost
+                )}
+              </p>
+
+            </div>
+
+          </div>
+
+        </section>
+
+        {/* ====================================================
+            EDUCATIONAL / SAFETY NOTE
+        ==================================================== */}
+
+        <section className="bg-blue-50 border border-blue-200 rounded-3xl p-5">
+
+          <div className="flex gap-3">
+
+            <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0" />
+
+            <div>
+
+              <h3 className="text-sm font-black text-blue-950">
+                महत्वपूर्ण किसान सूचना
+              </h3>
+
+              <p className="text-xs text-blue-900 leading-relaxed mt-1">
+
+                जैविक या प्राकृतिक घोल भी फसल पर
+                प्रतिक्रिया कर सकते हैं। किसी भी नए
+                घोल को पहले छोटे क्षेत्र पर परीक्षण करें।
+                फसल, रोग/कीट की सही पहचान और स्थानीय
+                कृषि विशेषज्ञ/KVK की सलाह के अनुसार
+                उपयोग करें। निर्धारित लेबल निर्देशों और
+                सुरक्षा उपकरणों का पालन करें।
+
+              </p>
+
+            </div>
+
+          </div>
+
+        </section>
+
+        {/* ====================================================
+            PRINT HEADER
+        ==================================================== */}
+
+        <section className="print-only print-white">
+
+          <div className="border-b-2 border-black pb-4 mb-5">
+
+            <h1 className="text-2xl font-black">
+              कृषि मित्र — जैविक खेती गाइड
+            </h1>
+
+            <p className="text-sm mt-2">
+              जमीन: {formatNumber(
+                areaInAcres
+              )}{' '}
+              एकड़
+            </p>
+
+            <p className="text-sm">
+              कुल नुस्खे: {
+                filteredRecipes.length
+              }
+            </p>
+
+          </div>
+
+        </section>
+
+      </main>
+
+      {/* ======================================================
+          DETAIL MODAL
+      ====================================================== */}
+
+      {selectedRecipe && (
+        <div className="print-hidden fixed inset-0 z-[100] bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+
+          <div className="bg-white w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl shadow-2xl">
+
+            <div className="sticky top-0 bg-white border-b border-slate-100 p-5 flex justify-between items-center">
+
+              <div>
+
+                <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-1 rounded-full font-black">
+                  {selectedRecipe.type}
+                </span>
+
+                <h2 className="text-xl font-black text-slate-900 mt-2">
+                  {selectedRecipe.title}
+                </h2>
+
               </div>
 
-              {/* Accordion Toggle Button */}
               <button
-                onClick={() => toggleExpand(item.id)}
-                className="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-900 text-xs font-extrabold rounded-2xl flex items-center justify-center gap-2 transition print:hidden"
+                onClick={() =>
+                  setSelectedRecipeId(
+                    null
+                  )
+                }
+                className="p-2 bg-slate-100 rounded-xl"
               >
-                {isExpanded ? (
-                  <>
-                    संक्षिप्त करें <ChevronUp className="w-4 h-4" />
-                  </>
-                ) : (
-                  <>
-                    बनाने की पूरी विधि एवं सावधानियां देखें <ChevronDown className="w-4 h-4" />
-                  </>
-                )}
+                <X className="w-5 h-5" />
               </button>
+
             </div>
-          );
-        })}
-      </div>
 
-      {/* Savings & Educational Impact Section */}
-      <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-3xl p-6 sm:p-8 space-y-6 print:hidden">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-700 pb-6">
-          <div>
-            <span className="bg-emerald-500 text-slate-950 font-black text-[10px] px-3 py-1 rounded-full uppercase tracking-wider inline-block">
-              आर्थिक लाभ तुलना
-            </span>
-            <h3 className="text-xl sm:text-2xl font-black mt-2">
-              रसायनिक बनाम जैविक खेती: लागत बचत का गणित
-            </h3>
-            <p className="text-xs text-slate-300 mt-1 max-w-2xl">
-              देसी गाय के गोबर व गौमूत्र से बने जैविक इनपुट का उपयोग करने पर प्रति एकड़ खेती की लागत में भारी कमी आती है।
-            </p>
+            <div className="p-5 space-y-5">
+
+              {/* Calculator */}
+
+              <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4">
+
+                <h3 className="text-sm font-black text-emerald-950">
+                  आपकी जमीन के लिए गणना
+                </h3>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3">
+
+                  <div className="bg-white rounded-xl p-3">
+                    <p className="text-[10px] text-slate-500">
+                      क्षेत्रफल
+                    </p>
+                    <p className="font-black text-sm">
+                      {formatNumber(
+                        areaInAcres
+                      )}{' '}
+                      Acre
+                    </p>
+                  </div>
+
+                  <div className="bg-white rounded-xl p-3">
+                    <p className="text-[10px] text-slate-500">
+                      पानी
+                    </p>
+                    <p className="font-black text-sm">
+                      {formatNumber(
+                        selectedRecipe.baseWater *
+                          areaInAcres
+                      )}{' '}
+                      L
+                    </p>
+                  </div>
+
+                  <div className="bg-white rounded-xl p-3">
+                    <p className="text-[10px] text-slate-500">
+                      लागत
+                    </p>
+                    <p className="font-black text-sm">
+                      ₹
+                      {formatNumber(
+                        selectedRecipe.costMin *
+                          areaInAcres
+                      )}{' '}
+                      –
+                      ₹
+                      {formatNumber(
+                        selectedRecipe.costMax *
+                          areaInAcres
+                      )}
+                    </p>
+                  </div>
+
+                </div>
+
+              </div>
+
+              {/* Ingredients */}
+
+              <div>
+
+                <h3 className="font-black text-slate-900">
+                  आवश्यक सामग्री
+                </h3>
+
+                <div className="mt-3 border border-slate-200 rounded-2xl overflow-hidden">
+
+                  {selectedRecipe.baseIngredients.map(
+                    (
+                      ingredient,
+                      index
+                    ) => (
+                      <div
+                        key={index}
+                        className="flex justify-between gap-3 p-3 border-b last:border-b-0"
+                      >
+
+                        <span className="text-sm">
+                          {
+                            ingredient.name
+                          }
+                        </span>
+
+                        <strong className="text-sm text-emerald-800">
+                          {formatAmount(
+                            ingredient.amount *
+                              areaInAcres,
+                            ingredient.unit
+                          )}
+                        </strong>
+
+                      </div>
+                    )
+                  )}
+
+                </div>
+
+              </div>
+
+              {/* Process */}
+
+              <div>
+
+                <h3 className="font-black text-slate-900">
+                  बनाने की विधि
+                </h3>
+
+                <ol className="mt-3 space-y-2">
+
+                  {selectedRecipe.processSteps.map(
+                    (
+                      step,
+                      index
+                    ) => (
+                      <li
+                        key={index}
+                        className="flex gap-3 text-sm text-slate-700"
+                      >
+
+                        <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs font-black shrink-0">
+                          {index +
+                            1}
+                        </span>
+
+                        {step}
+
+                      </li>
+                    )
+                  )}
+
+                </ol>
+
+              </div>
+
+              {/* Usage */}
+
+              <div className="bg-emerald-50 rounded-2xl p-4">
+
+                <h3 className="text-sm font-black text-emerald-900">
+                  उपयोग
+                </h3>
+
+                <p className="text-sm text-emerald-950 mt-1">
+                  {
+                    selectedRecipe.usage
+                  }
+                </p>
+
+              </div>
+
+              {/* Safety */}
+
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+
+                <h3 className="text-sm font-black text-amber-900 flex items-center gap-2">
+
+                  <AlertTriangle className="w-4 h-4" />
+
+                  सावधानी
+
+                </h3>
+
+                <p className="text-sm text-amber-950 mt-1">
+                  {
+                    selectedRecipe.precautions
+                  }
+                </p>
+
+              </div>
+
+            </div>
+
+            <div className="sticky bottom-0 bg-white border-t border-slate-100 p-4 flex gap-2">
+
+              <button
+                onClick={() =>
+                  copyRecipe(
+                    selectedRecipe
+                  )
+                }
+                className="flex-1 bg-blue-50 text-blue-700 py-3 rounded-xl text-xs font-black"
+              >
+                <Copy className="w-4 h-4 inline mr-1" />
+                Copy
+              </button>
+
+              <button
+                onClick={() =>
+                  setSelectedRecipeId(
+                    null
+                  )
+                }
+                className="flex-1 bg-slate-900 text-white py-3 rounded-xl text-xs font-black"
+              >
+                बंद करें
+              </button>
+
+            </div>
+
           </div>
+
+        </div>
+      )}
+    </>
+  );
+}
+
+/* =========================================================
+   SUMMARY CARD
+========================================================= */
+
+function SummaryCard({
+  icon,
+  label,
+  value,
+}) {
+  return (
+    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+
+      <div className="flex items-center gap-2">
+
+        <div className="bg-white border border-slate-200 p-2 rounded-xl text-emerald-600">
+          {icon}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-          <div className="bg-white/5 border border-white/10 p-4 rounded-2xl space-y-1">
-            <span className="text-xs text-slate-400 font-medium">रसायनिक खाद व दवा (प्रति एकड़)</span>
-            <p className="text-xl font-black text-red-400">₹6,000 - ₹9,000</p>
-          </div>
-          <div className="bg-white/5 border border-white/10 p-4 rounded-2xl space-y-1">
-            <span className="text-xs text-slate-400 font-medium">प्राकृतिक जैविक विकल्प (प्रति एकड़)</span>
-            <p className="text-xl font-black text-emerald-400">₹400 - ₹800</p>
-          </div>
-          <div className="bg-emerald-500/10 border border-emerald-500/30 p-4 rounded-2xl space-y-1">
-            <span className="text-xs text-emerald-300 font-bold">आपकी कुल शुद्ध बचत</span>
-            <p className="text-2xl font-black text-amber-400">₹5,000+ / एकड़</p>
-          </div>
+        <div>
+
+          <p className="text-[10px] text-slate-500">
+            {label}
+          </p>
+
+          <p className="text-sm font-black text-slate-900 mt-0.5">
+            {value}
+          </p>
+
         </div>
+
       </div>
+
     </div>
   );
 }

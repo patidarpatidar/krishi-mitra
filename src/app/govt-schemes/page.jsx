@@ -1,141 +1,448 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { Landmark, FileText, CheckCircle2, ArrowRight, ExternalLink, Search } from 'lucide-react';
+import { useMemo, useState } from "react";
+import Link from "next/link";
 
-const schemesList = [
-  {
-    id: 'pm-kisan',
-    title: 'PM किसान सम्मान निधि योजना',
-    category: 'केंद्र सरकार',
-    benefit: '₹6,000 प्रति वर्ष (3 समान किस्तों में)',
-    eligibility: 'समस्त सीमांत व छोटे कृषक (2 हेक्टेयर तक योग्य भूमि)',
-    documents: ['आधार कार्ड', 'खसरा/खतौनी नकल', 'बैंक पासबुक', 'मोबाइल नंबर'],
-    link: '/pm-kisan',
-    isExternal: false,
-  },
-  {
-    id: 'pm-fasal-bima',
-    title: 'प्रधानमंत्री फसल बीमा योजना (PMFBY)',
-    category: 'केंद्र व राज्य',
-    benefit: 'प्राकृतिक आपदाओं से फसल नुकसान की शत-प्रतिशत भरपाई',
-    eligibility: 'अधिसूचित फसलों के उत्पादक सभी किसान',
-    documents: ['फसल बुआई प्रमाण पत्र', 'भू-अधिकार पुस्तिका', 'बैंक खाता विवरण'],
-    link: 'https://pmfby.gov.in',
-    isExternal: true,
-  },
-  {
-    id: 'mp-kisan-kalyan',
-    title: 'मुख्यमंत्री किसान कल्याण योजना (MP)',
-    category: 'मध्य प्रदेश सरकार',
-    benefit: '₹6,000 अतिरिक्त वार्षिक सहायता (PM किसान के साथ कुल ₹12,000)',
-    eligibility: 'MP के मूल निवासी एवं PM-Kisan पात्र किसान',
-    documents: ['समान पात्रता विवरण', 'समग्र आईडी'],
-    link: 'https://saara.mp.gov.in',
-    isExternal: true,
-  },
-  {
-    id: 'krishi-yantra-subsidy',
-    title: 'कृषि यंत्र अनुदान योजना (MP)',
-    category: 'मध्य प्रदेश सरकार',
-    benefit: 'ट्रैक्टर, रोटावेटर एवं ड्रिप सिंचाई पर 40% - 50% सब्सिडी',
-    eligibility: 'मध्य प्रदेश के सभी वर्ग के कृषक',
-    documents: ['जाति प्रमाण पत्र', 'भूमि दस्तावेज', 'बैंक पासबुक'],
-    link: 'https://dmt.mponline.gov.in',
-    isExternal: true,
-  },
-];
+import {
+  Search,
+  Landmark,
+  Sprout,
+  ArrowRight,
+  ExternalLink,
+  ShieldCheck,
+  Filter,
+  CheckCircle2,
+} from "lucide-react";
 
-export default function GovtSchemesPage() {
-  const [searchTerm, setSearchTerm] = useState('');
+import governmentSchemes from "@/data/governmentSchemes";
 
-  const filteredSchemes = schemesList.filter(s =>
-    s.title.toLowerCase().includes(searchTerm.toLowerCase())
+const iconMap = {
+  sprout: Sprout,
+  shield: ShieldIcon,
+  credit: CreditCardIcon,
+  landmark: Landmark,
+};
+
+function ShieldIcon({ className }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <path d="M12 3l7 4v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V7l7-4z" />
+      <path d="M9 12l2 2 4-4" />
+    </svg>
+  );
+}
+
+function CreditCardIcon({ className }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <rect
+        x="3"
+        y="5"
+        width="18"
+        height="14"
+        rx="2"
+      />
+      <path d="M3 10h18" />
+      <path d="M7 15h4" />
+    </svg>
+  );
+}
+
+export default function GovernmentSchemesPage() {
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("सभी");
+
+  const activeSchemes = governmentSchemes.filter(
+    (scheme) => scheme.status === "active"
   );
 
+  const categories = useMemo(() => {
+    const unique = [
+      ...new Set(
+        activeSchemes.map(
+          (scheme) => scheme.category
+        )
+      ),
+    ];
+
+    return ["सभी", ...unique];
+  }, [activeSchemes]);
+
+  const filteredSchemes = useMemo(() => {
+    const query = search
+      .trim()
+      .toLowerCase();
+
+    return activeSchemes.filter(
+      (scheme) => {
+
+        const matchesSearch =
+          !query ||
+          scheme.name
+            .toLowerCase()
+            .includes(query) ||
+          scheme.shortName
+            ?.toLowerCase()
+            .includes(query) ||
+          scheme.description
+            ?.toLowerCase()
+            .includes(query) ||
+          scheme.tags?.some((tag) =>
+            tag.toLowerCase().includes(query)
+          );
+
+        const matchesCategory =
+          category === "सभी" ||
+          scheme.category === category;
+
+        return (
+          matchesSearch &&
+          matchesCategory
+        );
+      }
+    );
+  }, [
+    activeSchemes,
+    search,
+    category,
+  ]);
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Banner */}
-      <div className="bg-gradient-to-r from-emerald-800 to-emerald-600 text-white p-6 sm:p-8 rounded-2xl shadow-md flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <span className="bg-amber-400 text-slate-900 font-bold text-xs px-3 py-1 rounded-full uppercase">
-            सरकारी सहायता पोर्टल
-          </span>
-          <h1 className="text-2xl sm:text-4xl font-extrabold mt-2">
-            प्रमुख सरकारी कृषि योजनाएं
-          </h1>
-          <p className="text-emerald-100 text-xs sm:text-sm mt-1">
-            केंद्र एवं मध्य प्रदेश शासन द्वारा संचालित किसान कल्याण योजनाओं की जानकारी और आवेदन लिंक।
-          </p>
-        </div>
-      </div>
+    <main className="min-h-screen bg-slate-50">
 
-      {/* Search Bar */}
-      <div className="relative max-w-md">
-        <input
-          type="text"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="योजना का नाम खोजें (उदा. PM किसान, फसल बीमा)..."
-          className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500 outline-none shadow-xs"
-        />
-        <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-      </div>
+      {/* HERO */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-emerald-950 via-emerald-900 to-green-800 text-white">
 
-      {/* Scheme Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {filteredSchemes.map((scheme) => (
-          <div key={scheme.id} className="bg-white border border-emerald-100 rounded-2xl p-6 shadow-xs flex flex-col justify-between space-y-4 hover:border-emerald-400 transition">
-            <div>
-              <div className="flex justify-between items-start">
-                <span className="text-xs bg-emerald-100 text-emerald-900 font-bold px-2.5 py-1 rounded-full">
-                  {scheme.category}
-                </span>
-                <Landmark className="w-5 h-5 text-emerald-700" />
-              </div>
+        <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-emerald-400/10 blur-3xl" />
 
-              <h2 className="text-lg font-bold text-slate-900 mt-3">{scheme.title}</h2>
-              <div className="mt-2 bg-amber-50 border border-amber-200 p-3 rounded-xl">
-                <span className="text-[11px] text-amber-800 font-semibold block">लाभ (Benefit):</span>
-                <p className="text-xs font-bold text-amber-950 mt-0.5">{scheme.benefit}</p>
-              </div>
+        <div className="absolute -bottom-20 -left-20 h-72 w-72 rounded-full bg-lime-300/10 blur-3xl" />
 
-              <div className="mt-3 space-y-2 text-xs text-slate-700">
-                <p><strong>पात्रता:</strong> {scheme.eligibility}</p>
-                <div>
-                  <strong className="block mb-1">आवश्यक दस्तावेज:</strong>
-                  <div className="flex flex-wrap gap-1.5">
-                    {scheme.documents.map(doc => (
-                      <span key={doc} className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[11px]">
-                        ✓ {doc}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
+        <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+
+          <div className="max-w-3xl">
+
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-white/10 px-3 py-1.5 text-xs font-bold">
+              <Landmark className="h-4 w-4 text-lime-300" />
+              सरकारी योजनाएं
             </div>
 
-            {scheme.isExternal ? (
-              <a
-                href={scheme.link}
-                target="_blank"
-                rel="noreferrer"
-                className="w-full flex items-center justify-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white py-2.5 rounded-xl text-xs font-bold transition"
-              >
-                आधिकारिक पोर्टल पर आवेदन करें <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            ) : (
-              <Link
-                href={scheme.link}
-                className="w-full flex items-center justify-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white py-2.5 rounded-xl text-xs font-bold transition"
-              >
-                विवरण एवं स्टेटस चेक गाइड <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            )}
+            <h1 className="mt-5 text-3xl font-black leading-tight sm:text-5xl">
+              किसानों के लिए सरकारी योजनाएं
+            </h1>
+
+            <p className="mt-5 text-sm leading-7 text-emerald-50/80 sm:text-base">
+              केंद्र सरकार और मध्य प्रदेश सरकार की
+              किसान उपयोगी योजनाओं की जानकारी एक जगह।
+              लाभ, पात्रता, दस्तावेज, आवेदन प्रक्रिया और
+              official government links देखें।
+            </p>
+
           </div>
-        ))}
-      </div>
-    </div>
+
+          {/* SEARCH */}
+          <div className="mt-8 max-w-3xl">
+
+            <div className="relative">
+
+              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-emerald-700" />
+
+              <input
+                type="text"
+                value={search}
+                onChange={(e) =>
+                  setSearch(e.target.value)
+                }
+                placeholder="योजना का नाम खोजें..."
+                className="w-full rounded-2xl border border-white/20 bg-white py-4 pl-12 pr-4 text-sm text-slate-800 shadow-xl outline-none placeholder:text-slate-400 focus:ring-4 focus:ring-white/20"
+              />
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      {/* PAGE CONTENT */}
+      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+
+        {/* TOP STATS */}
+        <div className="grid gap-4 sm:grid-cols-3">
+
+          <div className="rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm">
+
+            <div className="flex items-center gap-3">
+
+              <div className="rounded-xl bg-emerald-100 p-3">
+                <Landmark className="h-5 w-5 text-emerald-700" />
+              </div>
+
+              <div>
+                <p className="text-xs text-slate-500">
+                  उपलब्ध योजनाएं
+                </p>
+
+                <p className="text-2xl font-black text-slate-800">
+                  {activeSchemes.length}
+                </p>
+              </div>
+
+            </div>
+
+          </div>
+
+          <div className="rounded-2xl border border-sky-100 bg-white p-5 shadow-sm">
+
+            <div className="flex items-center gap-3">
+
+              <div className="rounded-xl bg-sky-100 p-3">
+                <Sprout className="h-5 w-5 text-sky-700" />
+              </div>
+
+              <div>
+                <p className="text-xs text-slate-500">
+                  किसान केंद्रित
+                </p>
+
+                <p className="text-sm font-bold text-slate-800">
+                  कृषि एवं किसान योजनाएं
+                </p>
+              </div>
+
+            </div>
+
+          </div>
+
+          <div className="rounded-2xl border border-amber-100 bg-white p-5 shadow-sm">
+
+            <div className="flex items-center gap-3">
+
+              <div className="rounded-xl bg-amber-100 p-3">
+                <CheckCircle2 className="h-5 w-5 text-amber-700" />
+              </div>
+
+              <div>
+                <p className="text-xs text-slate-500">
+                  Source
+                </p>
+
+                <p className="text-sm font-bold text-slate-800">
+                  Official Government Links
+                </p>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* FILTER */}
+        <div className="mt-8 flex items-center gap-2 overflow-x-auto pb-2">
+
+          <Filter className="h-5 w-5 shrink-0 text-slate-400" />
+
+          {categories.map((item) => (
+
+            <button
+              key={item}
+              onClick={() =>
+                setCategory(item)
+              }
+              className={`whitespace-nowrap rounded-full px-4 py-2 text-xs font-bold transition ${
+                category === item
+                  ? "bg-emerald-700 text-white shadow-sm"
+                  : "bg-white text-slate-600 border border-slate-200 hover:border-emerald-300 hover:text-emerald-700"
+              }`}
+            >
+              {item}
+            </button>
+
+          ))}
+
+        </div>
+
+        {/* RESULTS */}
+        <div className="mt-6 flex items-center justify-between">
+
+          <div>
+            <h2 className="text-xl font-black text-slate-800">
+              योजनाओं की सूची
+            </h2>
+
+            <p className="mt-1 text-xs text-slate-500">
+              {filteredSchemes.length} योजना उपलब्ध
+            </p>
+          </div>
+
+        </div>
+
+        {/* CARDS */}
+        {filteredSchemes.length === 0 ? (
+
+          <div className="mt-8 rounded-3xl border border-slate-200 bg-white p-12 text-center">
+
+            <Search className="mx-auto h-10 w-10 text-slate-300" />
+
+            <h3 className="mt-4 font-bold text-slate-800">
+              कोई योजना नहीं मिली
+            </h3>
+
+            <p className="mt-2 text-sm text-slate-500">
+              दूसरा नाम या category search करें।
+            </p>
+
+          </div>
+
+        ) : (
+
+          <div className="mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+
+            {filteredSchemes.map((scheme) => {
+
+              const Icon =
+                iconMap[scheme.icon] ||
+                Landmark;
+
+              return (
+                <article
+                  key={scheme.slug}
+                  className="group flex flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-xl"
+                >
+
+                  {/* CARD TOP */}
+                  <div className="p-5">
+
+                    <div className="flex items-start justify-between gap-3">
+
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50">
+                        <Icon className="h-6 w-6 text-emerald-700" />
+                      </div>
+
+                      <span className="rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-bold text-emerald-700">
+                        {scheme.level}
+                      </span>
+
+                    </div>
+
+                    <p className="mt-5 text-[11px] font-black uppercase tracking-wide text-emerald-700">
+                      {scheme.category}
+                    </p>
+
+                    <h3 className="mt-2 text-xl font-black leading-snug text-slate-800">
+                      {scheme.name}
+                    </h3>
+
+                    {scheme.shortName && (
+                      <p className="mt-1 text-xs font-bold text-slate-400">
+                        {scheme.shortName}
+                      </p>
+                    )}
+
+                    <p className="mt-4 line-clamp-4 text-sm leading-6 text-slate-500">
+                      {scheme.description}
+                    </p>
+
+                    {/* QUICK BENEFITS */}
+                    <div className="mt-5 space-y-2">
+
+                      {scheme.benefits
+                        .slice(0, 2)
+                        .map((benefit, index) => (
+
+                          <div
+                            key={index}
+                            className="flex gap-2 text-xs text-slate-600"
+                          >
+                            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+
+                            <span className="line-clamp-2">
+                              {benefit}
+                            </span>
+                          </div>
+
+                        ))}
+
+                    </div>
+
+                  </div>
+
+                  {/* CARD FOOTER */}
+                  <div className="mt-auto border-t border-slate-100 p-4">
+
+                    <div className="flex gap-2">
+
+                      <Link
+                        href={`/govt-schemes/${scheme.slug}`}
+                        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-3 text-xs font-black text-white transition hover:bg-emerald-800"
+                      >
+                        पूरी जानकारी
+                        <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+                      </Link>
+
+                      {scheme.sourceUrl && (
+                        <a
+                          href={scheme.sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="Official Source"
+                          className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                      )}
+
+                    </div>
+
+                  </div>
+
+                </article>
+              );
+            })}
+
+          </div>
+
+        )}
+
+      </section>
+
+      {/* DISCLAIMER */}
+      <section className="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
+
+        <div className="flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+
+          <ShieldCheck className="mt-1 h-5 w-5 shrink-0 text-amber-600" />
+
+          <p className="text-xs leading-6 text-slate-600">
+
+            <strong className="text-amber-700">
+              महत्वपूर्ण:
+            </strong>{" "}
+            कृषि मित्र एक व्यक्तिगत कृषि सूचना प्लेटफॉर्म है,
+            सरकारी वेबसाइट या सरकारी कार्यालय नहीं है। योजना की
+            पात्रता, राशि, आवेदन अवधि और नियम समय के साथ बदल
+            सकते हैं। आवेदन करने से पहले संबंधित official
+            government portal पर जानकारी verify करें।
+
+          </p>
+
+        </div>
+
+      </section>
+
+    </main>
   );
 }

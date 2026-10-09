@@ -1,315 +1,687 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { 
-  Calendar, User, ArrowRight, Search, PlayCircle, Image as ImageIcon, 
-  ThumbsUp, MessageSquare, Sparkles, Filter, Eye, Tag, Share2, CheckCircle, BookOpen
+import {
+  ArrowRight,
+  BookOpen,
+  Calendar,
+  CheckCircle,
+  Eye,
+  Filter,
+  Grid3X3,
+  List,
+  MessageSquare,
+  PlayCircle,
+  Search,
+  SlidersHorizontal,
+  Sparkles,
+  Tag,
+  ThumbsUp,
+  X,
 } from 'lucide-react';
 
-const categories = [
-  { id: 'all', label: 'सभी लेख' },
-  { id: 'फसल सुरक्षा', label: '🛡️ फसल सुरक्षा' },
-  { id: 'फसल प्रबंधन', label: '🌾 फसल प्रबंधन' },
-  { id: 'जैविक खेती', label: '🌱 जैविक खेती' },
-  { id: 'कृषि तकनीक', label: '🚜 कृषि तकनीक' },
+import { blogsData, BLOG_CATEGORIES } from '@/data/blogData';
+
+const SORT_OPTIONS = [
+  { value: 'latest', label: 'नवीनतम' },
+  { value: 'popular', label: 'सबसे लोकप्रिय' },
+  { value: 'mostLiked', label: 'सबसे ज्यादा पसंद' },
+  { value: 'mostViewed', label: 'सबसे ज्यादा देखे गए' },
 ];
 
-const blogsData = [
-  {
-    slug: 'garlic-care-masterclass',
-    title: 'लहसुन में पीलापन, थ्रिप्स व कंद आकार बढ़ाने की संपूर्ण गाइड (वीडियो व डोज कैलकुलेटर सहित)',
-    category: 'फसल सुरक्षा',
-    date: '28 सितंबर 2026',
-    author: 'डॉ. आर. के. शर्मा',
-    authorRole: 'वरिष्ठ कृषि वैज्ञानिक',
-    readTime: '6 मिनट',
-    views: '12.4K',
-    likes: 840,
-    comments: 92,
-    hasVideo: true,
-    hasGallery: true,
-    isFeatured: true,
-    coverImage: 'https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&w=1200&q=80',
-    excerpt: 'नीमच व मंदसौर अंचल के लहसुन उत्पादकों के लिए विशेष रिपोर्ट: जानें मौसम परिवर्तन के दौरान कौन सा फफूंदनाशक और सूक्ष्म पोषक तत्व छिड़कें।',
-    tags: ['लहसुन', 'नीमच मंडी', 'थ्रिप्स', 'NPK']
-  },
-  {
-    slug: 'soyabean-harvesting-tips',
-    title: 'सोयाबीन कटाई एवं भण्डारण में नमी नियंत्रण: पाएं मंडी में अधिकतम भाव',
-    category: 'फसल प्रबंधन',
-    date: '25 सितंबर 2026',
-    author: 'सुरेश पटेल',
-    authorRole: 'उन्नत कृषक',
-    readTime: '4 मिनट',
-    views: '8.1K',
-    likes: 512,
-    comments: 34,
-    hasVideo: false,
-    hasGallery: true,
-    isFeatured: false,
-    coverImage: 'https://images.unsplash.com/photo-1592982537447-7440770cbfc9?auto=format&fit=crop&w=800&q=80',
-    excerpt: 'कटाई के समय दानों में सही नमी (12-14%) बनाए रखकर अपनी उपज को मंडी में ग्रेड-A श्रेणी में बेचें।',
-    tags: ['सोयाबीन', 'भंडारण', 'मंडी भाव']
-  },
-  {
-    slug: 'organic-jeevamrut-production',
-    title: '500 रुपये से कम लागत में बनाएं 200 लीटर जीवामृत खाद (स्टेप-बाय-स्टेप गाइड)',
-    category: 'जैविक खेती',
-    date: '20 सितंबर 2026',
-    author: 'राकेश धाकड़',
-    authorRole: 'जैविक विशेषज्ञ',
-    readTime: '5 मिनट',
-    views: '15.3K',
-    likes: 1205,
-    comments: 145,
-    hasVideo: true,
-    hasGallery: false,
-    isFeatured: false,
-    coverImage: 'https://images.unsplash.com/photo-1586771107445-d3ca888129ff?auto=format&fit=crop&w=800&q=80',
-    excerpt: 'देसी गाय के गोबर व गौमूत्र से बनाएं मिट्टी की उर्वरा शक्ति और मित्र कीटों को बढ़ाने वाला प्राकृतिक घोल।',
-    tags: ['जैविक खाद', 'जीवामृत', 'प्राकृतिक खेती']
-  },
-  {
-    slug: 'drone-spraying-technology',
-    title: 'खेती में ड्रोन स्प्रेयर: समय, पानी और रसायनों की भारी बचत कैसे करें?',
-    category: 'कृषि तकनीक',
-    date: '15 सितंबर 2026',
-    author: 'इंजीनियर अजय वर्मा',
-    authorRole: 'एग्री-टेक विशेषज्ञ',
-    readTime: '4 मिनट',
-    views: '6.7K',
-    likes: 380,
-    comments: 28,
-    hasVideo: true,
-    hasGallery: true,
-    isFeatured: false,
-    coverImage: 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?auto=format&fit=crop&w=800&q=80',
-    excerpt: '1 एकड़ खेत में मात्र 7 मिनट में सटीक दवा छिड़काव की आधुनिक ड्रोन विधि की पूरी जानकारी।',
-    tags: ['ड्रोन', 'स्मार्ट फार्मिंग', 'छिड़काव']
+function formatNumber(value) {
+  if (value >= 1000) {
+    return `${(value / 1000).toFixed(1)}K`;
   }
-];
+
+  return value;
+}
 
 export default function BlogListingPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedTag, setSelectedTag] = useState('');
+  const [sortBy, setSortBy] = useState('latest');
+  const [viewMode, setViewMode] = useState('grid');
+  const [showFilters, setShowFilters] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(6);
 
-  const featuredPost = blogsData.find(post => post.isFeatured) || blogsData[0];
+  const allTags = useMemo(() => {
+    const tags = blogsData.flatMap((blog) => blog.tags || []);
+    return [...new Set(tags)];
+  }, []);
 
-  const filteredBlogs = blogsData.filter(blog => {
-    const matchesCategory = selectedCategory === 'all' || blog.category === selectedCategory;
-    const matchesSearch = blog.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          blog.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
-    return matchesCategory && matchesSearch;
-  });
+  const featuredPost = blogsData.find((post) => post.isFeatured);
+
+  const categoryCounts = useMemo(() => {
+    return BLOG_CATEGORIES.map((category) => ({
+      ...category,
+      count:
+        category.id === 'all'
+          ? blogsData.length
+          : blogsData.filter((blog) => blog.category === category.id).length,
+    }));
+  }, []);
+
+  const filteredBlogs = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+
+    const result = blogsData.filter((blog) => {
+      const categoryMatch =
+        selectedCategory === 'all' ||
+        blog.category === selectedCategory;
+
+      const tagMatch =
+        !selectedTag ||
+        blog.tags?.some((tag) => tag === selectedTag);
+
+      const searchMatch =
+        !query ||
+        [
+          blog.title,
+          blog.excerpt,
+          blog.category,
+          blog.author,
+          ...(blog.tags || []),
+        ]
+          .join(' ')
+          .toLowerCase()
+          .includes(query);
+
+      return categoryMatch && tagMatch && searchMatch;
+    });
+
+    return [...result].sort((a, b) => {
+      if (sortBy === 'popular') {
+        return b.likes + b.comments - (a.likes + a.comments);
+      }
+
+      if (sortBy === 'mostLiked') {
+        return b.likes - a.likes;
+      }
+
+      if (sortBy === 'mostViewed') {
+        return b.views - a.views;
+      }
+
+      return new Date(b.date) - new Date(a.date);
+    });
+  }, [searchTerm, selectedCategory, selectedTag, sortBy]);
+
+  const visibleBlogs = filteredBlogs.slice(0, visibleCount);
+
+  const resetFilters = () => {
+    setSearchTerm('');
+    setSelectedCategory('all');
+    setSelectedTag('');
+    setSortBy('latest');
+    setVisibleCount(6);
+  };
+
+  const hasActiveFilters =
+    searchTerm || selectedCategory !== 'all' || selectedTag;
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8 space-y-10 max-w-7xl mx-auto">
-      
-      {/* Banner / Hero Section */}
-      <div className="relative bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-800 text-white p-8 sm:p-12 rounded-3xl shadow-xl overflow-hidden">
-        <div className="absolute -right-10 -bottom-10 opacity-10 pointer-events-none">
-          <BookOpen className="w-96 h-96" />
-        </div>
-        <div className="relative z-10 max-w-3xl space-y-4">
-          <span className="inline-flex items-center gap-2 bg-amber-400 text-emerald-950 text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-wider shadow-sm">
-            <Sparkles className="w-4 h-4" /> डिजिटल कृषि ज्ञान केंद्र
-          </span>
-          <h1 className="text-3xl sm:text-5xl font-black leading-tight">
-            वैज्ञानिक सलाह, मौसम अपडेट व व्यावहारिक कृषि ज्ञान
-          </h1>
-          <p className="text-emerald-100 text-sm sm:text-base leading-relaxed">
-            कीट प्रबंधन, उन्नत फसल किस्में, मंडी गाइड और जैविक तकनीकों पर प्रमाणित गाइड और विशेषज्ञों के सुझाव।
-          </p>
-        </div>
-      </div>
+    <div className="min-h-screen bg-slate-50">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
-      {/* Filter & Search Bar */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
-        {/* Category Pills */}
-        <div className="flex flex-wrap gap-2 w-full md:w-auto">
-          {categories.map(cat => (
-            <button
-              key={cat.id}
-              onClick={() => setSelectedCategory(cat.id)}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 ${
-                selectedCategory === cat.id
-                  ? 'bg-emerald-700 text-white shadow-md scale-105'
-                  : 'bg-slate-100 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800'
-              }`}
-            >
-              {cat.label}
-            </button>
-          ))}
-        </div>
+        {/* HERO */}
+        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-950 via-emerald-900 to-teal-800 text-white shadow-xl">
+          <div className="absolute -right-20 -bottom-20 opacity-10">
+            <BookOpen className="w-96 h-96" />
+          </div>
 
-        {/* Search Input */}
-        <div className="relative w-full md:w-80">
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="फसल, बीमारी या विषय खोजें (उदा. लहसुन)..."
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:bg-white focus:ring-2 focus:ring-emerald-600 focus:outline-none transition"
-          />
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
-        </div>
-      </div>
+          <div className="relative z-10 p-7 sm:p-10 lg:p-14 max-w-4xl">
+            <div className="inline-flex items-center gap-2 bg-amber-400 text-emerald-950 px-4 py-2 rounded-full text-xs font-black mb-5">
+              <Sparkles className="w-4 h-4" />
+              डिजिटल कृषि ज्ञान केंद्र
+            </div>
 
-      {/* Featured Main Post Card */}
-      {selectedCategory === 'all' && !searchTerm && (
-        <div className="bg-white border border-emerald-100 rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition duration-300 grid grid-cols-1 lg:grid-cols-12 group">
-          <div className="relative lg:col-span-7 h-64 sm:h-96 lg:h-full bg-slate-200 overflow-hidden">
-            <img
-              src={featuredPost.coverImage}
-              alt={featuredPost.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition duration-700 ease-out"
-            />
-            <div className="absolute top-4 left-4 flex flex-wrap gap-2">
-              <span className="bg-amber-400 text-emerald-950 font-black text-xs px-3.5 py-1 rounded-full shadow-md">
-                मुख्य लेख (Featured)
-              </span>
-              {featuredPost.hasVideo && (
-                <span className="bg-red-600 text-white font-bold text-xs px-3 py-1 rounded-full flex items-center gap-1 shadow-md">
-                  <PlayCircle className="w-3.5 h-3.5" /> वीडियो उपलब्ध
-                </span>
+            <h1 className="text-3xl sm:text-5xl font-black leading-tight">
+              किसान के लिए कृषि ज्ञान,
+              <span className="text-amber-300"> आसान भाषा में</span>
+            </h1>
+
+            <p className="mt-5 text-emerald-100 max-w-3xl text-sm sm:text-base leading-7">
+              फसल प्रबंधन, फसल सुरक्षा, जैविक खेती, मंडी और कृषि तकनीक से जुड़े
+              practical guides पढ़ें।
+            </p>
+
+            <div className="flex flex-wrap gap-3 mt-7">
+              <div className="bg-white/10 border border-white/10 rounded-xl px-4 py-3">
+                <div className="text-xl font-black">{blogsData.length}+</div>
+                <div className="text-[11px] text-emerald-200">
+                  कृषि लेख
+                </div>
+              </div>
+
+              <div className="bg-white/10 border border-white/10 rounded-xl px-4 py-3">
+                <div className="text-xl font-black">
+                  {formatNumber(
+                    blogsData.reduce((sum, blog) => sum + blog.views, 0)
+                  )}
+              </div>
+                <div className="text-[11px] text-emerald-200">
+                  कुल views
+                </div>
+              </div>
+
+              <div className="bg-white/10 border border-white/10 rounded-xl px-4 py-3">
+                <div className="text-xl font-black">
+                  {BLOG_CATEGORIES.length - 1}
+                </div>
+                <div className="text-[11px] text-emerald-200">
+                  विषय
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* SEARCH */}
+        <section className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+          <div className="flex flex-col lg:flex-row gap-3">
+
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-3.5 w-4 h-4 text-slate-400" />
+
+              <input
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setVisibleCount(6);
+                }}
+                placeholder="लहसुन, सोयाबीन, थ्रिप्स, मंडी, जैविक..."
+                className="w-full pl-11 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500"
+              />
+
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-3 top-3 p-1 text-slate-400 hover:text-slate-800"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               )}
             </div>
+
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`px-4 py-3 rounded-xl border text-sm font-bold flex items-center justify-center gap-2 ${
+                showFilters
+                  ? 'bg-emerald-700 text-white border-emerald-700'
+                  : 'bg-white text-slate-700 border-slate-200'
+              }`}
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+              Filter
+            </button>
+
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm font-bold outline-none"
+            >
+              {SORT_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+
+            <div className="hidden sm:flex border border-slate-200 rounded-xl overflow-hidden">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`px-4 ${
+                  viewMode === 'grid'
+                    ? 'bg-emerald-700 text-white'
+                    : 'bg-white text-slate-600'
+                }`}
+                title="Grid View"
+              >
+                <Grid3X3 className="w-4 h-4" />
+              </button>
+
+              <button
+                onClick={() => setViewMode('list')}
+                className={`px-4 ${
+                  viewMode === 'list'
+                    ? 'bg-emerald-700 text-white'
+                    : 'bg-white text-slate-600'
+                }`}
+                title="List View"
+              >
+                <List className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
-          <div className="lg:col-span-5 p-6 sm:p-8 flex flex-col justify-between space-y-6">
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 text-xs text-slate-500">
-                <span className="text-emerald-800 font-extrabold bg-emerald-100 px-3 py-1 rounded-md">
-                  {featuredPost.category}
-                </span>
-                <span>• {featuredPost.date}</span>
-                <span>• {featuredPost.readTime} पढ़ें</span>
-              </div>
+          {/* FILTER PANEL */}
+          {showFilters && (
+            <div className="mt-4 pt-4 border-t border-slate-100 space-y-5">
 
-              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 group-hover:text-emerald-700 transition leading-snug">
-                <Link href={`/blog/${featuredPost.slug}`}>{featuredPost.title}</Link>
-              </h2>
-
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                {featuredPost.excerpt}
-              </p>
-
-              <div className="flex flex-wrap gap-1.5 pt-2">
-                {featuredPost.tags.map((tag, idx) => (
-                  <span key={idx} className="bg-slate-100 text-slate-600 text-[11px] font-semibold px-2.5 py-0.5 rounded-full">
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-emerald-700 text-white font-bold flex items-center justify-center text-xs">
-                  👨‍🌾
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Filter className="w-4 h-4 text-emerald-700" />
+                  <h3 className="text-sm font-black">
+                    विषय के अनुसार खोजें
+                  </h3>
                 </div>
-                <div>
-                  <p className="text-xs font-bold text-slate-900">{featuredPost.author}</p>
-                  <p className="text-[10px] text-slate-500">{featuredPost.authorRole}</p>
+
+                <div className="flex flex-wrap gap-2">
+                  {categoryCounts.map((category) => (
+                    <button
+                      key={category.id}
+                      onClick={() => {
+                        setSelectedCategory(category.id);
+                        setVisibleCount(6);
+                      }}
+                      className={`px-3 py-2 rounded-xl text-xs font-bold border transition ${
+                        selectedCategory === category.id
+                          ? 'bg-emerald-700 text-white border-emerald-700'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-emerald-300'
+                      }`}
+                    >
+                      {category.icon} {category.label}
+                      <span className="ml-1 opacity-70">
+                        ({category.count})
+                      </span>
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              <Link
-                href={`/blog/${featuredPost.slug}`}
-                className="inline-flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition shadow-md hover:shadow-lg"
-              >
-                पूरा लेख पढ़ें <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Tag className="w-4 h-4 text-emerald-700" />
+                  <h3 className="text-sm font-black">
+                    Popular Tags
+                  </h3>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {allTags.map((tag) => (
+                    <button
+                      key={tag}
+                      onClick={() =>
+                        setSelectedTag(selectedTag === tag ? '' : tag)
+                      }
+                      className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition ${
+                        selectedTag === tag
+                          ? 'bg-amber-400 text-amber-950'
+                          : 'bg-slate-100 text-slate-600 hover:bg-emerald-50 hover:text-emerald-800'
+                      }`}
+                    >
+                      #{tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {hasActiveFilters && (
+                <button
+                  onClick={resetFilters}
+                  className="text-xs font-bold text-red-600 hover:underline"
+                >
+                  सभी filters हटाएं
+                </button>
+              )}
             </div>
+          )}
+        </section>
+
+        {/* ACTIVE FILTER INFO */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-black text-slate-900">
+              {selectedCategory === 'all'
+                ? 'नवीनतम कृषि लेख एवं गाइड'
+                : selectedCategory}
+            </h2>
+
+            <p className="text-xs text-slate-500 mt-1">
+              {filteredBlogs.length} लेख मिले
+              {searchTerm && ` • "${searchTerm}"`}
+              {selectedTag && ` • #${selectedTag}`}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            <CheckCircle className="w-4 h-4 text-emerald-600" />
+            किसान उपयोगी सामग्री
           </div>
         </div>
-      )}
 
-      {/* Grid List for All Posts */}
-      <div className="space-y-4">
-        <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
-          <BookOpen className="w-5 h-5 text-emerald-700" /> नवीनतम कृषि लेख एवं गाइड
-        </h3>
+        {/* FEATURED */}
+        {featuredPost &&
+          selectedCategory === 'all' &&
+          !searchTerm &&
+          !selectedTag && (
+            <section className="bg-white rounded-3xl overflow-hidden border border-emerald-100 shadow-lg">
+              <div className="grid lg:grid-cols-12">
 
-        {filteredBlogs.length === 0 ? (
-          <div className="bg-white p-12 text-center rounded-2xl border border-slate-200 space-y-3">
-            <p className="text-slate-500 font-bold">कोई लेख नहीं मिला!</p>
-            <button 
-              onClick={() => { setSearchTerm(''); setSelectedCategory('all'); }}
-              className="text-emerald-700 text-xs font-bold underline"
-            >
-              फ़िल्टर हटाएं
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredBlogs.map((blog) => (
-              <div key={blog.slug} className="bg-white border border-slate-200 hover:border-emerald-400 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition duration-300 flex flex-col justify-between group">
-                <div>
-                  {/* Thumbnail Image */}
-                  <div className="relative h-48 bg-slate-100 overflow-hidden">
-                    <img
-                      src={blog.coverImage}
-                      alt={blog.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                    />
-                    <span className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-md">
-                      {blog.category}
+                <div className="lg:col-span-7 h-64 sm:h-96 lg:h-[430px] relative overflow-hidden">
+                  <img
+                    src={featuredPost.coverImage}
+                    alt={featuredPost.title}
+                    className="w-full h-full object-cover hover:scale-105 transition duration-700"
+                  />
+
+                  <div className="absolute top-5 left-5 flex gap-2 flex-wrap">
+                    <span className="bg-amber-400 text-emerald-950 px-3 py-1.5 rounded-full text-xs font-black">
+                      ⭐ Featured
                     </span>
-                    <div className="absolute bottom-3 right-3 flex gap-1">
-                      {blog.hasVideo && (
-                        <span className="bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1 shadow-sm">
-                          <PlayCircle className="w-3 h-3" /> वीडियो
-                        </span>
-                      )}
-                    </div>
-                  </div>
 
-                  {/* Body Details */}
-                  <div className="p-5 space-y-3">
-                    <div className="flex justify-between items-center text-[11px] text-slate-500">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3 text-emerald-600" /> {blog.date}
+                    {featuredPost.hasVideo && (
+                      <span className="bg-red-600 text-white px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1">
+                        <PlayCircle className="w-3 h-3" />
+                        वीडियो
                       </span>
-                      <span className="flex items-center gap-1">
-                        <Eye className="w-3 h-3 text-slate-400" /> {blog.views}
-                      </span>
-                    </div>
-
-                    <h4 className="text-base font-bold text-slate-900 group-hover:text-emerald-700 transition leading-snug line-clamp-2">
-                      <Link href={`/blog/${blog.slug}`}>{blog.title}</Link>
-                    </h4>
-
-                    <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
-                      {blog.excerpt}
-                    </p>
+                    )}
                   </div>
                 </div>
 
-                {/* Card Footer */}
-                <div className="px-5 pb-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                  <div className="flex items-center gap-3">
-                    <span className="flex items-center gap-1 text-[11px] font-medium">
-                      <ThumbsUp className="w-3.5 h-3.5 text-slate-400" /> {blog.likes}
+                <div className="lg:col-span-5 p-6 sm:p-8 flex flex-col justify-between">
+                  <div>
+                    <span className="inline-block bg-emerald-100 text-emerald-800 px-3 py-1 rounded-lg text-xs font-bold">
+                      {featuredPost.category}
                     </span>
-                    <span className="flex items-center gap-1 text-[11px] font-medium">
-                      <MessageSquare className="w-3.5 h-3.5 text-slate-400" /> {blog.comments}
-                    </span>
+
+                    <h2 className="text-2xl sm:text-3xl font-black text-slate-900 leading-tight mt-4">
+                      {featuredPost.title}
+                    </h2>
+
+                    <p className="text-sm text-slate-600 leading-6 mt-4">
+                      {featuredPost.excerpt}
+                    </p>
+
+                    <div className="flex flex-wrap gap-2 mt-5">
+                      {featuredPost.tags.slice(0, 5).map((tag) => (
+                        <span
+                          key={tag}
+                          className="bg-slate-100 px-2.5 py-1 rounded-full text-[10px] font-bold text-slate-600"
+                        >
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
                   </div>
 
-                  <Link
-                    href={`/blog/${blog.slug}`}
-                    className="text-emerald-700 font-bold hover:text-emerald-900 inline-flex items-center gap-1 transition"
-                  >
-                    पढ़ें <ArrowRight className="w-3 h-3" />
-                  </Link>
+                  <div className="border-t border-slate-100 mt-6 pt-5">
+                    <div className="flex justify-between items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-9 h-9 rounded-full bg-emerald-700 text-white flex items-center justify-center">
+                          {featuredPost.authorAvatar}
+                        </div>
+
+                        <div>
+                          <p className="text-xs font-black">
+                            {featuredPost.author}
+                          </p>
+
+                          <p className="text-[10px] text-slate-500">
+                            {featuredPost.authorRole}
+                          </p>
+                        </div>
+                      </div>
+
+                      <Link
+                        href={`/blog/${featuredPost.slug}`}
+                        className="bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2"
+                      >
+                        पूरा पढ़ें
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
+                  </div>
                 </div>
               </div>
+            </section>
+          )}
+
+        {/* BLOGS */}
+        {visibleBlogs.length === 0 ? (
+          <div className="bg-white rounded-3xl border border-slate-200 p-14 text-center">
+            <Search className="w-12 h-12 mx-auto text-slate-300" />
+
+            <h3 className="font-black text-slate-900 mt-4">
+              कोई लेख नहीं मिला
+            </h3>
+
+            <p className="text-sm text-slate-500 mt-2">
+              Search या filter बदलकर फिर प्रयास करें।
+            </p>
+
+            <button
+              onClick={resetFilters}
+              className="mt-5 bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold"
+            >
+              सभी लेख दिखाएं
+            </button>
+          </div>
+        ) : viewMode === 'grid' ? (
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {visibleBlogs.map((blog) => (
+              <BlogCard
+                key={blog.slug}
+                blog={blog}
+                onCategoryClick={() => {
+                  setSelectedCategory(blog.category);
+                  setVisibleCount(6);
+                }}
+              />
+            ))}
+          </div>
+
+        ) : (
+
+          <div className="space-y-4">
+            {visibleBlogs.map((blog) => (
+              <BlogListCard
+                key={blog.slug}
+                blog={blog}
+              />
             ))}
           </div>
         )}
-      </div>
+
+        {/* LOAD MORE */}
+        {visibleCount < filteredBlogs.length && (
+          <div className="text-center">
+            <button
+              onClick={() => setVisibleCount((prev) => prev + 6)}
+              className="px-7 py-3 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-sm font-bold shadow-md"
+            >
+              और लेख दिखाएं
+            </button>
+          </div>
+        )}
+
+      </main>
     </div>
+  );
+}
+
+/* =========================================================
+   BLOG GRID CARD
+========================================================= */
+
+function BlogCard({ blog, onCategoryClick }) {
+  return (
+    <article className="group bg-white border border-slate-200 rounded-2xl overflow-hidden hover:border-emerald-400 hover:shadow-xl transition duration-300 flex flex-col">
+
+      <div className="relative h-52 overflow-hidden bg-slate-100">
+        <img
+          src={blog.coverImage}
+          alt={blog.title}
+          className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+        />
+
+        <button
+          onClick={onCategoryClick}
+          className="absolute top-3 left-3 bg-slate-950/80 text-white backdrop-blur px-2.5 py-1.5 rounded-lg text-[10px] font-bold"
+        >
+          {blog.category}
+        </button>
+
+        {blog.hasVideo && (
+          <span className="absolute bottom-3 left-3 bg-red-600 text-white px-2 py-1 rounded-md text-[10px] font-bold flex items-center gap-1">
+            <PlayCircle className="w-3 h-3" />
+            वीडियो
+          </span>
+        )}
+
+        {blog.isFeatured && (
+          <span className="absolute top-3 right-3 bg-amber-400 text-amber-950 px-2 py-1 rounded-md text-[10px] font-black">
+            Featured
+          </span>
+        )}
+      </div>
+
+      <div className="p-5 flex-1 flex flex-col">
+
+        <div className="flex items-center justify-between text-[10px] text-slate-500">
+          <span className="flex items-center gap-1">
+            <Calendar className="w-3 h-3 text-emerald-600" />
+            {blog.dateLabel}
+          </span>
+
+          <span className="flex items-center gap-1">
+            <Eye className="w-3 h-3" />
+            {formatNumber(blog.views)}
+          </span>
+        </div>
+
+        <Link href={`/blog/${blog.slug}`}>
+          <h3 className="text-lg font-black text-slate-900 group-hover:text-emerald-700 leading-snug mt-3 line-clamp-2">
+            {blog.title}
+          </h3>
+        </Link>
+
+        <p className="text-xs text-slate-600 leading-5 mt-3 line-clamp-3">
+          {blog.excerpt}
+        </p>
+
+        <div className="flex flex-wrap gap-1.5 mt-4">
+          {blog.tags.slice(0, 3).map((tag) => (
+            <span
+              key={tag}
+              className="bg-slate-100 px-2 py-1 rounded-full text-[9px] font-bold text-slate-600"
+            >
+              #{tag}
+            </span>
+          ))}
+        </div>
+
+        <div className="mt-auto pt-5 border-t border-slate-100 mt-5 flex items-center justify-between">
+
+          <div className="flex gap-3 text-[10px] text-slate-500">
+            <span className="flex items-center gap-1">
+              <ThumbsUp className="w-3 h-3" />
+              {formatNumber(blog.likes)}
+            </span>
+
+            <span className="flex items-center gap-1">
+              <MessageSquare className="w-3 h-3" />
+              {blog.comments}
+            </span>
+          </div>
+
+          <Link
+            href={`/blog/${blog.slug}`}
+            className="text-emerald-700 font-black text-xs flex items-center gap-1"
+          >
+            पढ़ें
+            <ArrowRight className="w-3 h-3" />
+          </Link>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+/* =========================================================
+   BLOG LIST CARD
+========================================================= */
+
+function BlogListCard({ blog }) {
+  return (
+    <article className="bg-white border border-slate-200 rounded-2xl overflow-hidden hover:border-emerald-400 hover:shadow-lg transition grid md:grid-cols-12">
+
+      <div className="md:col-span-4 h-56 md:h-auto overflow-hidden">
+        <img
+          src={blog.coverImage}
+          alt={blog.title}
+          className="w-full h-full object-cover hover:scale-105 transition duration-500"
+        />
+      </div>
+
+      <div className="md:col-span-8 p-5 sm:p-7">
+
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-lg text-[10px] font-bold">
+            {blog.category}
+          </span>
+
+          {blog.hasVideo && (
+            <span className="bg-red-50 text-red-700 px-2.5 py-1 rounded-lg text-[10px] font-bold">
+              वीडियो
+            </span>
+          )}
+        </div>
+
+        <Link href={`/blog/${blog.slug}`}>
+          <h3 className="text-xl font-black text-slate-900 hover:text-emerald-700 mt-3">
+            {blog.title}
+          </h3>
+        </Link>
+
+        <p className="text-sm text-slate-600 leading-6 mt-3">
+          {blog.excerpt}
+        </p>
+
+        <div className="flex flex-wrap gap-2 mt-4">
+          {blog.tags.map((tag) => (
+            <span
+              key={tag}
+              className="text-[10px] bg-slate-100 px-2 py-1 rounded-full font-bold text-slate-600"
+            >
+              #{tag}
+            </span>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap justify-between items-center gap-3 mt-6 pt-4 border-t border-slate-100">
+
+          <div className="flex gap-4 text-xs text-slate-500">
+            <span>
+              📅 {blog.dateLabel}
+            </span>
+
+            <span>
+              👁️ {formatNumber(blog.views)}
+            </span>
+
+            <span>
+              👍 {formatNumber(blog.likes)}
+            </span>
+
+            <span>
+              💬 {blog.comments}
+            </span>
+          </div>
+
+          <Link
+            href={`/blog/${blog.slug}`}
+            className="bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2"
+          >
+            पूरा लेख
+            <ArrowRight className="w-3 h-3" />
+          </Link>
+        </div>
+      </div>
+    </article>
   );
 }

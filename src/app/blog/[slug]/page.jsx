@@ -1,378 +1,1282 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { 
-  ArrowLeft, Calendar, User, Clock, Share2, ThumbsUp, MessageSquare, 
-  Volume2, VolumeX, PlayCircle, ShieldCheck, CheckCircle2, Bookmark, Send, 
-  Calculator, AlertTriangle, Eye, Check, Copy
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  Bookmark,
+  Calculator,
+  Check,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  Copy,
+  Eye,
+  Heart,
+  MessageSquare,
+  PlayCircle,
+  Send,
+  Share2,
+  ShieldCheck,
+  ThumbsDown,
+  ThumbsUp,
+  User,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
 
-const postData = {
-  title: 'लहसुन में पीलापन, थ्रिप्स व कंद आकार बढ़ाने की संपूर्ण गाइड (वीडियो व डोज कैलकुलेटर सहित)',
-  category: 'फसल सुरक्षा',
-  date: '28 सितंबर 2026',
-  author: 'डॉ. आर. के. शर्मा',
-  authorRole: 'वरिष्ठ कृषि वैज्ञानिक (कृषि विज्ञान केंद्र, नीमच)',
-  readTime: '6 मिनट पाठ',
-  likesCount: 840,
-  viewsCount: '12,450',
-  youtubeVideoId: 'dQw4w9WgXcQ',
-  audioText: 'लहसुन की फसल में पीलापन दूर करने, थ्रिप्स कीट से बचाव और कंद का आकार बढ़ाने की वैज्ञानिक गाइड में आपका स्वागत है।',
-  heroImage: 'https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&w=1200&q=80',
-  galleryImages: [
-    { url: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=600&q=80', title: 'थ्रिप्स का प्रकोप (पत्तियों पर सफेद धब्बे)' },
-    { url: 'https://images.unsplash.com/photo-1592982537447-7440770cbfc9?auto=format&fit=crop&w=600&q=80', title: 'स्वस्थ कंद विकास हेतु सही सिंचाई व्यवस्था' }
-  ]
-};
+import {
+  getBlogBySlug,
+  getRelatedBlogs,
+} from '@/data/blogData';
 
-export default function BlogDetailPage() {
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview', 'calculator', 'spray'
-  const [likes, setLikes] = useState(postData.likesCount);
-  const [hasLiked, setHasLiked] = useState(false);
-  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+export default function BlogDetailPage({ params }) {
+  const blog = getBlogBySlug(params?.slug);
+
+  const [progress, setProgress] = useState(0);
+  const [activeSection, setActiveSection] = useState('');
+  const [activeTab, setActiveTab] = useState('article');
+
+  const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [likes, setLikes] = useState(blog?.likes || 0);
+
   const [copied, setCopied] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
 
-  // Interactive Calculator State
-  const [landArea, setLandArea] = useState(1); // Default 1 Acre
-  const [unit, setUnit] = useState('acre'); // 'acre' or 'bigha'
+  const [landArea, setLandArea] = useState(1);
+  const [landUnit, setLandUnit] = useState('acre');
 
-  // Comments state
+  const [openFaq, setOpenFaq] = useState(null);
+
+  const [helpful, setHelpful] = useState(null);
+
   const [comments, setComments] = useState([
-    { name: 'रामेश्वर धाकड़ (नीमच)', text: 'डॉक्टर साहब, 00:52:34 का छिड़काव करने से मेरी फसल में कंद का आकार काफी अच्छा बना!', date: '28 सितंबर' },
-    { name: 'विक्रम सिंह (मंदसौर)', text: 'क्या हम इमिडाक्लोप्रिड के साथ सल्फर मिला सकते हैं?', date: '29 सितंबर' }
+    {
+      id: 1,
+      name: 'रामेश्वर धाकड़',
+      location: 'नीमच',
+      text: 'जानकारी उपयोगी लगी।',
+      date: 'आज',
+    },
+    {
+      id: 2,
+      name: 'विक्रम सिंह',
+      location: 'मंदसौर',
+      text: 'ऐसे और practical articles डालिए।',
+      date: 'कल',
+    },
   ]);
-  const [newComment, setNewComment] = useState({ name: '', text: '' });
 
-  const handleLike = () => {
-    setLikes(prev => hasLiked ? prev - 1 : prev + 1);
-    setHasLiked(!hasLiked);
-  };
+  const [commentForm, setCommentForm] = useState({
+    name: '',
+    location: '',
+    text: '',
+  });
 
-  const handleAddComment = (e) => {
-    e.preventDefault();
-    if (newComment.name && newComment.text) {
-      setComments([...comments, { ...newComment, date: 'अभी' }]);
-      setNewComment({ name: '', text: '' });
-    }
-  };
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const height =
+        document.documentElement.scrollHeight -
+        document.documentElement.clientHeight;
 
-  const toggleAudio = () => {
-    if ('speechSynthesis' in window) {
-      if (isPlayingAudio) {
-        window.speechSynthesis.cancel();
-        setIsPlayingAudio(false);
-      } else {
-        const utterance = new SpeechSynthesisUtterance(postData.audioText);
-        utterance.lang = 'hi-IN';
-        utterance.onend = () => setIsPlayingAudio(false);
-        window.speechSynthesis.speak(utterance);
-        setIsPlayingAudio(true);
-      }
-    } else {
-      alert('आपके डिवाइस पर ऑडियो सपोर्ट उपलब्ध नहीं है।');
-    }
-  };
+      setProgress(height > 0 ? (scrollTop / height) * 100 : 0);
+    };
 
-  const copyLink = () => {
-    navigator.clipboard.writeText(window.location.href);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+    window.addEventListener('scroll', handleScroll);
 
-  // Dosage Calculation Factor (Base: 1 Acre)
-  const multiplier = unit === 'acre' ? landArea : landArea * 0.625; // 1 Bigha ~ 0.625 Acre approx.
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
-  return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto space-y-8">
-      
-      {/* Top Navigation */}
-      <div className="flex justify-between items-center border-b border-slate-200 pb-4">
-        <Link
-          href="/blog"
-          className="inline-flex items-center gap-2 text-xs font-bold text-emerald-800 hover:text-emerald-950 transition"
-        >
-          <ArrowLeft className="w-4 h-4" /> सभी कृषि ब्लॉग पर लौटें
-        </Link>
+  useEffect(() => {
+    if (!blog) return;
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={copyLink}
-            className="p-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-bold transition flex items-center gap-1.5"
+    const sections =
+      blog.content?.sections?.map((section) => section.id) || [];
+
+    const observers = [];
+
+    sections.forEach((id) => {
+      const element = document.getElementById(id);
+
+      if (!element) return;
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              setActiveSection(id);
+            }
+          });
+        },
+        {
+          rootMargin: '-20% 0px -65% 0px',
+        }
+      );
+
+      observer.observe(element);
+      observers.push(observer);
+    });
+
+    return () => {
+      observers.forEach((observer) => observer.disconnect());
+    };
+  }, [blog]);
+
+  if (!blog) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
+        <div className="bg-white border border-slate-200 rounded-3xl p-10 text-center max-w-lg">
+          <h1 className="text-2xl font-black text-slate-900">
+            लेख नहीं मिला
+          </h1>
+
+          <p className="text-sm text-slate-500 mt-2">
+            यह article मौजूद नहीं है या हटाया जा चुका है।
+          </p>
+
+          <Link
+            href="/blog"
+            className="inline-flex mt-6 bg-emerald-700 text-white px-5 py-3 rounded-xl text-sm font-bold"
           >
-            {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Share2 className="w-4 h-4" />}
-            {copied ? 'लिंक कॉपी हुआ' : 'शेयर'}
-          </button>
-
-          <button
-            onClick={() => setSaved(!saved)}
-            className={`p-2.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 ${
-              saved ? 'bg-amber-100 border-amber-300 text-amber-900' : 'bg-white border-slate-200 text-slate-700'
-            }`}
-          >
-            <Bookmark className="w-4 h-4" /> {saved ? 'सहेजा गया' : 'सेव करें'}
-          </button>
+            सभी ब्लॉग देखें
+          </Link>
         </div>
       </div>
+    );
+  }
 
-      {/* Main Header */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <span className="bg-emerald-100 text-emerald-900 font-extrabold text-xs px-3 py-1 rounded-full">
-            {postData.category}
-          </span>
-          <span className="text-xs text-slate-500 flex items-center gap-1">
-            <Eye className="w-3.5 h-3.5" /> {postData.viewsCount} बार देखा गया
-          </span>
-          <span className="text-xs text-slate-500">• {postData.date}</span>
+  const relatedBlogs = getRelatedBlogs(blog);
+
+  const calculatorData = useMemo(() => {
+    const acres =
+      landUnit === 'acre'
+        ? Number(landArea) || 0
+        : (Number(landArea) || 0) * 0.625;
+
+    const water =
+      (blog.calculator?.waterPerAcre || 0) * acres;
+
+    const recommendations =
+      blog.calculator?.recommendations?.map((item) => ({
+        ...item,
+        calculated: item.quantity * acres,
+      })) || [];
+
+    return {
+      acres,
+      water,
+      recommendations,
+    };
+  }, [landArea, landUnit, blog]);
+
+  const scrollToSection = (id) => {
+    document.getElementById(id)?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  };
+
+  const handleLike = () => {
+    setLiked((previous) => !previous);
+    setLikes((previous) => previous + (liked ? -1 : 1));
+  };
+
+  const handleBookmark = () => {
+    setSaved((previous) => !previous);
+  };
+
+  const handleShare = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: blog.title,
+          text: blog.excerpt,
+          url: window.location.href,
+        });
+        return;
+      }
+
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+
+      setTimeout(() => {
+        setCopied(false);
+      }, 2000);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+
+      setCopied(true);
+
+      setTimeout(() => {
+        setCopied(false);
+      }, 2000);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleVoice = () => {
+    if (!('speechSynthesis' in window)) {
+      alert('आपके browser में voice support उपलब्ध नहीं है।');
+      return;
+    }
+
+    if (speaking) {
+      window.speechSynthesis.cancel();
+      setSpeaking(false);
+      return;
+    }
+
+    const text = [
+      blog.title,
+      blog.content?.introduction,
+      ...(blog.content?.sections || []).flatMap((section) => [
+        section.title,
+        ...(section.paragraphs || []),
+        ...(section.bullets || []),
+      ]),
+    ].join('. ');
+
+    const utterance = new SpeechSynthesisUtterance(text);
+
+    utterance.lang = 'hi-IN';
+    utterance.rate = 0.9;
+
+    utterance.onend = () => {
+      setSpeaking(false);
+    };
+
+    window.speechSynthesis.speak(utterance);
+    setSpeaking(true);
+  };
+
+  const handleCommentSubmit = (event) => {
+    event.preventDefault();
+
+    if (
+      !commentForm.name.trim() ||
+      !commentForm.text.trim()
+    ) {
+      return;
+    }
+
+    setComments((previous) => [
+      ...previous,
+      {
+        id: Date.now(),
+        name: commentForm.name,
+        location: commentForm.location,
+        text: commentForm.text,
+        date: 'अभी',
+      },
+    ]);
+
+    setCommentForm({
+      name: '',
+      location: '',
+      text: '',
+    });
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+
+      {/* READING PROGRESS */}
+      <div className="fixed top-0 left-0 right-0 z-[60] h-1 bg-slate-200">
+        <div
+          className="h-full bg-emerald-600 transition-all"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        {/* TOP BAR */}
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+
+          <Link
+            href="/blog"
+            className="inline-flex items-center gap-2 text-xs font-bold text-emerald-800"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            सभी कृषि ब्लॉग
+          </Link>
+
+          <div className="flex items-center gap-2">
+
+            <button
+              onClick={handleVoice}
+              className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-2 ${
+                speaking
+                  ? 'bg-red-600 text-white'
+                  : 'bg-white border border-slate-200 text-slate-700'
+              }`}
+            >
+              {speaking ? (
+                <VolumeX className="w-4 h-4" />
+              ) : (
+                <Volume2 className="w-4 h-4" />
+              )}
+
+              {speaking ? 'बंद करें' : 'सुनें'}
+            </button>
+
+            <button
+              onClick={handleBookmark}
+              className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border ${
+                saved
+                  ? 'bg-amber-100 border-amber-300 text-amber-900'
+                  : 'bg-white border-slate-200 text-slate-700'
+              }`}
+            >
+              <Bookmark className="w-4 h-4" />
+              {saved ? 'Saved' : 'Save'}
+            </button>
+
+            <button
+              onClick={handleShare}
+              className="px-3 py-2 rounded-xl bg-emerald-700 text-white text-xs font-bold flex items-center gap-2"
+            >
+              <Share2 className="w-4 h-4" />
+              Share
+            </button>
+          </div>
         </div>
 
-        <h1 className="text-2xl sm:text-4xl font-black text-slate-900 leading-tight">
-          {postData.title}
-        </h1>
+        {/* HERO */}
+        <section className="bg-white rounded-3xl overflow-hidden border border-slate-200 shadow-sm">
 
-        {/* Author Box & Voice Assistant */}
-        <div className="flex flex-wrap items-center justify-between gap-4 bg-white border border-slate-200 p-4 rounded-2xl shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 bg-emerald-800 text-white font-bold rounded-full flex items-center justify-center text-base shrink-0 shadow-sm">
-              👨‍🌾
-            </div>
-            <div>
-              <p className="text-xs sm:text-sm font-black text-slate-900">{postData.author}</p>
-              <p className="text-[11px] text-slate-500 font-medium">{postData.authorRole}</p>
+          <div className="relative h-64 sm:h-96 lg:h-[500px]">
+
+            <img
+              src={blog.heroImage || blog.coverImage}
+              alt={blog.title}
+              className="w-full h-full object-cover"
+            />
+
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+            <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-8 lg:p-10 text-white">
+
+              <div className="flex flex-wrap gap-2 mb-4">
+
+                <span className="bg-emerald-600 px-3 py-1.5 rounded-full text-xs font-black">
+                  {blog.category}
+                </span>
+
+                {blog.hasVideo && (
+                  <span className="bg-red-600 px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1">
+                    <PlayCircle className="w-3 h-3" />
+                    वीडियो
+                  </span>
+                )}
+              </div>
+
+              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black leading-tight max-w-5xl">
+                {blog.title}
+              </h1>
+
+              <div className="flex flex-wrap gap-4 mt-5 text-xs text-slate-200">
+
+                <span className="flex items-center gap-1">
+                  <CalendarIcon />
+                  {blog.dateLabel}
+                </span>
+
+                <span className="flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5" />
+                  {blog.readTime} मिनट
+                </span>
+
+                <span className="flex items-center gap-1">
+                  <Eye className="w-3.5 h-3.5" />
+                  {formatNumber(blog.views)} views
+                </span>
+
+              </div>
             </div>
           </div>
 
-          <button
-            onClick={toggleAudio}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm ${
-              isPlayingAudio ? 'bg-red-600 text-white animate-pulse' : 'bg-emerald-700 text-white hover:bg-emerald-800'
-            }`}
-          >
-            {isPlayingAudio ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-            {isPlayingAudio ? 'बोलना बंद करें' : 'बोलकर सुनें (Voice Assist)'}
-          </button>
+          {/* AUTHOR */}
+          <div className="p-5 sm:p-7 flex flex-wrap items-center justify-between gap-4">
+
+            <div className="flex items-center gap-3">
+
+              <div className="w-12 h-12 rounded-full bg-emerald-700 text-white flex items-center justify-center">
+                {blog.authorAvatar || '👨‍🌾'}
+              </div>
+
+              <div>
+                <div className="text-sm font-black text-slate-900">
+                  {blog.author}
+                </div>
+
+                <div className="text-xs text-slate-500">
+                  {blog.authorRole}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+
+              <button
+                onClick={handleLike}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 ${
+                  liked
+                    ? 'bg-emerald-700 text-white'
+                    : 'bg-slate-100 text-slate-700'
+                }`}
+              >
+                <Heart
+                  className={`w-4 h-4 ${liked ? 'fill-current' : ''}`}
+                />
+                {formatNumber(likes)}
+              </button>
+
+              <button
+                onClick={handleCopyLink}
+                className="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold flex items-center gap-2"
+              >
+                {copied ? (
+                  <Check className="w-4 h-4 text-emerald-600" />
+                ) : (
+                  <Copy className="w-4 h-4" />
+                )}
+
+                {copied ? 'Copied' : 'Copy Link'}
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* BODY */}
+        <div className="grid lg:grid-cols-12 gap-8 mt-8">
+
+          {/* LEFT CONTENT */}
+          <article className="lg:col-span-8 space-y-7">
+
+            {/* VIDEO */}
+            {blog.youtubeVideoId && (
+              <section className="bg-slate-950 rounded-3xl overflow-hidden shadow-lg">
+
+                <div className="p-4 text-white flex items-center gap-2 text-sm font-bold">
+                  <PlayCircle className="w-5 h-5 text-red-500" />
+                  कृषि विशेषज्ञ वीडियो
+                </div>
+
+                <div className="aspect-video">
+                  <iframe
+                    className="w-full h-full"
+                    src={`https://www.youtube-nocookie.com/embed/${blog.youtubeVideoId}`}
+                    title={blog.title}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              </section>
+            )}
+
+            {/* TABS */}
+            <div className="bg-white border border-slate-200 p-1.5 rounded-2xl flex gap-1 sticky top-3 z-30 shadow-sm">
+
+              <button
+                onClick={() => setActiveTab('article')}
+                className={`flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-bold ${
+                  activeTab === 'article'
+                    ? 'bg-emerald-700 text-white'
+                    : 'text-slate-600'
+                }`}
+              >
+                📖 लेख
+              </button>
+
+              {blog.calculator?.enabled && (
+                <button
+                  onClick={() => setActiveTab('calculator')}
+                  className={`flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-bold ${
+                    activeTab === 'calculator'
+                      ? 'bg-emerald-700 text-white'
+                      : 'text-slate-600'
+                  }`}
+                >
+                  🧮 Calculator
+                </button>
+              )}
+            </div>
+
+            {/* ARTICLE */}
+            {activeTab === 'article' && (
+              <ArticleContent
+                blog={blog}
+                openFaq={openFaq}
+                setOpenFaq={setOpenFaq}
+              />
+            )}
+
+            {/* CALCULATOR */}
+            {activeTab === 'calculator' && (
+              <CalculatorSection
+                blog={blog}
+                landArea={landArea}
+                setLandArea={setLandArea}
+                landUnit={landUnit}
+                setLandUnit={setLandUnit}
+                calculatorData={calculatorData}
+              />
+            )}
+
+            {/* FEEDBACK */}
+            <section className="bg-white border border-slate-200 rounded-3xl p-6 text-center">
+
+              <h3 className="font-black text-slate-900">
+                क्या यह जानकारी उपयोगी लगी?
+              </h3>
+
+              <p className="text-xs text-slate-500 mt-1">
+                आपकी प्रतिक्रिया से हम बेहतर कृषि सामग्री तैयार कर सकते हैं।
+              </p>
+
+              <div className="flex justify-center gap-3 mt-4">
+
+                <button
+                  onClick={() => setHelpful('yes')}
+                  className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 ${
+                    helpful === 'yes'
+                      ? 'bg-emerald-700 text-white'
+                      : 'bg-slate-100 text-slate-700'
+                  }`}
+                >
+                  <ThumbsUp className="w-4 h-4" />
+                  उपयोगी
+                </button>
+
+                <button
+                  onClick={() => setHelpful('no')}
+                  className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 ${
+                    helpful === 'no'
+                      ? 'bg-red-600 text-white'
+                      : 'bg-slate-100 text-slate-700'
+                  }`}
+                >
+                  <ThumbsDown className="w-4 h-4" />
+                  सुधार चाहिए
+                </button>
+
+              </div>
+            </section>
+
+            {/* COMMENTS */}
+            <CommentsSection
+              comments={comments}
+              commentForm={commentForm}
+              setCommentForm={setCommentForm}
+              handleCommentSubmit={handleCommentSubmit}
+            />
+
+            {/* RELATED */}
+            {relatedBlogs.length > 0 && (
+              <section className="space-y-4">
+
+                <h2 className="text-xl font-black text-slate-900">
+                  इसी विषय के अन्य लेख
+                </h2>
+
+                <div className="grid sm:grid-cols-2 gap-4">
+
+                  {relatedBlogs.map((related) => (
+                    <Link
+                      key={related.slug}
+                      href={`/blog/${related.slug}`}
+                      className="bg-white border border-slate-200 rounded-2xl overflow-hidden hover:border-emerald-400 hover:shadow-lg transition"
+                    >
+                      <div className="h-36 overflow-hidden">
+                        <img
+                          src={related.coverImage}
+                          alt={related.title}
+                          className="w-full h-full object-cover hover:scale-105 transition"
+                        />
+                      </div>
+
+                      <div className="p-4">
+                        <span className="text-[10px] text-emerald-700 font-bold">
+                          {related.category}
+                        </span>
+
+                        <h3 className="font-black text-sm mt-1 line-clamp-2">
+                          {related.title}
+                        </h3>
+
+                        <div className="text-[10px] text-slate-500 mt-3 flex gap-3">
+                          <span>👁️ {formatNumber(related.views)}</span>
+                          <span>👍 {formatNumber(related.likes)}</span>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+
+                </div>
+              </section>
+            )}
+
+          </article>
+
+          {/* RIGHT SIDEBAR */}
+          <aside className="lg:col-span-4">
+
+            <div className="lg:sticky lg:top-5 space-y-5">
+
+              {/* TABLE OF CONTENTS */}
+              {blog.content?.sections?.length > 0 && (
+                <section className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+
+                  <h3 className="font-black text-slate-900 flex items-center gap-2">
+                    <BookIcon />
+                    इस लेख में
+                  </h3>
+
+                  <div className="space-y-1 mt-4">
+
+                    {blog.content.sections.map((section, index) => (
+                      <button
+                        key={section.id}
+                        onClick={() => scrollToSection(section.id)}
+                        className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold transition ${
+                          activeSection === section.id
+                            ? 'bg-emerald-100 text-emerald-900'
+                            : 'hover:bg-slate-100 text-slate-600'
+                        }`}
+                      >
+                        {index + 1}. {section.title}
+                      </button>
+                    ))}
+
+                  </div>
+                </section>
+              )}
+
+              {/* QUICK STATS */}
+              <section className="bg-emerald-900 text-white rounded-2xl p-5">
+
+                <h3 className="font-black">
+                  लेख की जानकारी
+                </h3>
+
+                <div className="grid grid-cols-2 gap-3 mt-4">
+
+                  <Stat
+                    label="Views"
+                    value={formatNumber(blog.views)}
+                  />
+
+                  <Stat
+                    label="Likes"
+                    value={formatNumber(likes)}
+                  />
+
+                  <Stat
+                    label="Comments"
+                    value={blog.comments}
+                  />
+
+                  <Stat
+                    label="Read"
+                    value={`${blog.readTime} min`}
+                  />
+
+                </div>
+              </section>
+
+              {/* TAGS */}
+              <section className="bg-white border border-slate-200 rounded-2xl p-5">
+
+                <h3 className="font-black text-sm">
+                  Related Tags
+                </h3>
+
+                <div className="flex flex-wrap gap-2 mt-3">
+
+                  {blog.tags?.map((tag) => (
+                    <span
+                      key={tag}
+                      className="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full text-[10px] font-bold"
+                    >
+                      #{tag}
+                    </span>
+                  ))}
+
+                </div>
+              </section>
+
+            </div>
+          </aside>
         </div>
+      </main>
+    </div>
+  );
+}
+
+/* =========================================================
+   ARTICLE CONTENT
+========================================================= */
+
+function ArticleContent({ blog, openFaq, setOpenFaq }) {
+  return (
+    <article className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-9 shadow-sm">
+
+      <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 mb-7">
+        <p className="text-sm sm:text-base text-emerald-950 leading-7 font-medium">
+          {blog.content?.introduction}
+        </p>
       </div>
 
-      {/* Embedded Video Section */}
-      <div className="bg-slate-900 rounded-3xl overflow-hidden shadow-lg border border-slate-800">
-        <div className="p-3 bg-slate-800/90 text-white text-xs font-bold flex items-center justify-between">
-          <span className="flex items-center gap-2">
-            <PlayCircle className="w-4 h-4 text-red-500" /> कृषि विशेषज्ञ मास्टरक्लास वीडियो
-          </span>
-          <span className="text-slate-400 text-[11px]">अवधि: 8 मिनट 45 सेकंड</span>
-        </div>
-        <div className="relative aspect-video w-full">
-          <iframe
-            className="w-full h-full"
-            src={`https://www.youtube-nocookie.com/embed/${postData.youtubeVideoId}`}
-            title="Agri Guidance Video"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          ></iframe>
-        </div>
-      </div>
-
-      {/* Interactive Navigation Tabs */}
-      <div className="flex border-b border-slate-200 gap-2 bg-slate-100 p-1.5 rounded-2xl">
-        <button
-          onClick={() => setActiveTab('overview')}
-          className={`flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition ${
-            activeTab === 'overview' ? 'bg-white text-emerald-800 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-          }`}
+      {blog.content?.sections?.map((section, index) => (
+        <section
+          key={section.id}
+          id={section.id}
+          className="scroll-mt-24 mb-10"
         >
-          📖 विस्तृत जानकारी
-        </button>
-        <button
-          onClick={() => setActiveTab('calculator')}
-          className={`flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition ${
-            activeTab === 'calculator' ? 'bg-white text-emerald-800 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-          }`}
-        >
-          🧮 डोज कैलकुलेटर (Spray Dose)
-        </button>
-      </div>
 
-      {/* Tab 1: Detailed Content & Symptoms */}
-      {activeTab === 'overview' && (
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-10 shadow-sm space-y-6 text-slate-800">
-          
-          <p className="text-base sm:text-lg font-medium text-slate-900 border-l-4 border-emerald-600 pl-4 py-1 italic bg-emerald-50/50 rounded-r-xl">
-            नीमच व मंदसौर मंडी क्षेत्र के लहसुन उत्पादकों के लिए विशेष रिपोर्ट: मौसम में उतार-चढ़ाव के समय सही दवाओं का चयन फसल को सुरक्षित रखता है।
-          </p>
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 flex items-start gap-3">
+            <span className="w-8 h-8 shrink-0 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center text-sm">
+              {index + 1}
+            </span>
 
-          <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 pt-2">
-            <ShieldCheck className="w-5 h-5 text-emerald-600" /> 1. लहसुन में पीलापन व बीमारी के मुख्य लक्षण
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-xs sm:text-sm text-slate-700 leading-relaxed">
-            <li><strong>रस चूसक थ्रिप्स (Thrips):</strong> पत्तियों पर छोटी-छोटी सफेद धारियाँ बनना एवं पत्तियों की नोक मुड़ना।</li>
-            <li><strong>फफूंदजन्य रोग (Purple Blotch):</strong> पत्तियों पर बैंगनी-भूरे रंग के धब्बे बनना, जिससे पत्तियाँ सूखने लगती हैं।</li>
-            <li><strong>पोषक तत्वों की कमी:</strong> सल्फर या जिंक की कमी से नए कंदों का विकास रुकना।</li>
-          </ul>
+            {section.title}
+          </h2>
 
-          {/* Image Gallery Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
-            {postData.galleryImages.map((img, idx) => (
-              <div key={idx} className="rounded-2xl overflow-hidden border border-slate-200">
-                <img src={img.url} alt={img.title} className="w-full h-48 object-cover" />
-                <p className="p-2.5 text-[11px] text-center bg-slate-50 text-slate-600 font-semibold">
-                  {img.title}
+          <div className="space-y-4 mt-5">
+
+            {section.paragraphs?.map((paragraph, idx) => (
+              <p
+                key={idx}
+                className="text-sm sm:text-base text-slate-700 leading-7"
+              >
+                {paragraph}
+              </p>
+            ))}
+
+            {section.bullets?.length > 0 && (
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5">
+
+                <h4 className="font-black text-sm mb-3">
+                  मुख्य बातें
+                </h4>
+
+                <ul className="space-y-3">
+                  {section.bullets.map((bullet, idx) => (
+                    <li
+                      key={idx}
+                      className="flex gap-3 text-sm text-slate-700"
+                    >
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+                      <span>{bullet}</span>
+                    </li>
+                  ))}
+                </ul>
+
+              </div>
+            )}
+
+          </div>
+        </section>
+      ))}
+
+      {/* GALLERY */}
+      {blog.galleryImages?.length > 0 && (
+        <section className="mb-10">
+
+          <h2 className="text-xl font-black text-slate-900 mb-4">
+            📸 फोटो गैलरी
+          </h2>
+
+          <div className="grid sm:grid-cols-2 gap-4">
+
+            {blog.galleryImages.map((image, index) => (
+              <div
+                key={index}
+                className="rounded-2xl overflow-hidden border border-slate-200"
+              >
+                <img
+                  src={image.url}
+                  alt={image.title}
+                  className="w-full h-52 object-cover hover:scale-105 transition duration-500"
+                />
+
+                <p className="p-3 text-xs font-bold text-slate-600">
+                  {image.title}
                 </p>
               </div>
             ))}
-          </div>
 
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 space-y-2">
-            <h4 className="font-bold text-amber-950 text-xs sm:text-sm flex items-center gap-1.5">
-              <AlertTriangle className="w-4 h-4 text-amber-600" /> सावधानियां:
-            </h4>
-            <p className="text-xs text-amber-900 leading-relaxed">
-              छिड़काव हमेशा सुबह ओस सूखने के बाद या शाम 4 बजे के बाद करें। सिलिकॉन चिपको (Sticker) मिलाना अनिवार्य है।
-            </p>
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Tab 2: Interactive Dose Calculator */}
-      {activeTab === 'calculator' && (
-        <div className="bg-white border border-emerald-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
-          <div className="space-y-1">
-            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-              <Calculator className="w-5 h-5 text-emerald-700" /> स्वचालित छिड़काव डोज कैलकुलेटर
-            </h3>
-            <p className="text-xs text-slate-500">
-              अपने खेत का क्षेत्रफल दर्ज करें और जानें कि आपको कितनी दवा और कितना पानी चाहिए।
-            </p>
-          </div>
+      {/* SAFETY */}
+      {blog.content?.safetyNote && (
+        <section className="bg-amber-50 border border-amber-200 rounded-2xl p-5 mb-10">
 
-          {/* Calculator Input Bar */}
-          <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl flex flex-col sm:flex-row gap-4 items-center">
-            <div className="flex-1 w-full">
-              <label className="block text-xs font-bold text-slate-700 mb-1">खेत का क्षेत्रफल:</label>
-              <input
-                type="number"
-                min="0.5"
-                step="0.5"
-                value={landArea}
-                onChange={(e) => setLandArea(Math.max(0.1, parseFloat(e.target.value) || 0))}
-                className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-emerald-600 outline-none"
-              />
-            </div>
+          <h3 className="font-black text-amber-950 flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-amber-600" />
+            महत्वपूर्ण सावधानी
+          </h3>
 
-            <div className="w-full sm:w-48">
-              <label className="block text-xs font-bold text-slate-700 mb-1">इकाई (Unit):</label>
-              <select
-                value={unit}
-                onChange={(e) => setUnit(e.target.value)}
-                className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-emerald-600 outline-none"
-              >
-                <option value="acre">एकड़ (Acre)</option>
-                <option value="bigha">बीघा (Bigha)</option>
-              </select>
-            </div>
-          </div>
+          <p className="text-sm text-amber-900 leading-6 mt-2">
+            {blog.content.safetyNote}
+          </p>
 
-          {/* Calculated Output Table */}
-          <div className="overflow-x-auto border border-slate-200 rounded-2xl">
-            <table className="w-full text-left text-xs sm:text-sm">
-              <thead className="bg-slate-100 text-slate-800 font-bold border-b border-slate-200">
-                <tr>
-                  <th className="p-3">रसायन/उर्वरक</th>
-                  <th className="p-3">प्रकार</th>
-                  <th className="p-3">अनुशंसित मात्रा</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
-                <tr>
-                  <td className="p-3 font-bold text-slate-900">इमिडाक्लोप्रिड 17.8% SL</td>
-                  <td className="p-3">कीटनाशक (थ्रिप्स)</td>
-                  <td className="p-3 text-emerald-800 font-bold">{(100 * multiplier).toFixed(0)} ml</td>
-                </tr>
-                <tr>
-                  <td className="p-3 font-bold text-slate-900">मैन्कोज़ेब 75% WP</td>
-                  <td className="p-3">फफूंदनाशक</td>
-                  <td className="p-3 text-emerald-800 font-bold">{(300 * multiplier).toFixed(0)} gram</td>
-                </tr>
-                <tr>
-                  <td className="p-3 font-bold text-slate-900">NPK 00:52:34</td>
-                  <td className="p-3">कंद बढ़वार पोषक तत्व</td>
-                  <td className="p-3 text-emerald-800 font-bold">{(750 * multiplier).toFixed(0)} gram</td>
-                </tr>
-                <tr>
-                  <td className="p-3 font-bold text-slate-900">आवश्यक पानी (Water Volume)</td>
-                  <td className="p-3">छिड़काव हेतु</td>
-                  <td className="p-3 text-blue-700 font-bold">{(150 * multiplier).toFixed(0)} लीटर (लगभग {(10 * multiplier).toFixed(0)} पंप)</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+        </section>
       )}
 
-      {/* Engagement & Like Bar */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-4 flex justify-between items-center shadow-sm">
-        <button
-          onClick={handleLike}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition ${
-            hasLiked ? 'bg-emerald-700 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-          }`}
-        >
-          <ThumbsUp className="w-4 h-4" /> {likes} किसानों को यह उपयोगी लगा
-        </button>
+      {/* FAQ */}
+      {blog.content?.faqs?.length > 0 && (
+        <section>
 
-        <span className="text-xs font-medium text-slate-500">
-          {comments.length} किसान प्रतिक्रियाएं
+          <h2 className="text-xl font-black text-slate-900 mb-4">
+            अक्सर पूछे जाने वाले सवाल
+          </h2>
+
+          <div className="space-y-3">
+
+            {blog.content.faqs.map((faq, index) => {
+              const open = openFaq === index;
+
+              return (
+                <div
+                  key={index}
+                  className="border border-slate-200 rounded-2xl overflow-hidden"
+                >
+
+                  <button
+                    onClick={() =>
+                      setOpenFaq(open ? null : index)
+                    }
+                    className="w-full p-4 text-left flex justify-between gap-4 items-center"
+                  >
+                    <span className="font-bold text-sm text-slate-900">
+                      {faq.question}
+                    </span>
+
+                    {open ? (
+                      <ChevronUp className="w-4 h-4 shrink-0" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 shrink-0" />
+                    )}
+                  </button>
+
+                  {open && (
+                    <div className="px-4 pb-4 text-sm text-slate-600 leading-6">
+                      {faq.answer}
+                    </div>
+                  )}
+
+                </div>
+              );
+            })}
+
+          </div>
+        </section>
+      )}
+    </article>
+  );
+}
+
+/* =========================================================
+   CALCULATOR
+========================================================= */
+
+function CalculatorSection({
+  blog,
+  landArea,
+  setLandArea,
+  landUnit,
+  setLandUnit,
+  calculatorData,
+}) {
+  if (!blog.calculator?.enabled) {
+    return null;
+  }
+
+  return (
+    <section className="bg-white border border-emerald-200 rounded-3xl p-6 sm:p-8 shadow-sm">
+
+      <div className="flex items-start gap-3">
+
+        <div className="w-11 h-11 bg-emerald-100 text-emerald-800 rounded-xl flex items-center justify-center">
+          <Calculator className="w-5 h-5" />
+        </div>
+
+        <div>
+          <h2 className="text-xl font-black">
+            खेत के क्षेत्रफल के अनुसार Calculator
+          </h2>
+
+          <p className="text-xs text-slate-500 mt-1">
+            Base recommendation को आपके खेत के क्षेत्रफल के अनुसार scale किया गया है।
+          </p>
+        </div>
+      </div>
+
+      {/* INPUT */}
+      <div className="grid sm:grid-cols-2 gap-4 mt-7">
+
+        <div>
+          <label className="text-xs font-bold text-slate-700">
+            खेत का क्षेत्रफल
+          </label>
+
+          <input
+            type="number"
+            min="0.1"
+            step="0.1"
+            value={landArea}
+            onChange={(e) =>
+              setLandArea(
+                Math.max(0.1, Number(e.target.value) || 0)
+              )
+            }
+            className="w-full mt-2 px-4 py-3 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500"
+          />
+        </div>
+
+        <div>
+          <label className="text-xs font-bold text-slate-700">
+            क्षेत्रफल की इकाई
+          </label>
+
+          <select
+            value={landUnit}
+            onChange={(e) => setLandUnit(e.target.value)}
+            className="w-full mt-2 px-4 py-3 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500"
+          >
+            <option value="acre">एकड़</option>
+            <option value="bigha">बीघा</option>
+          </select>
+        </div>
+
+      </div>
+
+      {/* QUICK AREA */}
+      <div className="mt-4">
+
+        <p className="text-[11px] font-bold text-slate-500 mb-2">
+          Quick Select
+        </p>
+
+        <div className="flex flex-wrap gap-2">
+
+          {[0.5, 1, 2, 3, 5, 10].map((value) => (
+            <button
+              key={value}
+              onClick={() => setLandArea(value)}
+              className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-100 text-xs font-bold"
+            >
+              {value}
+            </button>
+          ))}
+
+        </div>
+      </div>
+
+      {/* AREA SUMMARY */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-7">
+
+        <SummaryCard
+          label="Input Area"
+          value={`${landArea || 0} ${landUnit === 'acre' ? 'एकड़' : 'बीघा'}`}
+        />
+
+        <SummaryCard
+          label="लगभग Acre"
+          value={`${calculatorData.acres.toFixed(2)} एकड़`}
+        />
+
+        <SummaryCard
+          label="पानी"
+          value={`${calculatorData.water.toFixed(0)} L`}
+        />
+
+      </div>
+
+      {/* RESULT */}
+      <div className="mt-7 border border-slate-200 rounded-2xl overflow-hidden">
+
+        <div className="bg-slate-100 px-4 py-3 font-black text-sm">
+          Calculated Requirement
+        </div>
+
+        <div className="divide-y divide-slate-100">
+
+          {calculatorData.recommendations.map((item) => (
+            <div
+              key={item.name}
+              className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+            >
+
+              <div>
+                <h4 className="font-black text-sm">
+                  {item.name}
+                </h4>
+
+                <p className="text-[11px] text-slate-500">
+                  {item.type}
+                </p>
+              </div>
+
+              <div className="text-emerald-800 font-black text-lg">
+                {formatAmount(item.calculated)} {item.unit}
+              </div>
+
+            </div>
+          ))}
+
+          <div className="p-4 flex items-center justify-between">
+
+            <div>
+              <h4 className="font-black text-sm">
+                पानी
+              </h4>
+
+              <p className="text-[11px] text-slate-500">
+                Spray volume
+              </p>
+            </div>
+
+            <div className="text-blue-700 font-black text-lg">
+              {calculatorData.water.toFixed(0)} L
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+
+      <div className="mt-5 bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-900 leading-5">
+        ⚠️ यह calculator केवल उपलब्ध base data को scale करता है। वास्तविक pesticide
+        / fungicide dose हमेशा product label, crop stage और स्थानीय कृषि विशेषज्ञ की
+        सलाह के अनुसार तय करें।
+      </div>
+
+    </section>
+  );
+}
+
+/* =========================================================
+   COMMENTS
+========================================================= */
+
+function CommentsSection({
+  comments,
+  commentForm,
+  setCommentForm,
+  handleCommentSubmit,
+}) {
+  return (
+    <section className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8">
+
+      <div className="flex items-center gap-2">
+        <MessageSquare className="w-5 h-5 text-emerald-700" />
+
+        <h2 className="text-xl font-black">
+          किसान चर्चा
+        </h2>
+
+        <span className="text-xs text-slate-500">
+          ({comments.length})
         </span>
       </div>
 
-      {/* Interactive Comment & Discussion Section */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
-        <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-          <MessageSquare className="w-5 h-5 text-emerald-700" /> किसान चर्चा एवं सवाल-जवाब
-        </h3>
+      <form
+        onSubmit={handleCommentSubmit}
+        className="bg-slate-50 border border-slate-200 rounded-2xl p-4 mt-5 space-y-3"
+      >
 
-        {/* Form */}
-        <form onSubmit={handleAddComment} className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+        <div className="grid sm:grid-cols-2 gap-3">
+
           <input
-            type="text"
             required
-            placeholder="आपका नाम एवं गांव (उदा. रमेश, नीमच)..."
-            value={newComment.name}
-            onChange={(e) => setNewComment({ ...newComment, name: e.target.value })}
-            className="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-emerald-600 outline-none"
+            value={commentForm.name}
+            onChange={(e) =>
+              setCommentForm({
+                ...commentForm,
+                name: e.target.value,
+              })
+            }
+            placeholder="आपका नाम"
+            className="bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-xs outline-none"
           />
-          <textarea
-            rows={3}
-            required
-            placeholder="अपनी समस्या या अनुभव यहाँ लिखें..."
-            value={newComment.text}
-            onChange={(e) => setNewComment({ ...newComment, text: e.target.value })}
-            className="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-emerald-600 outline-none"
-          ></textarea>
-          <button
-            type="submit"
-            className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-5 py-2.5 rounded-xl transition flex items-center gap-2"
-          >
-            टिप्पणी भेजें <Send className="w-3.5 h-3.5" />
-          </button>
-        </form>
 
-        {/* Comment Feed */}
-        <div className="space-y-3 divide-y divide-slate-100">
-          {comments.map((c, idx) => (
-            <div key={idx} className="pt-3 space-y-1">
-              <div className="flex justify-between items-center text-xs">
-                <span className="font-bold text-slate-900">{c.name}</span>
-                <span className="text-[10px] text-slate-400">{c.date}</span>
-              </div>
-              <p className="text-xs text-slate-700 leading-relaxed">{c.text}</p>
-            </div>
-          ))}
+          <input
+            value={commentForm.location}
+            onChange={(e) =>
+              setCommentForm({
+                ...commentForm,
+                location: e.target.value,
+              })
+            }
+            placeholder="गांव / जिला"
+            className="bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-xs outline-none"
+          />
+
         </div>
+
+        <textarea
+          required
+          rows={4}
+          value={commentForm.text}
+          onChange={(e) =>
+            setCommentForm({
+              ...commentForm,
+              text: e.target.value,
+            })
+          }
+          placeholder="अपना सवाल या अनुभव लिखें..."
+          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-3 text-xs outline-none"
+        />
+
+        <button
+          type="submit"
+          className="bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2"
+        >
+          टिप्पणी भेजें
+          <Send className="w-4 h-4" />
+        </button>
+      </form>
+
+      <div className="mt-6 space-y-4">
+
+        {comments.map((comment) => (
+          <div
+            key={comment.id}
+            className="border-b border-slate-100 pb-4"
+          >
+
+            <div className="flex items-center justify-between gap-3">
+
+              <div className="flex items-center gap-2">
+
+                <div className="w-9 h-9 bg-emerald-100 rounded-full flex items-center justify-center">
+                  <User className="w-4 h-4 text-emerald-700" />
+                </div>
+
+                <div>
+                  <p className="text-xs font-black">
+                    {comment.name}
+                  </p>
+
+                  {comment.location && (
+                    <p className="text-[10px] text-slate-500">
+                      {comment.location}
+                    </p>
+                  )}
+                </div>
+
+              </div>
+
+              <span className="text-[10px] text-slate-400">
+                {comment.date}
+              </span>
+
+            </div>
+
+            <p className="text-sm text-slate-700 leading-6 mt-3">
+              {comment.text}
+            </p>
+
+          </div>
+        ))}
+
+      </div>
+    </section>
+  );
+}
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function Stat({ label, value }) {
+  return (
+    <div className="bg-white/10 rounded-xl p-3">
+      <div className="text-lg font-black">{value}</div>
+      <div className="text-[10px] text-emerald-200">
+        {label}
+      </div>
+    </div>
+  );
+}
+
+function SummaryCard({ label, value }) {
+  return (
+    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+      <div className="text-[10px] text-slate-500 font-bold">
+        {label}
       </div>
 
+      <div className="text-sm font-black text-slate-900 mt-1">
+        {value}
+      </div>
     </div>
+  );
+}
+
+function formatNumber(value) {
+  if (value >= 1000) {
+    return `${(value / 1000).toFixed(1)}K`;
+  }
+
+  return value;
+}
+
+function formatAmount(value) {
+  if (value >= 1000) {
+    return value.toFixed(0);
+  }
+
+  return value.toFixed(1);
+}
+
+function CalendarIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+  );
+}
+
+function BookIcon() {
+  return (
+    <svg
+      width="17"
+      height="17"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" />
+    </svg>
   );
 }

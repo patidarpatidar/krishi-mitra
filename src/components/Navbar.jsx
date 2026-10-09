@@ -1,115 +1,617 @@
-'use client';
-import { useState } from 'react';
-import Link from 'next/link';
-import LogoSvg from './LogoSvg';
-import { Menu, X, Search, User, CloudSun, LineChart } from 'lucide-react';
+"use client";
+
+import { useState,useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import LogoSvg from "./LogoSvg";
+
+import {
+  Menu,
+  X,
+  Search,
+  User,
+  ChevronDown,
+  CloudSun,
+  TrendingUp,
+  Landmark,
+  Sprout,
+} from "lucide-react";
+
+import governmentSchemes from "@/data/governmentSchemes";
+
+const navRoutes = [
+  { name: "होम", path: "/" },
+  { name: "फ़सलें", path: "/crops" },
+  { name: "मंडी भाव", path: "/mandi-bhav" },
+  { name: "मौसम", path: "/weather" },
+  {
+    name: "सरकारी योजनाएं",
+    path: "/govt-schemes",
+    dropdown: true,
+  },
+  { name: "जैविक खेती", path: "/organic-farming" },
+  { name: "पशुपालन", path: "/pashupalan" },
+  { name: "कृषि ब्लॉग", path: "/blog" },
+  { name: "हमारे बारे में", path: "/about" },
+  { name: "संपर्क करें", path: "/contact" },
+];
+
+const iconMap = {
+  sprout: Sprout,
+  shield: ShieldIcon,
+  credit: CreditCardIcon,
+  landmark: Landmark,
+};
+
+function ShieldIcon({ className }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <path d="M12 3l7 4v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V7l7-4z" />
+      <path d="M9 12l2 2 4-4" />
+    </svg>
+  );
+}
+
+function CreditCardIcon({ className }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <rect
+        x="3"
+        y="5"
+        width="18"
+        height="14"
+        rx="2"
+      />
+      <path d="M3 10h18" />
+      <path d="M7 15h4" />
+    </svg>
+  );
+}
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [schemeOpen, setSchemeOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+const [farmerLoggedIn, setFarmerLoggedIn] = useState(false);
 
-  const navRoutes = [
-    { name: 'होम', path: '/' },
-    { name: 'फ़सलें', path: '/crops' },
-    { name: 'मंडी भाव', path: '/mandi-bhav' },
-    { name: 'मौसम', path: '/weather' },
-    // { name: 'सरकारी योजनाएं', path: '/govt-schemes' },
-    { name: 'जैविक खेती', path: '/organic-farming' },
-    { name: 'पशुपालन', path: '/livestock' },
-    { name: 'कृषि ब्लॉग', path: '/blog' },
-    { name: 'हमारे बारे में', path: '/about' },
-    { name: 'संपर्क करें', path: '/contact' },
-  ];
+  const pathname = usePathname();
+
+  const activeSchemes = governmentSchemes.filter(
+    (scheme) => scheme.status === "active"
+  );
+
+  const featuredSchemes = activeSchemes.filter(
+    (scheme) => scheme.featured
+  );
+
+  const isActive = (path) => {
+    if (path === "/") return pathname === "/";
+
+    return (
+      pathname === path ||
+      pathname.startsWith(`${path}/`)
+    );
+  };
+
+  useEffect(() => {
+  const stored = localStorage.getItem("krishi_mitra_farmer");
+
+  if (stored) {
+    try {
+      const user = JSON.parse(stored);
+      setFarmerLoggedIn(Boolean(user?.loggedIn));
+    } catch {
+      setFarmerLoggedIn(false);
+    }
+  }
+}, []);
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-emerald-100 shadow-sm">
-      {/* Top Notification / Banner */}
-      <div className="bg-emerald-800 text-white text-xs py-1.5 px-4 text-center font-medium">
-        🌾 मध्य प्रदेश नीमच मंडी के ताज़ा भाव और मौसम की सटीक जानकारी - कृषि मित्र
+
+      {/* Top Announcement */}
+      <div className="bg-gradient-to-r from-emerald-800 via-green-700 to-emerald-800 text-white">
+        <div className="max-w-7xl mx-auto px-4 py-1.5">
+          <div className="flex items-center justify-center gap-2 text-[11px] sm:text-xs font-medium">
+            <span className="animate-pulse">🌾</span>
+
+            <span>
+              मध्य प्रदेश किसानों के लिए मंडी भाव, मौसम और सरकारी योजनाओं की जानकारी
+            </span>
+
+            <span className="hidden sm:inline text-amber-300">
+              • अपडेटेड जानकारी
+            </span>
+          </div>
+        </div>
       </div>
 
+      {/* Main Header */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+
+        <div className="flex items-center justify-between min-h-[68px] gap-4">
+
           {/* Logo */}
-          <Link href="/">
+          <Link
+            href="/"
+            className="shrink-0 hover:scale-[1.02] transition-transform"
+          >
             <LogoSvg />
           </Link>
 
-          {/* Search bar Desktop */}
-          <div className="hidden md:flex flex-1 max-w-md mx-8 relative">
-            <input
-              type="text"
-              placeholder="फसल, मंडी भाव, या योजना खोजें..."
-              className="w-full pl-10 pr-4 py-2 border border-emerald-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-emerald-50/50"
-            />
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-emerald-600" />
+          {/* Desktop Search */}
+          <div className="hidden md:block flex-1 max-w-xl">
+            <div className="relative group">
+
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-600" />
+
+              <input
+                type="text"
+                placeholder="फसल, मंडी भाव, सरकारी योजना खोजें..."
+                className="w-full pl-11 pr-24 py-2.5 bg-slate-50 border border-slate-200 rounded-full text-sm outline-none transition-all focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+              />
+
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 hidden lg:flex items-center gap-1 text-[9px] text-slate-400 bg-white border border-slate-200 px-2 py-1 rounded-md">
+                Search
+              </span>
+
+            </div>
           </div>
 
-          {/* Quick Actions & Auth */}
-          <div className="hidden md:flex items-center space-x-4">
+          {/* Quick Info */}
+          <div className="hidden md:flex items-center gap-2">
+
             <Link
-              href="/login"
-              className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2 rounded-lg text-sm font-semibold transition"
+              href="/weather"
+              className="group flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-sky-50 transition"
             >
-              <User className="w-4 h-4" /> किसान लॉगिन
+              <div className="w-8 h-8 rounded-lg bg-sky-100 flex items-center justify-center">
+                <CloudSun className="w-4 h-4 text-sky-600" />
+              </div>
+
+              <div>
+                <p className="text-[9px] text-slate-400">
+                  मौसम
+                </p>
+
+                <p className="text-xs font-black text-slate-700">
+                  नीमच
+                </p>
+              </div>
             </Link>
+
+            <Link
+              href="/mandi-bhav"
+              className="group flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-emerald-50 transition"
+            >
+              <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
+                <TrendingUp className="w-4 h-4 text-emerald-600" />
+              </div>
+
+              <div>
+                <p className="text-[9px] text-slate-400">
+                  मंडी
+                </p>
+
+                <p className="text-xs font-black text-slate-700">
+                  आज के भाव
+                </p>
+              </div>
+            </Link>
+
+           {farmerLoggedIn ? (
+  <Link
+    href="/farmer"
+    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold"
+  >
+    <User className="w-4 h-4" />
+    किसान डैशबोर्ड
+  </Link>
+) : (
+  <Link
+    href="/login"
+    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold"
+  >
+    <User className="w-4 h-4" />
+    किसान लॉगिन
+  </Link>
+)}
           </div>
 
-          {/* Mobile menu button */}
-          <div className="md:hidden flex items-center">
+          {/* Mobile Buttons */}
+          <div className="md:hidden flex items-center gap-1">
+
             <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="p-2 rounded-md text-emerald-800 hover:text-emerald-900 focus:outline-none"
+              type="button"
+              onClick={() =>
+                setSearchOpen(!searchOpen)
+              }
+              className="p-2.5 rounded-xl text-emerald-800 hover:bg-emerald-50"
             >
-              {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              <Search className="w-5 h-5" />
             </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                setIsOpen(!isOpen)
+              }
+              className="p-2.5 rounded-xl text-emerald-800 hover:bg-emerald-50"
+            >
+              {isOpen ? (
+                <X className="w-6 h-6" />
+              ) : (
+                <Menu className="w-6 h-6" />
+              )}
+            </button>
+
           </div>
+
         </div>
+
+        {/* Mobile Search */}
+        {searchOpen && (
+          <div className="md:hidden pb-4">
+
+            <div className="relative">
+
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-600" />
+
+              <input
+                autoFocus
+                type="text"
+                placeholder="फसल, मंडी, योजना खोजें..."
+                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-emerald-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-100"
+              />
+
+            </div>
+
+          </div>
+        )}
+
       </div>
 
-      {/* Primary Navigation Bar (Desktop) */}
+      {/* Desktop Navigation */}
       <nav className="hidden md:block bg-emerald-700 text-white">
-        <div className="max-w-7xl mx-auto px-4 flex items-center space-x-1 overflow-x-auto text-sm font-medium">
-          {navRoutes.map((route) => (
-            <Link
-              key={route.path}
-              href={route.path}
-              className="px-3 py-2.5 hover:bg-emerald-800 whitespace-nowrap transition rounded-xs"
-            >
-              {route.name}
-            </Link>
-          ))}
+
+        <div className="max-w-7xl mx-auto px-4 flex items-center overflow-visible">
+
+          {navRoutes.map((route) => {
+
+            const active = isActive(route.path);
+
+            if (route.dropdown) {
+
+              return (
+                <div
+                  key={route.path}
+                  className="relative"
+                  onMouseEnter={() =>
+                    setSchemeOpen(true)
+                  }
+                  onMouseLeave={() =>
+                    setSchemeOpen(false)
+                  }
+                >
+
+                  <Link
+                    href={route.path}
+                    className={`flex items-center gap-1 px-3 py-3 text-xs lg:text-sm font-semibold whitespace-nowrap transition ${
+                      active
+                        ? "bg-emerald-900 text-amber-300"
+                        : "hover:bg-emerald-800"
+                    }`}
+                  >
+
+                    <Landmark className="w-4 h-4" />
+
+                    {route.name}
+
+                    <ChevronDown
+                      className={`w-3.5 h-3.5 transition-transform ${
+                        schemeOpen
+                          ? "rotate-180"
+                          : ""
+                      }`}
+                    />
+
+                  </Link>
+
+                  {/* Government Scheme Dropdown */}
+                  {schemeOpen && (
+                    <div className="absolute left-0 top-full w-80 bg-white text-slate-800 rounded-b-2xl shadow-2xl border border-emerald-100 overflow-hidden">
+
+                      <div className="p-3 bg-gradient-to-r from-emerald-50 to-lime-50 border-b">
+
+                        <p className="text-sm font-black text-emerald-900">
+                          सरकारी योजनाएं
+                        </p>
+
+                        <p className="text-[10px] text-slate-500 mt-1">
+                          किसानों के लिए उपयोगी योजनाओं की जानकारी
+                        </p>
+
+                      </div>
+
+                      <div className="p-2">
+
+                        {/* ALL SCHEMES */}
+                        <Link
+                          href="/govt-schemes"
+                          className="flex items-center gap-3 p-3 rounded-xl hover:bg-emerald-50 group transition"
+                        >
+
+                          <div className="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center">
+                            <Landmark className="w-4 h-4 text-emerald-700" />
+                          </div>
+
+                          <div className="flex-1">
+
+                            <p className="text-xs font-bold">
+                              सभी सरकारी योजनाएं
+                            </p>
+
+                            <p className="text-[9px] text-slate-400">
+                              {activeSchemes.length} योजनाएं देखें
+                            </p>
+
+                          </div>
+
+                          <span className="text-emerald-500">
+                            →
+                          </span>
+
+                        </Link>
+
+                        {/* STATIC REAL SCHEMES */}
+                        {featuredSchemes.map((item) => {
+
+                          const Icon =
+                            iconMap[item.icon] ||
+                            Landmark;
+
+                          return (
+                            <Link
+                              key={item.slug}
+                              href={`/govt-schemes/${item.slug}`}
+                              className="flex items-center gap-3 p-3 rounded-xl hover:bg-emerald-50 group transition"
+                            >
+
+                              <div className="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center group-hover:bg-emerald-200">
+
+                                <Icon className="w-4 h-4 text-emerald-700" />
+
+                              </div>
+
+                              <div className="flex-1 min-w-0">
+
+                                <p className="text-xs font-bold truncate">
+                                  {item.shortName ||
+                                    item.name}
+                                </p>
+
+                                <p className="text-[9px] text-slate-400 truncate">
+                                  {item.category}
+                                </p>
+
+                              </div>
+
+                              <span className="text-emerald-500">
+                                →
+                              </span>
+
+                            </Link>
+                          );
+                        })}
+
+                      </div>
+
+                      <Link
+                        href="/govt-schemes"
+                        className="block mx-3 mb-3 text-center bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl py-2.5 text-xs font-bold"
+                      >
+                        सभी योजनाएं देखें
+                      </Link>
+
+                    </div>
+                  )}
+
+                </div>
+              );
+            }
+
+            return (
+              <Link
+                key={route.path}
+                href={route.path}
+                className={`px-3 py-3 text-xs lg:text-sm font-semibold whitespace-nowrap transition ${
+                  active
+                    ? "bg-emerald-900 text-amber-300"
+                    : "hover:bg-emerald-800"
+                }`}
+              >
+                {route.name}
+              </Link>
+            );
+          })}
+
         </div>
+
       </nav>
 
-      {/* Mobile Drawer Navigation */}
+      {/* Mobile Navigation */}
       {isOpen && (
-        <div className="md:hidden bg-emerald-900 text-white px-4 pt-2 pb-6 space-y-1">
-          <div className="my-2">
-            <input
-              type="text"
-              placeholder="खोजें..."
-              className="w-full px-3 py-2 text-slate-900 rounded-md text-sm"
-            />
-          </div>
-          {navRoutes.map((route) => (
-            <Link
-              key={route.path}
-              href={route.path}
-              onClick={() => setIsOpen(false)}
-              className="block px-3 py-2 text-base font-medium hover:bg-emerald-800 rounded-md"
+        <div className="md:hidden bg-emerald-950 text-white border-t border-emerald-800">
+
+          <div className="p-4 space-y-1">
+
+            {navRoutes.map((route) => {
+
+              const active = isActive(route.path);
+
+              if (route.dropdown) {
+
+                return (
+                  <div key={route.path}>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSchemeOpen(!schemeOpen)
+                      }
+                      className={`w-full flex items-center justify-between px-3 py-3 rounded-xl text-sm font-semibold ${
+                        active
+                          ? "bg-emerald-800 text-amber-300"
+                          : "hover:bg-emerald-900"
+                      }`}
+                    >
+
+                      <span className="flex items-center gap-2">
+                        <Landmark className="w-4 h-4" />
+                        सरकारी योजनाएं
+                      </span>
+
+                      <ChevronDown
+                        className={`w-4 h-4 transition-transform ${
+                          schemeOpen
+                            ? "rotate-180"
+                            : ""
+                        }`}
+                      />
+
+                    </button>
+
+                    {schemeOpen && (
+                      <div className="ml-4 mt-1 border-l border-emerald-700 pl-2">
+
+                        <Link
+                          href="/govt-schemes"
+                          onClick={() =>
+                            setIsOpen(false)
+                          }
+                          className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs text-emerald-100 hover:bg-emerald-900"
+                        >
+                          <Landmark className="w-4 h-4" />
+                          सभी सरकारी योजनाएं
+                        </Link>
+
+                        {featuredSchemes.map(
+                          (item) => {
+
+                            const Icon =
+                              iconMap[item.icon] ||
+                              Landmark;
+
+                            return (
+                              <Link
+                                key={item.slug}
+                                href={`/govt-schemes/${item.slug}`}
+                                onClick={() =>
+                                  setIsOpen(false)
+                                }
+                                className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs text-emerald-100 hover:bg-emerald-900"
+                              >
+                                <Icon className="w-4 h-4" />
+
+                                {item.shortName ||
+                                  item.name}
+                              </Link>
+                            );
+                          }
+                        )}
+
+                      </div>
+                    )}
+
+                  </div>
+                );
+              }
+
+              return (
+                <Link
+                  key={route.path}
+                  href={route.path}
+                  onClick={() =>
+                    setIsOpen(false)
+                  }
+                  className={`block px-3 py-3 rounded-xl text-sm font-semibold ${
+                    active
+                      ? "bg-emerald-800 text-amber-300"
+                      : "hover:bg-emerald-900"
+                  }`}
+                >
+                  {route.name}
+                </Link>
+              );
+            })}
+
+            <div className="grid grid-cols-2 gap-2 pt-3">
+
+              <Link
+                href="/weather"
+                onClick={() =>
+                  setIsOpen(false)
+                }
+                className="flex items-center justify-center gap-2 bg-sky-600 rounded-xl py-3 text-xs font-bold"
+              >
+                <CloudSun className="w-4 h-4" />
+                मौसम
+              </Link>
+
+              <Link
+                href="/mandi-bhav"
+                onClick={() =>
+                  setIsOpen(false)
+                }
+                className="flex items-center justify-center gap-2 bg-emerald-600 rounded-xl py-3 text-xs font-bold"
+              >
+                <TrendingUp className="w-4 h-4" />
+                मंडी भाव
+              </Link>
+
+            </div>
+
+            {farmerLoggedIn ? (
+              <Link
+                href="/farmer"
+                onClick={() =>
+                  setIsOpen(false)
+                }
+                className="mt-2 flex items-center justify-center gap-2 bg-emerald-500 text-slate-950 rounded-xl py-3 text-sm font-black"
+              >
+                <User className="w-4 h-4" />
+                किसान डैशबोर्ड
+              </Link>
+            ) : (
+              <Link
+                href="/login"
+                onClick={() =>
+                  setIsOpen(false)
+                }
+                className="mt-2 flex items-center justify-center gap-2 bg-amber-500 text-slate-950 rounded-xl py-3 text-sm font-black"
             >
-              {route.name}
+              <User className="w-4 h-4" />
+              किसान लॉगिन / रजिस्टर
             </Link>
-          ))}
-          <Link
-            href="/login"
-            onClick={() => setIsOpen(false)}
-            className="mt-4 block text-center bg-amber-500 text-slate-900 font-bold px-4 py-2 rounded-md"
-          >
-            किसान लॉगिन / रजिस्टर
-          </Link>
+
+            )}
+          </div>
+
         </div>
       )}
+
     </header>
   );
 }
