@@ -24,413 +24,11 @@ import {
   Check,
   RotateCcw,
 } from 'lucide-react';
+import { publicApiRequest, unwrapApiList } from '@/lib/publicApi';
 
 /* =========================================================
    CROP DATA
 ========================================================= */
-
-const cropsData = [
-  {
-    id: 1,
-    slug: 'soyabean',
-    name: 'सोयाबीन',
-    nameEn: 'Soyabean',
-    category: 'oilseed',
-    categoryLabel: 'तिलहन',
-    season: 'kharif',
-    seasonLabel: 'खरीफ',
-    icon: '🌱',
-    description:
-      'मध्य प्रदेश की प्रमुख खरीफ तिलहन फसल। नीमच और मालवा क्षेत्र में बड़े स्तर पर इसकी खेती की जाती है।',
-    idealSoil:
-      'अच्छी जल निकासी वाली दोमट एवं मध्यम काली मिट्टी उपयुक्त मानी जाती है।',
-    duration: '90-105 दिन',
-    durationDays: 100,
-    sowing: '20 जून - 15 जुलाई',
-    seedRate: '75-80 किग्रा/हेक्टेयर',
-    water: 'medium',
-    waterLabel: 'मध्यम पानी',
-    cropType: 'commercial',
-    cropTypeLabel: 'व्यावसायिक',
-    regions: ['Neemuch', 'Mandsaur', 'Malwa'],
-    regionLabel: 'नीमच • मंदसौर • मालवा',
-    views: 12450,
-    likes: 842,
-    featured: true,
-    tags: ['सोयाबीन', 'खरीफ', 'तिलहन', 'मालवा', 'नीमच'],
-  },
-
-  {
-    id: 2,
-    slug: 'garlic',
-    name: 'लहसुन',
-    nameEn: 'Garlic',
-    category: 'spice',
-    categoryLabel: 'मसाला',
-    season: 'rabi',
-    seasonLabel: 'रबी',
-    icon: '🧄',
-    description:
-      'नीमच-मंदसौर क्षेत्र की महत्वपूर्ण मसाला फसल। अच्छी गुणवत्ता और भंडारण क्षमता के कारण किसानों के लिए महत्वपूर्ण है।',
-    idealSoil:
-      'भुरभुरी, उपजाऊ और अच्छी जल निकासी वाली दोमट मिट्टी उपयुक्त रहती है।',
-    duration: '130-150 दिन',
-    durationDays: 140,
-    sowing: '15 अक्टूबर - 15 नवंबर',
-    seedRate: '500-600 किग्रा कलियां/हेक्टेयर',
-    water: 'medium',
-    waterLabel: 'मध्यम पानी',
-    cropType: 'commercial',
-    cropTypeLabel: 'व्यावसायिक',
-    regions: ['Neemuch', 'Mandsaur', 'Malwa'],
-    regionLabel: 'नीमच • मंदसौर • मालवा',
-    views: 18320,
-    likes: 1260,
-    featured: true,
-    tags: ['लहसुन', 'मसाला', 'रबी', 'नीमच', 'मंदसौर'],
-  },
-
-  {
-    id: 3,
-    slug: 'wheat',
-    name: 'गेहूं',
-    nameEn: 'Wheat',
-    category: 'cereal',
-    categoryLabel: 'अनाज',
-    season: 'rabi',
-    seasonLabel: 'रबी',
-    icon: '🌾',
-    description:
-      'रबी मौसम की प्रमुख खाद्यान्न फसल। सिंचित क्षेत्रों में गेहूं की खेती व्यापक रूप से की जाती है।',
-    idealSoil:
-      'उपजाऊ दोमट एवं मध्यम काली मिट्टी गेहूं के लिए उपयुक्त रहती है।',
-    duration: '115-130 दिन',
-    durationDays: 123,
-    sowing: '15 नवंबर - 10 दिसंबर',
-    seedRate: '100-125 किग्रा/हेक्टेयर',
-    water: 'high',
-    waterLabel: 'अधिक पानी',
-    cropType: 'food',
-    cropTypeLabel: 'खाद्यान्न',
-    regions: ['Neemuch', 'Mandsaur', 'Malwa'],
-    regionLabel: 'नीमच • मंदसौर • मालवा',
-    views: 15100,
-    likes: 980,
-    featured: false,
-    tags: ['गेहूं', 'अनाज', 'रबी', 'सिंचाई'],
-  },
-
-  {
-    id: 4,
-    slug: 'gram',
-    name: 'चना',
-    nameEn: 'Gram',
-    category: 'pulse',
-    categoryLabel: 'दलहन',
-    season: 'rabi',
-    seasonLabel: 'रबी',
-    icon: '🫘',
-    description:
-      'कम पानी में भी अच्छी उपज देने वाली प्रमुख दलहनी फसल। मालवा क्षेत्र में इसकी खेती लोकप्रिय है।',
-    idealSoil:
-      'हल्की से मध्यम काली एवं दोमट मिट्टी उपयुक्त रहती है।',
-    duration: '100-110 दिन',
-    durationDays: 105,
-    sowing: '15 अक्टूबर - 10 नवंबर',
-    seedRate: '75-80 किग्रा/हेक्टेयर',
-    water: 'low',
-    waterLabel: 'कम पानी',
-    cropType: 'food',
-    cropTypeLabel: 'खाद्यान्न',
-    regions: ['Neemuch', 'Mandsaur', 'Malwa'],
-    regionLabel: 'नीमच • मंदसौर • मालवा',
-    views: 10980,
-    likes: 720,
-    featured: false,
-    tags: ['चना', 'दलहन', 'रबी', 'कम पानी'],
-  },
-
-  {
-    id: 5,
-    slug: 'maize',
-    name: 'मक्का',
-    nameEn: 'Maize',
-    category: 'cereal',
-    categoryLabel: 'अनाज',
-    season: 'kharif',
-    seasonLabel: 'खरीफ',
-    icon: '🌽',
-    description:
-      'खरीफ मौसम की महत्वपूर्ण अनाज फसल। खाद्य और पशु आहार दोनों के लिए इसका उपयोग किया जाता है।',
-    idealSoil:
-      'उपजाऊ दोमट एवं अच्छी जल निकासी वाली मिट्टी उपयुक्त रहती है।',
-    duration: '85-95 दिन',
-    durationDays: 90,
-    sowing: 'जून - जुलाई',
-    seedRate: '20-22 किग्रा/हेक्टेयर',
-    water: 'medium',
-    waterLabel: 'मध्यम पानी',
-    cropType: 'food',
-    cropTypeLabel: 'खाद्यान्न',
-    regions: ['Neemuch', 'Mandsaur', 'Malwa'],
-    regionLabel: 'नीमच • मंदसौर • मालवा',
-    views: 8420,
-    likes: 530,
-    featured: false,
-    tags: ['मक्का', 'अनाज', 'खरीफ'],
-  },
-
-  {
-    id: 6,
-    slug: 'coriander',
-    name: 'धनिया',
-    nameEn: 'Coriander',
-    category: 'spice',
-    categoryLabel: 'मसाला',
-    season: 'rabi',
-    seasonLabel: 'रबी',
-    icon: '🌿',
-    description:
-      'मसाला फसलों में प्रमुख स्थान रखने वाली फसल। बीज और हरी पत्तियों दोनों के लिए उगाई जाती है।',
-    idealSoil:
-      'हल्की से मध्यम दोमट मिट्टी जिसमें जल निकासी अच्छी हो।',
-    duration: '90-110 दिन',
-    durationDays: 100,
-    sowing: 'अक्टूबर - नवंबर',
-    seedRate: '15-20 किग्रा/हेक्टेयर',
-    water: 'medium',
-    waterLabel: 'मध्यम पानी',
-    cropType: 'commercial',
-    cropTypeLabel: 'व्यावसायिक',
-    regions: ['Neemuch', 'Mandsaur', 'Malwa'],
-    regionLabel: 'नीमच • मंदसौर • मालवा',
-    views: 7340,
-    likes: 480,
-    featured: false,
-    tags: ['धनिया', 'मसाला', 'रबी'],
-  },
-
-  {
-    id: 7,
-    slug: 'mustard',
-    name: 'सरसों',
-    nameEn: 'Mustard',
-    category: 'oilseed',
-    categoryLabel: 'तिलहन',
-    season: 'rabi',
-    seasonLabel: 'रबी',
-    icon: '🌼',
-    description:
-      'प्रमुख तिलहन फसल। कम अवधि और अपेक्षाकृत कम पानी में उत्पादन के लिए उपयोगी।',
-    idealSoil:
-      'हल्की से मध्यम दोमट एवं अच्छी जल निकासी वाली मिट्टी।',
-    duration: '105-120 दिन',
-    durationDays: 112,
-    sowing: 'सितंबर - अक्टूबर',
-    seedRate: '4-5 किग्रा/हेक्टेयर',
-    water: 'low',
-    waterLabel: 'कम पानी',
-    cropType: 'commercial',
-    cropTypeLabel: 'व्यावसायिक',
-    regions: ['Neemuch', 'Mandsaur', 'Malwa'],
-    regionLabel: 'नीमच • मंदसौर • मालवा',
-    views: 6510,
-    likes: 420,
-    featured: false,
-    tags: ['सरसों', 'तिलहन', 'रबी', 'कम पानी'],
-  },
-
-  {
-    id: 8,
-    slug: 'groundnut',
-    name: 'मूंगफली',
-    nameEn: 'Groundnut',
-    category: 'oilseed',
-    categoryLabel: 'तिलहन',
-    season: 'kharif',
-    seasonLabel: 'खरीफ',
-    icon: '🥜',
-    description:
-      'खरीफ मौसम की प्रमुख तिलहन फसल। अच्छी जल निकासी वाली भूमि में बेहतर प्रदर्शन करती है।',
-    idealSoil:
-      'हल्की, भुरभुरी एवं अच्छी जल निकासी वाली मिट्टी बेहतर रहती है।',
-    duration: '105-120 दिन',
-    durationDays: 112,
-    sowing: 'जून - जुलाई',
-    seedRate: '100-120 किग्रा/हेक्टेयर',
-    water: 'medium',
-    waterLabel: 'मध्यम पानी',
-    cropType: 'commercial',
-    cropTypeLabel: 'व्यावसायिक',
-    regions: ['Neemuch', 'Mandsaur', 'Malwa'],
-    regionLabel: 'नीमच • मंदसौर • मालवा',
-    views: 5900,
-    likes: 360,
-    featured: false,
-    tags: ['मूंगफली', 'तिलहन', 'खरीफ'],
-  },
-
-  {
-    id: 9,
-    slug: 'fenugreek',
-    name: 'मेथी',
-    nameEn: 'Fenugreek',
-    category: 'spice',
-    categoryLabel: 'मसाला',
-    season: 'rabi',
-    seasonLabel: 'रबी',
-    icon: '🌱',
-    description:
-      'मसाला और हरी सब्जी दोनों रूपों में उपयोगी फसल। कम अवधि में तैयार होने वाली फसल।',
-    idealSoil:
-      'उपजाऊ दोमट मिट्टी तथा उचित जल निकासी वाली भूमि।',
-    duration: '90-105 दिन',
-    durationDays: 98,
-    sowing: 'अक्टूबर - नवंबर',
-    seedRate: '20-25 किग्रा/हेक्टेयर',
-    water: 'low',
-    waterLabel: 'कम पानी',
-    cropType: 'commercial',
-    cropTypeLabel: 'व्यावसायिक',
-    regions: ['Neemuch', 'Mandsaur', 'Malwa'],
-    regionLabel: 'नीमच • मंदसौर • मालवा',
-    views: 4300,
-    likes: 290,
-    featured: false,
-    tags: ['मेथी', 'मसाला', 'कम पानी'],
-  },
-
-  {
-    id: 10,
-    slug: 'isabgol',
-    name: 'इसबगोल',
-    nameEn: 'Isabgol',
-    category: 'medicinal',
-    categoryLabel: 'औषधीय',
-    season: 'rabi',
-    seasonLabel: 'रबी',
-    icon: '🌾',
-    description:
-      'औषधीय उपयोग वाली महत्वपूर्ण फसल। बीज की भूसी के लिए इसका विशेष बाजार है।',
-    idealSoil:
-      'हल्की एवं अच्छी जल निकासी वाली मिट्टी उपयुक्त रहती है।',
-    duration: '110-120 दिन',
-    durationDays: 115,
-    sowing: 'नवंबर का पहला पखवाड़ा',
-    seedRate: '6-8 किग्रा/हेक्टेयर',
-    water: 'low',
-    waterLabel: 'कम पानी',
-    cropType: 'commercial',
-    cropTypeLabel: 'व्यावसायिक',
-    regions: ['Neemuch', 'Mandsaur', 'Malwa'],
-    regionLabel: 'नीमच • मंदसौर • मालवा',
-    views: 3860,
-    likes: 260,
-    featured: false,
-    tags: ['इसबगोल', 'औषधीय', 'रबी'],
-  },
-
-  {
-    id: 11,
-    slug: 'kalonji',
-    name: 'कलौंजी',
-    nameEn: 'Kalonji',
-    category: 'medicinal',
-    categoryLabel: 'औषधीय',
-    season: 'rabi',
-    seasonLabel: 'रबी',
-    icon: '🖤',
-    description:
-      'मसाला एवं औषधीय उपयोग वाली फसल। इसके बीज का उपयोग विभिन्न पारंपरिक उत्पादों में किया जाता है।',
-    idealSoil:
-      'अच्छी जल निकासी वाली दोमट या हल्की मिट्टी।',
-    duration: '130-140 दिन',
-    durationDays: 135,
-    sowing: 'अक्टूबर - नवंबर',
-    seedRate: '7-8 किग्रा/हेक्टेयर',
-    water: 'low',
-    waterLabel: 'कम पानी',
-    cropType: 'commercial',
-    cropTypeLabel: 'व्यावसायिक',
-    regions: ['Neemuch', 'Mandsaur', 'Malwa'],
-    regionLabel: 'नीमच • मंदसौर • मालवा',
-    views: 3150,
-    likes: 210,
-    featured: false,
-    tags: ['कलौंजी', 'औषधीय', 'रबी'],
-  },
-
-  {
-    id: 12,
-    slug: 'opium',
-    name: 'अफीम',
-    nameEn: 'Opium Poppy',
-    category: 'medicinal',
-    categoryLabel: 'औषधीय',
-    season: 'rabi',
-    seasonLabel: 'रबी',
-    icon: '🌺',
-    description:
-      'यह फसल केवल अधिकृत लाइसेंस और लागू सरकारी नियमों के अंतर्गत ही उगाई जा सकती है।',
-    idealSoil:
-      'इस फसल से संबंधित जानकारी केवल अधिकृत एवं कानूनी कृषि व्यवस्था के संदर्भ में देखें।',
-    duration: '140-150 दिन',
-    durationDays: 145,
-    sowing: '15 अक्टूबर - 15 नवंबर',
-    seedRate: '7-8 किग्रा/हेक्टेयर',
-    water: 'medium',
-    waterLabel: 'मध्यम पानी',
-    cropType: 'regulated',
-    cropTypeLabel: 'नियंत्रित फसल',
-    regions: ['Neemuch', 'Mandsaur'],
-    regionLabel: 'नीमच • मंदसौर',
-    views: 2980,
-    likes: 150,
-    featured: false,
-    tags: ['अफीम', 'लाइसेंस', 'औषधीय'],
-    regulated: true,
-  },
-];
-
-/* =========================================================
-   FILTER DATA
-========================================================= */
-
-const categories = [
-  { id: 'all', label: 'सभी श्रेणियां', icon: '🌱' },
-  { id: 'oilseed', label: 'तिलहन', icon: '🌻' },
-  { id: 'pulse', label: 'दलहन', icon: '🫘' },
-  { id: 'spice', label: 'मसाला', icon: '🧄' },
-  { id: 'cereal', label: 'अनाज', icon: '🌾' },
-  { id: 'medicinal', label: 'औषधीय', icon: '🌿' },
-];
-
-const seasons = [
-  { id: 'all', label: 'सभी मौसम' },
-  { id: 'kharif', label: '🌧️ खरीफ' },
-  { id: 'rabi', label: '❄️ रबी' },
-];
-
-const waterFilters = [
-  { id: 'all', label: 'सभी' },
-  { id: 'low', label: 'कम पानी' },
-  { id: 'medium', label: 'मध्यम पानी' },
-  { id: 'high', label: 'अधिक पानी' },
-];
-
-const regions = [
-  { id: 'all', label: 'सभी क्षेत्र' },
-  { id: 'Neemuch', label: 'नीमच' },
-  { id: 'Mandsaur', label: 'मंदसौर' },
-  { id: 'Malwa', label: 'मालवा' },
-];
-
-const cropTypes = [
-  { id: 'all', label: 'सभी प्रकार' },
-  { id: 'commercial', label: 'व्यावसायिक' },
-  { id: 'food', label: 'खाद्यान्न' },
-  { id: 'regulated', label: 'नियंत्रित' },
-];
 
 /* =========================================================
    HELPERS
@@ -457,6 +55,10 @@ const getCropStorage = (key) => {
 ========================================================= */
 
 export default function CropsPage() {
+  const [cropsData, setCropsData] = useState([]);
+  const [cropCategories, setCropCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [selectedSeason, setSelectedSeason] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedWater, setSelectedWater] = useState('all');
@@ -473,6 +75,97 @@ export default function CropsPage() {
 
   const [showFilters, setShowFilters] = useState(false);
   const [showFeaturedOnly, setShowFeaturedOnly] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      publicApiRequest('/crops?status=published&limit=100'),
+      publicApiRequest('/crop-categories?status=active'),
+    ])
+      .then(([cropResult, categoryResult]) => {
+        if (cancelled) return;
+        setCropsData(
+          unwrapApiList(cropResult).map((crop) => ({
+            ...crop,
+            id: crop._id || crop.slug,
+            nameEn: crop.englishName || '',
+            category: crop.category?.key || '',
+            categoryLabel: crop.category?.label || '',
+            season: crop.season?.key || '',
+            seasonLabel: crop.season?.label || '',
+            water: crop.water?.key || '',
+            waterLabel: crop.water?.label || '',
+            cropType: crop.cropType?.key || '',
+            cropTypeLabel: crop.cropType?.label || '',
+            tags: crop.tags || [],
+            regions: crop.regions || [],
+            views: crop.views || 0,
+            likes: crop.likes || 0,
+          })),
+        );
+        setCropCategories(unwrapApiList(categoryResult));
+        const requestedCategory = new URLSearchParams(
+          window.location.search,
+        ).get('category');
+        if (requestedCategory) setSelectedCategory(requestedCategory);
+      })
+      .catch((error) => {
+        if (!cancelled) setLoadError(error.message || 'फसलें लोड नहीं हो सकीं।');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const categories = useMemo(
+    () => [
+      { id: 'all', label: 'सभी श्रेणियां', icon: '🌱' },
+      ...cropCategories.map((category) => ({
+        id: category.key || category.slug,
+        label: category.name,
+        icon: category.icon || '🌱',
+      })),
+    ],
+    [cropCategories],
+  );
+  const seasons = useMemo(
+    () => [
+      { id: 'all', label: 'सभी मौसम' },
+      ...Array.from(new Map(cropsData
+        .filter((crop) => crop.season)
+        .map((crop) => [crop.season, { id: crop.season, label: crop.seasonLabel }])).values()),
+    ],
+    [cropsData],
+  );
+  const waterFilters = useMemo(
+    () => [
+      { id: 'all', label: 'सभी' },
+      ...Array.from(new Map(cropsData
+        .filter((crop) => crop.water)
+        .map((crop) => [crop.water, { id: crop.water, label: crop.waterLabel }])).values()),
+    ],
+    [cropsData],
+  );
+  const regions = useMemo(
+    () => [
+      { id: 'all', label: 'सभी क्षेत्र' },
+      ...Array.from(new Set(cropsData.flatMap((crop) => crop.regions)))
+        .map((region) => ({ id: region, label: region })),
+    ],
+    [cropsData],
+  );
+  const cropTypes = useMemo(
+    () => [
+      { id: 'all', label: 'सभी प्रकार' },
+      ...Array.from(new Map(cropsData
+        .filter((crop) => crop.cropType)
+        .map((crop) => [crop.cropType, { id: crop.cropType, label: crop.cropTypeLabel }])).values()),
+    ],
+    [cropsData],
+  );
 
   /* =====================================================
      LOAD LOCAL STORAGE
@@ -582,6 +275,7 @@ export default function CropsPage() {
 
     return result;
   }, [
+    cropsData,
     searchTerm,
     selectedSeason,
     selectedCategory,
@@ -955,6 +649,15 @@ export default function CropsPage() {
 
       <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
         {/* Result heading */}
+        {loadError && (
+          <p role="alert" className="mb-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">
+            {loadError}
+          </p>
+        )}
+        {loading && (
+          <p className="mb-5 text-sm text-slate-500">फसलें लोड हो रही हैं...</p>
+        )}
+
         <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>
             <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-emerald-700">

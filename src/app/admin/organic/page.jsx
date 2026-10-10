@@ -15,6 +15,7 @@ import {
   Filter,
   Loader2,
 } from "lucide-react";
+import { getAdminAuthHeaders } from "@/lib/apiClient";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -127,7 +128,7 @@ export default function OrganicAdminPage() {
       }
 
       const response = await fetch(
-        `${API_URL}/organic-recipes?${params.toString()}`
+        `${API_URL}/organic-recipes/admin?${params.toString()}`
       );
 
       const result = await response.json();
@@ -202,9 +203,10 @@ export default function OrganicAdminPage() {
       setActionLoading(`delete-${id}`);
 
       const response = await fetch(
-        `${API_URL}/organic-recipes/${id}`,
+        `${API_URL}/organic-recipes/admin/${id}`,
         {
           method: "DELETE",
+          headers: getAdminAuthHeaders(),
         }
       );
 
@@ -249,6 +251,7 @@ export default function OrganicAdminPage() {
           headers: {
             "Content-Type":
               "application/json",
+            ...getAdminAuthHeaders(),
           },
           body: JSON.stringify({
             status: nextStatus,
@@ -292,6 +295,7 @@ export default function OrganicAdminPage() {
           headers: {
             "Content-Type":
               "application/json",
+            ...getAdminAuthHeaders(),
           },
           body: JSON.stringify({
             featured:

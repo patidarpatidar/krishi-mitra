@@ -11,13 +11,14 @@ import {
   Filter,
 } from "lucide-react";
 
-import { farmerApi, getFarmerUser } from "@/lib/farmerApi";
+import { farmerApi } from "@/lib/farmerApi";
 import { getDynamicMandiRates } from "@/services/mandiApi";
 
 export default function FarmerMandiPage() {
   const [search, setSearch] = useState("");
-  const [watchlist, setWatchlist] = useState(["सोयाबीन", "लहसुन", "गेहूँ"]);
+  const [watchlist, setWatchlist] = useState([]);
   const [rates, setRates] = useState([]);
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [viewFilter, setViewFilter] = useState("all"); // 'all' or 'watchlist'
@@ -25,120 +26,17 @@ export default function FarmerMandiPage() {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
+      setError("");
 
-      // Load farmer's saved watchlist from backend
-      const watchRes = await farmerApi.getWatchlist().catch(() => null);
-      if (Array.isArray(watchRes?.data)) {
-        setWatchlist(watchRes.data);
-      } else {
-        const cached = getFarmerUser();
-        if (Array.isArray(cached?.watchlist)) {
-          setWatchlist(cached.watchlist);
-        }
-      }
-
-      // Fetch dynamic mandi rates
-      const dynamicRates = await getDynamicMandiRates({
-        state: "Madhya Pradesh",
-      }).catch(() => []);
-
-      if (Array.isArray(dynamicRates) && dynamicRates.length > 0) {
-        setRates(dynamicRates);
-      } else {
-        // Fallback default commodities with realistic live figures
-        setRates([
-          {
-            id: 1,
-            crop: "सोयाबीन",
-            mandi: "नीमच",
-            district: "Neemuch",
-            modalPrice: 4850,
-            minPrice: 4400,
-            maxPrice: 5120,
-            unit: "क्विंटल",
-            arrivalDate: new Date().toISOString().split("T")[0],
-          },
-          {
-            id: 2,
-            crop: "लहसुन",
-            mandi: "नीमच",
-            district: "Neemuch",
-            modalPrice: 7200,
-            minPrice: 5500,
-            maxPrice: 11500,
-            unit: "क्विंटल",
-            arrivalDate: new Date().toISOString().split("T")[0],
-          },
-          {
-            id: 3,
-            crop: "गेहूँ",
-            mandi: "नीमच",
-            district: "Neemuch",
-            modalPrice: 2580,
-            minPrice: 2400,
-            maxPrice: 2850,
-            unit: "क्विंटल",
-            arrivalDate: new Date().toISOString().split("T")[0],
-          },
-          {
-            id: 4,
-            crop: "चना",
-            mandi: "मंदसौर",
-            district: "Mandsaur",
-            modalPrice: 5900,
-            minPrice: 5400,
-            maxPrice: 6200,
-            unit: "क्विंटल",
-            arrivalDate: new Date().toISOString().split("T")[0],
-          },
-          {
-            id: 5,
-            crop: "मक्का",
-            mandi: "नीमच",
-            district: "Neemuch",
-            modalPrice: 2150,
-            minPrice: 1950,
-            maxPrice: 2320,
-            unit: "क्विंटल",
-            arrivalDate: new Date().toISOString().split("T")[0],
-          },
-          {
-            id: 6,
-            crop: "मेथी",
-            mandi: "नीमच",
-            district: "Neemuch",
-            modalPrice: 6100,
-            minPrice: 5200,
-            maxPrice: 6800,
-            unit: "क्विंटल",
-            arrivalDate: new Date().toISOString().split("T")[0],
-          },
-          {
-            id: 7,
-            crop: "इसबगोल",
-            mandi: "नीमच",
-            district: "Neemuch",
-            modalPrice: 14200,
-            minPrice: 12000,
-            maxPrice: 16500,
-            unit: "क्विंटल",
-            arrivalDate: new Date().toISOString().split("T")[0],
-          },
-          {
-            id: 8,
-            crop: "सरसों",
-            mandi: "मंदसौर",
-            district: "Mandsaur",
-            modalPrice: 5450,
-            minPrice: 5100,
-            maxPrice: 5800,
-            unit: "क्विंटल",
-            arrivalDate: new Date().toISOString().split("T")[0],
-          },
-        ]);
-      }
+      const [watchRes, dynamicRates] = await Promise.all([
+        farmerApi.getWatchlist(),
+        getDynamicMandiRates({ state: "Madhya Pradesh" }),
+      ]);
+      setWatchlist(Array.isArray(watchRes.data) ? watchRes.data : []);
+      setRates(dynamicRates);
     } catch (err) {
       console.error("Load mandi data error:", err);
+      setError(err.message || "मंडी भाव लोड नहीं हो सके।");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -159,9 +57,12 @@ export default function FarmerMandiPage() {
     setWatchlist(updated);
 
     try {
-      await farmerApi.toggleWatchlist(commodityName);
+      const result = await farmerApi.toggleWatchlist(commodityName);
+      if (Array.isArray(result.data)) setWatchlist(result.data);
     } catch (err) {
       console.error("Toggle watchlist error:", err);
+      setWatchlist(isWatched ? [...updated, commodityName] : updated.filter((x) => x !== commodityName));
+      setError(err.message || "वॉचलिस्ट अपडेट नहीं हो सकी।");
     }
   }
 
@@ -248,6 +149,11 @@ export default function FarmerMandiPage() {
       </div>
 
       {/* Mandi Cards Grid */}
+      {error && (
+        <div role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
+          {error}
+        </div>
+      )}
       {loading && rates.length === 0 ? (
         <div className="text-center py-20 bg-slate-900 border border-slate-800 rounded-2xl">
           <Loader2 className="w-8 h-8 animate-spin mx-auto text-emerald-400 mb-3" />

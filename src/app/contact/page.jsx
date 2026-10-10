@@ -20,12 +20,12 @@ import {
   UserCheck,
   BookOpen,
   Target,
+  Loader2,
 } from "lucide-react";
+import { inquiryApi } from "@/lib/inquiryApi";
 
 /* =========================================================
    CONTACT CONFIG
-   Future API / CMS integration के लिए सभी contact details
-   एक जगह रखी गई हैं।
 ========================================================= */
 
 const CONTACT_CONFIG = {
@@ -41,22 +41,10 @@ const CONTACT_CONFIG = {
   location: "नीमच एवं मालवांचल क्षेत्र, मध्य प्रदेश",
 
   districts: [
-    {
-      value: "Neemuch",
-      label: "नीमच (Neemuch)",
-    },
-    {
-      value: "Mandsaur",
-      label: "मंदसौर (Mandsaur)",
-    },
-    {
-      value: "Ratlam",
-      label: "रतलाम (Ratlam)",
-    },
-    {
-      value: "Ujjain",
-      label: "उज्जैन (Ujjain)",
-    },
+    { value: "Neemuch", label: "नीमच (Neemuch)" },
+    { value: "Mandsaur", label: "मंदसौर (Mandsaur)" },
+    { value: "Ratlam", label: "रतलाम (Ratlam)" },
+    { value: "Ujjain", label: "उज्जैन (Ujjain)" },
   ],
 
   queryTypes: [
@@ -186,7 +174,8 @@ function TrendingIcon({ size = 24 }) {
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
-
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const [activeHelp, setActiveHelp] = useState("");
 
   const [openFaq, setOpenFaq] = useState(0);
@@ -194,7 +183,8 @@ export default function ContactPage() {
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
-    district: "Neemuch",
+    email: "",
+    district: "",
     queryType: "Mandi Bhav",
     message: "",
   });
@@ -210,33 +200,28 @@ export default function ContactPage() {
     }));
   };
 
-  /* =======================================================
-     FORM SUBMIT
-     
-     अभी frontend demo behavior है।
-     बाद में यहाँ:
-     
-     fetch("/api/contact")
-     
-     लगाया जा सकता है।
-  ======================================================== */
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
+    setSubmitError("");
 
-    setSubmitted(true);
-
-    /*
-      Future API example:
-
-      await fetch("/api/contact", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
+    try {
+      await inquiryApi.createInquiry({
+        name: formData.name.trim(),
+        phone: formData.phone.trim(),
+        email: formData.email.trim(),
+        district: formData.district.trim(),
+        queryType: formData.queryType,
+        message: formData.message.trim(),
       });
-    */
+      setSubmitted(true);
+    } catch (error) {
+      setSubmitError(
+        error.message || "आपका संदेश भेजा नहीं जा सका। कृपया फिर प्रयास करें।",
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   /* =======================================================
@@ -249,12 +234,14 @@ export default function ContactPage() {
     setFormData({
       name: "",
       phone: "",
-      district: "Neemuch",
+      email: "",
+      district: "",
       queryType: "Mandi Bhav",
       message: "",
     });
 
     setActiveHelp("");
+    setSubmitError("");
   };
 
   /* =======================================================
@@ -775,9 +762,8 @@ export default function ContactPage() {
                     </h2>
 
                     <p className="mt-3 max-w-md leading-7 text-slate-600">
-                      आपका सवाल या feedback दर्ज हो गया है। यह अभी
-                      frontend demo flow है। Production में इसी form को
-                      API / email service से connect किया जा सकता है।
+                      आपका संदेश सफलतापूर्वक दर्ज हो गया है। हमारी टीम
+                      आपसे दिए गए संपर्क विवरण पर जवाब देगी।
                     </p>
 
                     <div className="mt-8 flex flex-wrap justify-center gap-3">
@@ -884,9 +870,27 @@ export default function ContactPage() {
 
                     </div>
 
-                    {/* DISTRICT + TOPIC */}
+                    {/* EMAIL + DISTRICT */}
 
                     <div className="grid gap-5 sm:grid-cols-2">
+
+                      <div>
+
+                        <label className="mb-2 block text-sm font-bold text-slate-700">
+                          Email (वैकल्पिक)
+                        </label>
+
+                        <input
+                          type="email"
+                          value={formData.email}
+                          onChange={(e) =>
+                            handleChange("email", e.target.value)
+                          }
+                          placeholder="name@example.com"
+                          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                        />
+
+                      </div>
 
                       <div>
 
@@ -895,17 +899,18 @@ export default function ContactPage() {
                         </label>
 
                         <select
+                          required
                           value={formData.district}
                           onChange={(e) =>
                             handleChange("district", e.target.value)
                           }
                           className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100"
                         >
+                          <option value="" disabled>
+                            जिला चुनें
+                          </option>
                           {CONTACT_CONFIG.districts.map((item) => (
-                            <option
-                              key={item.value}
-                              value={item.value}
-                            >
+                            <option key={item.value} value={item.value}>
                               {item.label}
                             </option>
                           ))}
@@ -913,36 +918,28 @@ export default function ContactPage() {
 
                       </div>
 
-                      <div>
+                    </div>
 
-                        <label className="mb-2 block text-sm font-bold text-slate-700">
-                          विषय *
-                        </label>
+                    {/* TOPIC */}
 
-                        <select
-                          value={formData.queryType}
-                          onChange={(e) => {
-                            handleChange(
-                              "queryType",
-                              e.target.value
-                            );
-
-                            setActiveHelp(e.target.value);
-                          }}
-                          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100"
-                        >
-                          {CONTACT_CONFIG.queryTypes.map((item) => (
-                            <option
-                              key={item.value}
-                              value={item.value}
-                            >
-                              {item.label}
-                            </option>
-                          ))}
-                        </select>
-
-                      </div>
-
+                    <div>
+                      <label className="mb-2 block text-sm font-bold text-slate-700">
+                        विषय *
+                      </label>
+                      <select
+                        value={formData.queryType}
+                        onChange={(e) => {
+                          handleChange("queryType", e.target.value);
+                          setActiveHelp(e.target.value);
+                        }}
+                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                      >
+                        {CONTACT_CONFIG.queryTypes.map((item) => (
+                          <option key={item.value} value={item.value}>
+                            {item.label}
+                          </option>
+                        ))}
+                      </select>
                     </div>
 
                     {/* MESSAGE */}
@@ -1033,23 +1030,39 @@ export default function ContactPage() {
 
                     {/* SUBMIT */}
 
+                    {submitError && (
+                      <div
+                        role="alert"
+                        className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                      >
+                        {submitError}
+                      </div>
+                    )}
+
                     <button
                       type="submit"
+                      disabled={submitting}
                       className="group flex w-full items-center justify-center gap-2 rounded-2xl bg-green-700 px-6 py-4 font-bold text-white shadow-lg shadow-green-900/10 transition hover:bg-green-800"
                     >
-                      संदेश भेजें
-
-                      <Send
-                        size={18}
-                        className="transition-transform group-hover:translate-x-1"
-                      />
+                      {submitting ? (
+                        <>
+                          <Loader2 size={18} className="animate-spin" />
+                          संदेश भेजा जा रहा है…
+                        </>
+                      ) : (
+                        <>
+                          संदेश भेजें
+                          <Send
+                            size={18}
+                            className="transition-transform group-hover:translate-x-1"
+                          />
+                        </>
+                      )}
 
                     </button>
 
                     <p className="text-center text-xs leading-5 text-slate-500">
-                      Form submit अभी demo/frontend flow है। Production
-                      में इसे API, Nodemailer या database से connect किया
-                      जा सकता है।
+                      भेजे गए संदेश Contact Management में सुरक्षित रखे जाएंगे।
                     </p>
 
                   </form>

@@ -17,77 +17,50 @@ const REVERSE_CROP_MAP = {
 };
 
 export async function getDynamicMandiRates({ state, district, mandi, crop }) {
-  try {
-    const params = new URLSearchParams();
-    if (state && state !== 'all') params.append('state', state);
-    if (district && district !== 'all') params.append('district', district);
-    if (mandi && mandi !== 'all') params.append('market', mandi);
-    
-    if (crop) {
-      const englishCrop = CROP_MAP[crop] || crop;
-      params.append('commodity', englishCrop);
-    }
+  const params = new URLSearchParams();
+  if (state && state !== 'all') params.set('state', state);
+  if (district && district !== 'all') params.set('district', district);
+  if (mandi && mandi !== 'all') params.set('mandi', mandi);
+  if (crop) params.set('crop', CROP_MAP[crop] || crop);
 
-    const response = await fetch(`https://mandi-api.onrender.com/v1/prices?${params.toString()}`);
-    if (!response.ok) throw new Error(`API error: ${response.status}`);
-
-    const json = await response.json();
-    const rawData = Array.isArray(json) ? json : json.data || json.records || [];
-
-    return rawData.map((record, index) => {
-      const rawCommodity = record.commodity || record.crop || record.commodity_name || 'अनजान';
-      const englishLower = rawCommodity.toLowerCase().trim();
-      const hindiName = REVERSE_CROP_MAP[englishLower] || rawCommodity;
-
-      return {
-        id: record.id || record._id || `${rawCommodity}-${index}`,
-        crop: hindiName,
-        cropEnglish: rawCommodity,
-        state: record.state || state || '',
-        district: record.district || district || '',
-        mandi: record.market || record.mandi || mandi || '',
-        unit: record.unit || 'क्विंटल',
-        minPrice: Number(record.min_price || record.minPrice) || 0,
-        maxPrice: Number(record.max_price || record.maxPrice) || 0,
-        modalPrice: Number(record.modal_price || record.modalPrice) || 0,
-        arrivalDate: record.arrival_date || record.date || new Date().toISOString().split('T')[0],
-      };
-    });
-  } catch (error) {
-    console.error('Failed to fetch mandi rates:', error);
-    return [];
+  const response = await fetch(`/api/mandi?${params.toString()}`, {
+    cache: 'no-store',
+  });
+  const json = await response.json().catch(() => ({}));
+  if (!response.ok || json.success === false) {
+    throw new Error(json.message || `Mandi API request failed (${response.status})`);
   }
+
+  const records = Array.isArray(json.data) ? json.data : [];
+  return records.map((record, index) => {
+    const rawCommodity = record.crop || record.commodity || '';
+    const englishLower = rawCommodity.toLowerCase().trim();
+    const hindiName = REVERSE_CROP_MAP[englishLower] || rawCommodity;
+    return {
+      id: record.id || record._id || `${rawCommodity}-${index}`,
+      crop: hindiName,
+      cropEnglish: rawCommodity,
+      state: record.state || state || '',
+      district: record.district || district || '',
+      mandi: record.mandi || record.market || mandi || '',
+      unit: record.unit || 'क्विंटल',
+      minPrice: Number(record.minPrice ?? record.min_price) || 0,
+      maxPrice: Number(record.maxPrice ?? record.max_price) || 0,
+      modalPrice: Number(record.modalPrice ?? record.modal_price) || 0,
+      arrivalDate: record.arrivalDate || record.arrival_date || null,
+    };
+  });
 }
 
 export async function getMandiPriceHistory({ state, district, mandi, crop }) {
-  try {
-    const params = new URLSearchParams();
-    if (state && state !== 'all') params.append('state', state);
-    if (district && district !== 'all') params.append('district', district);
-    if (mandi && mandi !== 'all') params.append('market', mandi);
-    
-    if (crop) {
-      const englishCrop = CROP_MAP[crop] || crop;
-      params.append('commodity', englishCrop);
-    }
-
-    const response = await fetch(`https://mandi-api.onrender.com/v1/prices?${params.toString()}`);
-    if (!response.ok) throw new Error(`API error: ${response.status}`);
-
-    const json = await response.json();
-    const rawData = Array.isArray(json) ? json : json.data || json.records || [];
-
-    return rawData
-      .map((item) => ({
-        date: item.arrival_date || item.date || 'N/A',
-        minPrice: Number(item.min_price || item.minPrice) || 0,
-        maxPrice: Number(item.max_price || item.maxPrice) || 0,
-        modalPrice: Number(item.modal_price || item.modalPrice) || 0,
-        crop: item.commodity || item.crop || 'फसल',
-      }))
-      .sort((a, b) => new Date(a.date) - new Date(b.date));
-  } catch (error) {
-    console.error('Failed to fetch price history:', error);
-    return [];
-  }
+  const records = await getDynamicMandiRates({ state, district, mandi, crop });
+  return records
+    .map((item) => ({
+      date: item.arrivalDate || 'N/A',
+      minPrice: item.minPrice,
+      maxPrice: item.maxPrice,
+      modalPrice: item.modalPrice,
+      crop: item.cropEnglish || item.crop,
+    }))
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
 }

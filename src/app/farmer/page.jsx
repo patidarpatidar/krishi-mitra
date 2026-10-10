@@ -15,48 +15,59 @@ import {
   ExternalLink,
 } from "lucide-react";
 
-import { farmerApi, getFarmerUser } from "@/lib/farmerApi";
+import { farmerApi } from "@/lib/farmerApi";
 import { getNeemuchWeather } from "@/services/weatherApi";
 import { getDynamicMandiRates } from "@/services/mandiApi";
 
 export default function FarmerDashboard() {
-  const [farmer, setFarmer] = useState(getFarmerUser() || {});
+  const [farmer, setFarmer] = useState({});
   const [stats, setStats] = useState({
     totalLand: "0 Acre",
     cropsCount: 0,
     savedCount: 0,
     watchlistCount: 0,
   });
-  const [weather, setWeather] = useState({
-    location: "नीमच, मध्य प्रदेश",
-    temperature: 28,
-    condition: "मौसम डेटा लोड हो रहा है...",
-    humidity: 60,
-    wind: 12,
-    rainChance: 20,
-  });
+  const [weather, setWeather] = useState(null);
   const [mandiRates, setMandiRates] = useState([]);
   const [advisories, setAdvisories] = useState([]);
   const [schemes, setSchemes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadErrors, setLoadErrors] = useState([]);
 
   const loadData = useCallback(async () => {
-    try {
-      // 1. Load Farmer Dashboard Overview
-      const dashRes = await farmerApi.getDashboard().catch(() => null);
+    setLoadErrors([]);
+    const results = await Promise.allSettled([
+      farmerApi.getDashboard(),
+      getNeemuchWeather(),
+      getDynamicMandiRates({
+        state: "Madhya Pradesh",
+        district: "Neemuch",
+      }),
+    ]);
+    const errors = [];
+    const [dashboardResult, weatherResult, mandiResult] = results;
 
-      if (dashRes?.data) {
-        const d = dashRes.data;
-        if (d.farmer) setFarmer(d.farmer);
-        if (d.stats) setStats(d.stats);
-        if (Array.isArray(d.advisories)) setAdvisories(d.advisories);
-        if (Array.isArray(d.schemes)) setSchemes(d.schemes);
-      }
+    if (dashboardResult.status === "fulfilled" && dashboardResult.value?.data) {
+      const d = dashboardResult.value.data;
+      if (d.farmer) setFarmer(d.farmer);
+      if (d.stats) setStats(d.stats);
+      setAdvisories(Array.isArray(d.advisories) ? d.advisories : []);
+      setSchemes(Array.isArray(d.schemes) ? d.schemes : []);
+    } else {
+      errors.push(
+        dashboardResult.status === "rejected"
+          ? dashboardResult.reason?.message || "Dashboard API request failed."
+          : "Dashboard API returned no data."
+      );
+      setFarmer({});
+      setStats({ totalLand: "0 Acre", cropsCount: 0, savedCount: 0, watchlistCount: 0 });
+      setAdvisories([]);
+      setSchemes([]);
+    }
 
-      // 2. Load Live Weather
-      const weatherRes = await getNeemuchWeather().catch(() => null);
-      if (weatherRes) {
+    if (weatherResult.status === "fulfilled") {
+      const weatherRes = weatherResult.value;
         setWeather({
           location: "नीमच, मध्य प्रदेश",
           temperature: weatherRes.temperature,
@@ -70,55 +81,20 @@ export default function FarmerDashboard() {
           wind: weatherRes.windSpeed,
           rainChance: weatherRes.rainProb,
         });
-      }
-
-      // 3. Load Dynamic Mandi Rates
-      const mandiRes = await getDynamicMandiRates({
-        state: "Madhya Pradesh",
-        district: "Neemuch",
-      }).catch(() => []);
-
-      if (Array.isArray(mandiRes) && mandiRes.length > 0) {
-        setMandiRates(mandiRes.slice(0, 4));
-      } else {
-        // Fallback default commodities
-        setMandiRates([
-          {
-            id: "m-1",
-            crop: "सोयाबीन",
-            mandi: "नीमच",
-            modalPrice: 4850,
-            unit: "क्विंटल",
-          },
-          {
-            id: "m-2",
-            crop: "लहसुन",
-            mandi: "नीमच",
-            modalPrice: 7200,
-            unit: "क्विंटल",
-          },
-          {
-            id: "m-3",
-            crop: "गेहूँ",
-            mandi: "नीमच",
-            modalPrice: 2580,
-            unit: "क्विंटल",
-          },
-          {
-            id: "m-4",
-            crop: "चना",
-            mandi: "मंदसौर",
-            modalPrice: 5900,
-            unit: "क्विंटल",
-          },
-        ]);
-      }
-    } catch (err) {
-      console.error("Dashboard data load error:", err);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+    } else {
+      setWeather(null);
+      errors.push(weatherResult.reason?.message || "Weather API request failed.");
     }
+    if (mandiResult.status === "fulfilled") {
+      setMandiRates(mandiResult.value.slice(0, 4));
+    } else {
+      setMandiRates([]);
+      errors.push(mandiResult.reason?.message || "Mandi API request failed.");
+    }
+
+    setLoadErrors(errors);
+    setLoading(false);
+    setRefreshing(false);
   }, []);
 
   useEffect(() => {
@@ -162,6 +138,12 @@ export default function FarmerDashboard() {
         </button>
       </section>
 
+      {loadErrors.length > 0 && (
+        <div role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
+          {loadErrors.join(" ")}
+        </div>
+      )}
+
       {/* Quick Stats */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
@@ -181,15 +163,15 @@ export default function FarmerDashboard() {
 
         <StatCard
           title="आज का तापमान"
-          value={`${weather.temperature}°C`}
-          subtitle={weather.condition}
+          value={weather ? `${weather.temperature}°C` : "—"}
+          subtitle={weather?.condition || "मौसम डेटा उपलब्ध नहीं"}
           icon={CloudSun}
           link="/farmer/weather"
         />
 
         <StatCard
           title="सरकारी योजनाएं"
-          value={schemes.length || 4}
+          value={schemes.length}
           subtitle="पात्र योजनाएं"
           icon={Landmark}
           link="/farmer/schemes"
@@ -204,15 +186,15 @@ export default function FarmerDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-slate-400 text-sm">आज का मौसम (लाइव)</p>
-                <h2 className="text-xl font-bold mt-1">{weather.location}</h2>
+                <h2 className="text-xl font-bold mt-1">{weather?.location || "मौसम डेटा उपलब्ध नहीं"}</h2>
               </div>
               <CloudSun className="w-10 h-10 text-emerald-400" />
             </div>
 
             <div className="mt-6 flex items-end gap-3">
-              <span className="text-5xl font-bold">{weather.temperature}°</span>
+              <span className="text-5xl font-bold">{weather ? `${weather.temperature}°` : "—"}</span>
               <span className="text-slate-400 mb-2 font-medium">
-                {weather.condition}
+                {weather?.condition || "मौसम डेटा उपलब्ध नहीं"}
               </span>
             </div>
 
@@ -220,17 +202,17 @@ export default function FarmerDashboard() {
               <WeatherItem
                 icon={Droplets}
                 label="नमी"
-                value={`${weather.humidity}%`}
+                value={weather ? `${weather.humidity}%` : "—"}
               />
               <WeatherItem
                 icon={Wind}
                 label="हवा"
-                value={`${weather.wind} km/h`}
+                value={weather ? `${weather.wind} km/h` : "—"}
               />
               <WeatherItem
                 icon={CloudSun}
                 label="बारिश"
-                value={`${weather.rainChance}%`}
+                value={weather ? `${weather.rainChance}%` : "—"}
               />
             </div>
           </div>

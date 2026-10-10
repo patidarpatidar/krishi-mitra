@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 
 import {
@@ -14,10 +14,8 @@ import {
   Wind,
   Droplets,
   BookOpen,
-  ChevronDown,
   Clock,
   Sparkles,
-  HelpCircle,
   Loader2,
   CheckCircle2,
   Calculator,
@@ -25,31 +23,18 @@ import {
   CloudSun,
   Sprout,
   Wheat,
-  Leaf,
-  Tractor,
-  Menu,
   X,
 } from "lucide-react";
 
 import HomeCarousel from "@/components/HomeCarousel";
-import { homeSlides } from "@/data/homeSlides";
 
 import { getDynamicMandiRates } from "@/services/mandiApi";
 import { getNeemuchWeather } from "@/services/weatherApi";
+import { publicApiRequest, unwrapApiList } from "@/lib/publicApi";
 
 /* =========================================================
    CONSTANTS
 ========================================================= */
-
-const PRESET_STATES = [
-  "Madhya Pradesh",
-  "Rajasthan",
-  "Gujarat",
-  "Uttar Pradesh",
-  "Maharashtra",
-  "Punjab",
-  "Haryana",
-];
 
 const quickActions = [
   {
@@ -86,116 +71,44 @@ const quickActions = [
   },
 ];
 
-const categories = [
-  {
-    title: "सोयाबीन",
-    icon: "🌱",
-    href: "/crops/soyabean",
-    type: "crop",
-  },
-  {
-    title: "लहसुन",
-    icon: "🧄",
-    href: "/crops/garlic",
-    type: "crop",
-  },
-  {
-    title: "गेहूं",
-    icon: "🌾",
-    href: "/crops/wheat",
-    type: "crop",
-  },
-  {
-    title: "चना",
-    icon: "🫘",
-    href: "/crops/gram",
-    type: "crop",
-  },
-  {
-    title: "मक्का",
-    icon: "🌽",
-    href: "/crops/maize",
-    type: "crop",
-  },
-  {
-    title: "पशुपालन",
-    icon: "🐄",
-    href: "/pashupalan",
-    type: "service",
-  },
-  {
-    title: "जैविक खाद",
-    icon: "🪴",
-    href: "/organic-farming",
-    type: "service",
-  },
-  {
-    title: "ड्रोन तकनीक",
-    icon: "🚁",
-    href: "/agri-tech",
-    type: "service",
-  },
-];
+function getCategoryLabel(category) {
+  if (typeof category === "string") return category;
+  return (
+    category?.label ||
+    category?.name ||
+    category?.title ||
+    category?.key ||
+    category?.slug ||
+    ""
+  );
+}
 
-const blogPosts = [
-  {
-    id: 1,
-    title: "लहसुन में थ्रिप्स व पीलापन रोकने के अचूक उपाय",
-    excerpt:
-      "लहसुन की फसल में समय रहते थ्रिप्स और फफूंद जनित रोगों को नियंत्रित करने के वैज्ञानिक तरीके।",
-    category: "फसल सुरक्षा",
-    readTime: "4 मिनट",
-    date: "28 सित",
-    emoji: "🧄",
-    bg: "bg-emerald-100",
-    href: "/blog/garlic-thrips-control",
-  },
-  {
-    id: 2,
-    title: "आधुनिक ड्रोन छिड़काव: समय और पैसे दोनों की बचत",
-    excerpt:
-      "कीटनाशकों और तरल उर्वरकों का ड्रोन द्वारा समान छिड़काव करने के फायदे और लागत विश्लेषण।",
-    category: "कृषि तकनीक",
-    readTime: "5 मिनट",
-    date: "26 सित",
-    emoji: "🚁",
-    bg: "bg-sky-100",
-    href: "/blog/drone-spraying-guide",
-  },
-  {
-    id: 3,
-    title: "जैविक खाद वर्मीकंपोस्ट घर पर तैयार करने का तरीका",
-    excerpt:
-      "कम लागत में उच्च गुणवत्ता वाली केंचुआ खाद बनाकर मिट्टी की उर्वरा शक्ति कैसे बढ़ाएं।",
-    category: "जैविक खेती",
-    readTime: "6 मिनट",
-    date: "24 सित",
-    emoji: "🌱",
-    bg: "bg-amber-100",
-    href: "/blog/vermicompost-guide",
-  },
-];
+function getSeedRatePerAcre(seedRate) {
+  const value = String(seedRate || "").trim();
+  if (!value || !/(?:kg|किग्रा|किलो|किलोग्राम)/i.test(value)) return null;
 
-const quickTips = [
-  {
-    id: 1,
-    question: "लहसुन और गेहूं में सिंचाई का सही समय क्या है?",
-    answer:
-      "सिंचाई हमेशा शाम के समय करें। हल्की और नियमित सिंचाई पौधों को तनाव से बचाती है और जड़ों के विकास में सहायक होती है।",
-  },
-  {
-    id: 2,
-    question: "मिट्टी परीक्षण क्यों जरूरी है?",
-    answer:
-      "मिट्टी परीक्षण से भूमि में मौजूद पोषक तत्वों की जानकारी मिलती है, जिससे आवश्यकता से अधिक उर्वरक देने से बच सकते हैं।",
-  },
-  {
-    id: 3,
-    question: "कीटनाशक प्रयोग करते समय क्या सावधानियां रखें?",
-    answer:
-      "सुरक्षा मास्क पहनें, हवा की दिशा का ध्यान रखें और अनुशंसित मात्रा से अधिक रसायन का प्रयोग न करें।",
-  },
-];
+  const values = [...value.matchAll(/\d+(?:\.\d+)?/g)]
+    .map(([number]) => Number(number))
+    .filter((number) => Number.isFinite(number) && number > 0);
+  if (!values.length) return null;
+
+  const average = values.reduce((sum, number) => sum + number, 0) / values.length;
+  if (/(?:\/\s*ha\b|per\s+hectare|hectare|हेक्टेयर)/i.test(value)) {
+    return average / 2.47105;
+  }
+  if (/(?:\/\s*acre\b|per\s+acre|एकड़)/i.test(value)) {
+    return average;
+  }
+
+  return null;
+}
+
+function formatHomeDate(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("hi-IN", { dateStyle: "medium" }).format(date);
+}
 
 /* =========================================================
    HOME PAGE
@@ -206,14 +119,7 @@ export default function HomePage() {
      MANDI STATE
   ------------------------------------------------------- */
 
-  const [selectedState, setSelectedState] =
-    useState("Madhya Pradesh");
-
-  const [selectedDistrict, setSelectedDistrict] =
-    useState("Neemuch");
-
-  const [selectedMandi, setSelectedMandi] =
-    useState("Neemuch");
+  const [selectedState, setSelectedState] = useState("");
 
   const [customDistrict, setCustomDistrict] = useState("");
   const [customMandi, setCustomMandi] = useState("");
@@ -228,20 +134,20 @@ export default function HomePage() {
 
   const [weatherData, setWeatherData] = useState(null);
   const [loadingWeather, setLoadingWeather] = useState(true);
+  const [weatherError, setWeatherError] = useState("");
 
   /* -------------------------------------------------------
-     CATEGORY
+     HOMEPAGE CONTENT
   ------------------------------------------------------- */
 
+  const [homeCategories, setHomeCategories] = useState([]);
+  const [homeCrops, setHomeCrops] = useState([]);
+  const [homeBlogs, setHomeBlogs] = useState([]);
+  const [loadingHomeContent, setLoadingHomeContent] = useState(true);
+  const [categoryError, setCategoryError] = useState("");
+  const [blogError, setBlogError] = useState("");
   const [activeCategoryTab, setActiveCategoryTab] =
     useState("all");
-
-  /* -------------------------------------------------------
-     FAQ
-  ------------------------------------------------------- */
-
-  const [activeAccordion, setActiveAccordion] =
-    useState(null);
 
   /* -------------------------------------------------------
      CALCULATOR
@@ -249,18 +155,318 @@ export default function HomePage() {
 
   const [landArea, setLandArea] = useState(1);
 
-  const [selectedCropCalc, setSelectedCropCalc] =
-    useState("wheat");
+  const [selectedCropCalc, setSelectedCropCalc] = useState("");
 
   /* -------------------------------------------------------
      ACTIVE VALUES
   ------------------------------------------------------- */
 
-  const activeDistrict =
-    customDistrict.trim() || selectedDistrict;
+  const activeDistrict = customDistrict.trim();
 
-  const activeMandi =
-    customMandi.trim() || selectedMandi;
+  const activeMandi = customMandi.trim();
+
+  const mandiStates = useMemo(
+    () => [...new Set(mandiRates.map((item) => item.state).filter(Boolean))],
+    [mandiRates],
+  );
+  const mandiDistricts = useMemo(
+    () =>
+      [
+        ...new Set(
+          mandiRates
+            .filter(
+              (item) => !selectedState || item.state === selectedState,
+            )
+            .map((item) => item.district)
+            .filter(Boolean),
+        ),
+      ],
+    [mandiRates, selectedState],
+  );
+  const mandiMarkets = useMemo(
+    () =>
+      [
+        ...new Set(
+          mandiRates
+            .filter(
+              (item) =>
+                (!selectedState || item.state === selectedState) &&
+                (!activeDistrict || item.district === activeDistrict),
+            )
+            .map((item) => item.mandi)
+            .filter(Boolean),
+        ),
+      ],
+    [mandiRates, selectedState, activeDistrict],
+  );
+
+  const homeSlides = useMemo(() => {
+    const blogSlides = homeBlogs
+      .filter((blog) => blog.slug && blog.title)
+      .slice(0, 5)
+      .map((blog) => ({
+        id: blog._id || blog.slug,
+        image: blog.heroImage || blog.coverImage || "",
+        badge: blog.categoryLabel ||
+          getCategoryLabel(blog.category) ||
+          "कृषि ब्लॉग",
+        title: blog.title,
+        highlight: "",
+        description: blog.excerpt || blog.description || "",
+        primaryButton: {
+          text: "लेख पढ़ें",
+          href: `/blog/${encodeURIComponent(blog.slug)}`,
+        },
+        secondaryButton: { text: "सभी लेख", href: "/blog" },
+      }));
+
+    if (blogSlides.length) return blogSlides;
+
+    return homeCrops
+      .filter((crop) => crop.slug && crop.name)
+      .slice(0, 5)
+      .map((crop) => ({
+        id: crop._id || crop.slug,
+        image: crop.image || crop.coverImage || "",
+        badge: getCategoryLabel(crop.category) || crop.name,
+        title: crop.name,
+        highlight: "",
+        description: crop.description || crop.subtitle || "",
+        primaryButton: {
+          text: "फसल देखें",
+          href: `/crops/${encodeURIComponent(crop.slug)}`,
+        },
+        secondaryButton: { text: "सभी फसलें", href: "/crops" },
+      }));
+  }, [homeBlogs, homeCrops]);
+
+  const visibleCategories = homeCategories.filter((category) => {
+    if (activeCategoryTab === "crops") return category.type === "crop";
+    if (activeCategoryTab === "services") return category.type === "service";
+    return true;
+  });
+
+  const seedRateCrops = useMemo(
+    () =>
+      homeCrops
+        .map((crop) => ({
+          ...crop,
+          seedRatePerAcre: getSeedRatePerAcre(crop.seedRate),
+          id: crop._id || crop.slug,
+        }))
+        .filter((crop) => crop.id && crop.seedRatePerAcre),
+    [homeCrops],
+  );
+  const selectedSeedCrop =
+    seedRateCrops.find((crop) => crop.id === selectedCropCalc) ||
+    seedRateCrops[0];
+  const seedEstimate = selectedSeedCrop
+    ? Number((selectedSeedCrop.seedRatePerAcre * landArea).toFixed(1))
+    : null;
+
+  useEffect(() => {
+    let cancelled = false;
+    const requests = [
+      ["crops", "/crops?status=published&limit=100"],
+      ["cropCategories", "/crop-categories?status=active"],
+      ["blogs", "/blogs?limit=100"],
+      ["blogCategories", "/blog-categories"],
+      ["organicCategories", "/organic-categories?status=active"],
+      ["livestock", "/livestock?status=published&limit=100"],
+      ["schemes", "/schemes?status=active&limit=100"],
+    ];
+
+    Promise.allSettled(
+      requests.map(([, path]) => publicApiRequest(path)),
+    )
+      .then((results) => {
+        if (cancelled) return;
+
+        const records = {};
+        const categoryFailures = [];
+        let failedBlogs = false;
+
+        results.forEach((result, index) => {
+          const [key] = requests[index];
+          if (result.status === "fulfilled") {
+            records[key] = unwrapApiList(result.value, [
+              "articles",
+              "recipes",
+              "schemes",
+            ]);
+          } else if (key === "blogs" || key === "blogCategories") {
+            failedBlogs = true;
+          } else {
+            categoryFailures.push(result.reason?.message);
+          }
+        });
+
+        const crops = records.crops || [];
+        const cropCategories = records.cropCategories || [];
+        const categories = [];
+        const seenCategories = new Set();
+        const addCategory = (category, type, href, fallbackIcon) => {
+          const title = getCategoryLabel(category);
+          if (!title) return;
+          const key =
+            type === "crop"
+              ? category?.key || category?.slug || category?._id || title
+              : category?.slug ||
+                category?.key ||
+                category?._id ||
+                category?.id ||
+                title;
+          const uniqueKey = `${type}:${key}`;
+          if (seenCategories.has(uniqueKey)) return;
+          seenCategories.add(uniqueKey);
+          categories.push({
+            id: uniqueKey,
+            title,
+            icon: category?.icon || category?.emoji || fallbackIcon,
+            href:
+              type === "crop"
+                ? `/crops?category=${encodeURIComponent(key)}`
+                : href,
+            type,
+          });
+        };
+
+        cropCategories.forEach((category) =>
+          addCategory(category, "crop", "/crops", "🌱"),
+        );
+        if (!cropCategories.length) {
+          const cropCategoryMap = new Map();
+          crops.forEach((crop) => {
+            const category =
+              crop.category && typeof crop.category === "object"
+                ? crop.category
+                : {
+                    key: crop.category,
+                    label: crop.categoryLabel || crop.category,
+                  };
+            if (getCategoryLabel(category)) {
+              cropCategoryMap.set(
+                category.key || getCategoryLabel(category),
+                category,
+              );
+            }
+          });
+          cropCategoryMap.forEach((category) =>
+            addCategory(category, "crop", "/crops", "🌱"),
+          );
+        }
+
+        (records.blogCategories || []).forEach((category) => {
+          const categoryId =
+            category._id || category.id || category.slug;
+          addCategory(
+            category,
+            "service",
+            `/blog?category=${encodeURIComponent(categoryId)}`,
+            "📚",
+          );
+        });
+        (records.organicCategories || []).forEach((category) => {
+          const categoryId =
+            category.slug || category._id || category.id;
+          addCategory(
+            category,
+            "service",
+            `/organic-farming?category=${encodeURIComponent(categoryId)}`,
+            "🌿",
+          );
+        });
+
+        const livestockCategories = new Map();
+        (records.livestock || []).forEach((article) => {
+          const category =
+            article.category && typeof article.category === "object"
+              ? article.category
+              : {
+                  key: article.category,
+                  label: article.categoryLabel || article.category,
+                };
+          if (getCategoryLabel(category)) {
+            livestockCategories.set(
+              category.key || getCategoryLabel(category),
+              category,
+            );
+          }
+        });
+        livestockCategories.forEach((category) =>
+          addCategory(category, "service", "/pashupalan", "🐄"),
+        );
+
+        const schemeCategories = new Map();
+        (records.schemes || []).forEach((scheme) => {
+          const category =
+            scheme.category && typeof scheme.category === "object"
+              ? scheme.category
+              : {
+                  key: scheme.category,
+                  label: scheme.categoryLabel || scheme.category,
+                };
+          if (getCategoryLabel(category)) {
+            schemeCategories.set(
+              category.key || getCategoryLabel(category),
+              category,
+            );
+          }
+        });
+        schemeCategories.forEach((category) =>
+          addCategory(category, "service", "/govt-schemes", "🏛️"),
+        );
+
+        const blogCategories = records.blogCategories || [];
+        const blogs = (records.blogs || []).map((blog) => {
+          const categoryId =
+            blog.categoryId?._id ||
+            blog.categoryId?.id ||
+            blog.categoryId?.slug ||
+            blog.categoryId;
+          const category = blogCategories.find((item) =>
+            [item._id, item.id, item.slug].includes(categoryId),
+          );
+          return {
+            ...blog,
+            categoryLabel:
+              getCategoryLabel(blog.category) ||
+              (typeof blog.categoryId === "object"
+                ? getCategoryLabel(blog.categoryId)
+                : "") ||
+              getCategoryLabel(category),
+          };
+        });
+
+        setHomeCrops(crops);
+        setHomeBlogs(blogs);
+        setHomeCategories(categories);
+        setCategoryError(
+          categoryFailures.length
+            ? "कुछ श्रेणियां अभी लोड नहीं हो सकीं।"
+            : "",
+        );
+        setBlogError(
+          failedBlogs ? "ब्लॉग अभी लोड नहीं हो सके।" : "",
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingHomeContent(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (
+      seedRateCrops.length &&
+      !seedRateCrops.some((crop) => crop.id === selectedCropCalc)
+    ) {
+      setSelectedCropCalc(seedRateCrops[0].id);
+    }
+  }, [seedRateCrops, selectedCropCalc]);
 
   /* =========================================================
      WEATHER
@@ -276,6 +482,7 @@ export default function HomePage() {
         setWeatherData(weather);
       } catch (error) {
         console.error("Weather error:", error);
+        setWeatherError(error.message || "मौसम की जानकारी उपलब्ध नहीं है।");
       } finally {
         setLoadingWeather(false);
       }
@@ -425,47 +632,6 @@ const latestMandiDateText = latestMandiDate
   );
 });
   /* =========================================================
-     CATEGORY FILTER
-  ========================================================= */
-
-  const filteredCategories = categories.filter((cat) => {
-    if (activeCategoryTab === "crops") {
-      return cat.type === "crop";
-    }
-
-    if (activeCategoryTab === "services") {
-      return cat.type === "service";
-    }
-
-    return true;
-  });
-
-  /* =========================================================
-     FAQ
-  ========================================================= */
-
-  const toggleAccordion = (id) => {
-    setActiveAccordion(
-      activeAccordion === id ? null : id
-    );
-  };
-
-  /* =========================================================
-     SEED CALCULATOR
-  ========================================================= */
-
-  const rateMap = {
-    wheat: 40,
-    garlic: 250,
-    soyabean: 30,
-    gram: 30,
-    maize: 8,
-  };
-
-  const seedEstimate =
-    (rateMap[selectedCropCalc] || 30) * landArea;
-
-  /* =========================================================
      RENDER
   ========================================================= */
 
@@ -480,9 +646,15 @@ const latestMandiDateText = latestMandiDate
 
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-5">
 
-        <HomeCarousel
-          slides={homeSlides}
-        />
+        {homeSlides.length ? (
+          <HomeCarousel slides={homeSlides} />
+        ) : loadingHomeContent ? (
+          <div className="min-h-[300px] rounded-[2rem] bg-slate-200 animate-pulse" />
+        ) : (
+          <p className="rounded-2xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-600">
+            {blogError || "अभी दिखाने के लिए कोई प्रकाशित लेख या फसल उपलब्ध नहीं है।"}
+          </p>
+        )}
 
       </section>
 
@@ -616,7 +788,7 @@ const latestMandiDateText = latestMandiDate
                         font-bold
                       ">
                         <CloudSun className="w-3 h-3" />
-                        LIVE WEATHER
+                        {weatherData ? "LIVE WEATHER" : "मौसम अपडेट"}
                       </span>
 
                       <h2 className="text-lg font-black mt-3">
@@ -652,7 +824,7 @@ const latestMandiDateText = latestMandiDate
                       <div className="flex items-end gap-2 mt-6">
 
                         <span className="text-4xl font-black">
-                          {weatherData?.temperature ?? 28}°
+                          {weatherData?.temperature ?? "—"}°
                         </span>
 
                         <span className="text-lg font-bold mb-1">
@@ -676,7 +848,7 @@ const latestMandiDateText = latestMandiDate
                               हवा
                             </p>
                             <p className="text-xs font-bold">
-                              {weatherData?.windSpeed ?? 12} km/h
+                              {weatherData?.windSpeed ?? "—"} km/h
                             </p>
                           </div>
                         </div>
@@ -694,12 +866,17 @@ const latestMandiDateText = latestMandiDate
                               आद्रता
                             </p>
                             <p className="text-xs font-bold">
-                              {weatherData?.humidity ?? 45}%
+                              {weatherData?.humidity ?? "—"}%
                             </p>
                           </div>
                         </div>
 
                       </div>
+                      {weatherError && (
+                        <p className="mt-3 text-[10px] text-sky-100">
+                          {weatherError}
+                        </p>
+                      )}
 
                       <Link
                         href="/weather"
@@ -843,7 +1020,7 @@ const latestMandiDateText = latestMandiDate
                     <div>
 
                       <h2 className="text-lg font-black">
-                        फसल एवं कृषि सेवाएं
+                        कृषि श्रेणियां
                       </h2>
 
                       <p className="text-[11px] text-slate-500">
@@ -870,7 +1047,7 @@ const latestMandiDateText = latestMandiDate
                   {[
                     ["all", "सभी"],
                     ["crops", "फसलें"],
-                    ["services", "सेवाएं"],
+                    ["services", "अन्य विषय"],
                   ].map(([value, label]) => (
 
                     <button
@@ -909,10 +1086,15 @@ const latestMandiDateText = latestMandiDate
                 mt-5
               ">
 
-                {filteredCategories.map((cat) => (
+                {loadingHomeContent ? (
+                  <p className="col-span-full py-5 text-center text-xs text-slate-500">
+                    श्रेणियां लोड हो रही हैं…
+                  </p>
+                ) : visibleCategories.length ? (
+                  visibleCategories.map((cat) => (
 
                   <Link
-                    key={cat.title}
+                    key={cat.id}
                     href={cat.href}
                     className="
                       group
@@ -966,9 +1148,19 @@ const latestMandiDateText = latestMandiDate
 
                   </Link>
 
-                ))}
+                  ))
+                ) : (
+                  <p className="col-span-full py-5 text-center text-xs text-slate-500">
+                    {categoryError || "अभी कोई श्रेणी उपलब्ध नहीं है।"}
+                  </p>
+                )}
 
               </div>
+              {!!categoryError && visibleCategories.length > 0 && (
+                <p className="mt-3 text-[10px] text-amber-700">
+                  {categoryError}
+                </p>
+              )}
 
             </section>
 
@@ -1044,7 +1236,7 @@ const latestMandiDateText = latestMandiDate
                 text-slate-900
               "
             >
-              {activeMandi || "मंडी"} मंडी भाव
+              {activeMandi ? `${activeMandi} मंडी भाव` : "मंडी भाव"}
             </h2>
 
             <span
@@ -1499,11 +1691,15 @@ const latestMandiDateText = latestMandiDate
           राज्य
         </label>
 
-        <select
+        <input
           value={selectedState}
-          onChange={(e) =>
-            setSelectedState(e.target.value)
-          }
+          onChange={(e) => {
+            setSelectedState(e.target.value);
+            setCustomDistrict("");
+            setCustomMandi("");
+          }}
+          list="home-mandi-states"
+          placeholder="राज्य का नाम"
           className="
             w-full
             p-2.5
@@ -1518,20 +1714,12 @@ const latestMandiDateText = latestMandiDate
             focus:ring-2
             focus:ring-emerald-100
           "
-        >
-
-          {PRESET_STATES.map((state) => (
-
-            <option
-              key={state}
-              value={state}
-            >
-              {state}
-            </option>
-
+        />
+        <datalist id="home-mandi-states">
+          {mandiStates.map((state) => (
+            <option key={state} value={state} />
           ))}
-
-        </select>
+        </datalist>
 
       </div>
 
@@ -1553,19 +1741,12 @@ const latestMandiDateText = latestMandiDate
         </label>
 
         <input
-          value={
-            customDistrict ||
-            selectedDistrict
-          }
+          value={customDistrict}
           onChange={(e) => {
-
-            setCustomDistrict(
-              e.target.value
-            );
-
-            setSelectedDistrict("");
-
+            setCustomDistrict(e.target.value);
+            setCustomMandi("");
           }}
+          list="home-mandi-districts"
           placeholder="जैसे: नीमच"
           className="
             w-full
@@ -1582,6 +1763,11 @@ const latestMandiDateText = latestMandiDate
             focus:ring-emerald-100
           "
         />
+        <datalist id="home-mandi-districts">
+          {mandiDistricts.map((district) => (
+            <option key={district} value={district} />
+          ))}
+        </datalist>
 
       </div>
 
@@ -1603,19 +1789,9 @@ const latestMandiDateText = latestMandiDate
         </label>
 
         <input
-          value={
-            customMandi ||
-            selectedMandi
-          }
-          onChange={(e) => {
-
-            setCustomMandi(
-              e.target.value
-            );
-
-            setSelectedMandi("");
-
-          }}
+          value={customMandi}
+          onChange={(e) => setCustomMandi(e.target.value)}
+          list="home-mandi-markets"
           placeholder="जैसे: नीमच"
           className="
             w-full
@@ -1632,6 +1808,11 @@ const latestMandiDateText = latestMandiDate
             focus:ring-emerald-100
           "
         />
+        <datalist id="home-mandi-markets">
+          {mandiMarkets.map((market) => (
+            <option key={market} value={market} />
+          ))}
+        </datalist>
 
       </div>
 
@@ -2646,12 +2827,13 @@ const latestMandiDateText = latestMandiDate
                     </label>
 
                     <select
-                      value={selectedCropCalc}
+                      value={selectedSeedCrop?.id || ""}
                       onChange={(e) =>
                         setSelectedCropCalc(
                           e.target.value
                         )
                       }
+                      disabled={!seedRateCrops.length}
                       className="
                         w-full
                         p-3
@@ -2665,25 +2847,19 @@ const latestMandiDateText = latestMandiDate
                       "
                     >
 
-                      <option value="wheat">
-                        गेहूं
-                      </option>
-
-                      <option value="garlic">
-                        लहसुन
-                      </option>
-
-                      <option value="soyabean">
-                        सोयाबीन
-                      </option>
-
-                      <option value="gram">
-                        चना
-                      </option>
-
-                      <option value="maize">
-                        मक्का
-                      </option>
+                      {seedRateCrops.length ? (
+                        seedRateCrops.map((crop) => (
+                          <option key={crop.id} value={crop.id}>
+                            {crop.name}
+                          </option>
+                        ))
+                      ) : (
+                        <option value="">
+                          {loadingHomeContent
+                            ? "फसलें लोड हो रही हैं…"
+                            : "प्रति एकड़/हेक्टेयर दर उपलब्ध नहीं"}
+                        </option>
+                      )}
 
                     </select>
 
@@ -2754,13 +2930,10 @@ const latestMandiDateText = latestMandiDate
                       text-amber-300
                       mt-1
                     ">
-                      {seedEstimate}
-                      <span className="
-                        text-sm
-                        ml-1
-                      ">
-                        kg
-                      </span>
+                      {seedEstimate === null ? "—" : seedEstimate}
+                      {seedEstimate !== null && (
+                        <span className="text-sm ml-1">kg</span>
+                      )}
                     </span>
 
                   </div>
@@ -2842,10 +3015,37 @@ const latestMandiDateText = latestMandiDate
 
               <div className="space-y-3 mt-4">
 
-                {blogPosts.map((post) => (
+                {loadingHomeContent ? (
+                  <p className="py-5 text-center text-xs text-slate-500">
+                    ब्लॉग लोड हो रहे हैं…
+                  </p>
+                ) : homeBlogs.length ? (
+                  [...homeBlogs]
+                    .sort(
+                      (first, second) =>
+                        new Date(second.date || second.publishedAt || 0) -
+                        new Date(first.date || first.publishedAt || 0),
+                    )
+                    .slice(0, 3)
+                    .map((post) => {
+                      const postHref = post.slug
+                        ? `/blog/${encodeURIComponent(post.slug)}`
+                        : "/blog";
+                      const category =
+                        post.categoryLabel ||
+                        getCategoryLabel(post.category) ||
+                        "कृषि ब्लॉग";
+                      const readTime = post.readTime
+                        ? `${post.readTime} मिनट`
+                        : "";
+                      const postDate = formatHomeDate(
+                        post.date || post.publishedAt,
+                      );
+
+                      return (
 
                   <article
-                    key={post.id}
+                    key={post._id || post.slug}
                     className="
                       group
                       border border-slate-200
@@ -2859,18 +3059,17 @@ const latestMandiDateText = latestMandiDate
 
                     <div className="flex gap-3">
 
-                      <div className={`
-                        w-12 h-12
-                        shrink-0
-                        rounded-xl
-                        ${post.bg}
-                        flex
-                        items-center
-                        justify-center
-                        text-2xl
-                      `}>
-                        {post.emoji}
-                      </div>
+                      {post.coverImage || post.heroImage ? (
+                        <img
+                          src={post.coverImage || post.heroImage}
+                          alt=""
+                          className="h-12 w-12 shrink-0 rounded-xl object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+                          <BookOpen className="h-5 w-5" />
+                        </div>
+                      )}
 
                       <div className="min-w-0">
 
@@ -2889,22 +3088,22 @@ const latestMandiDateText = latestMandiDate
                             rounded-full
                             font-bold
                           ">
-                            {post.category}
+                            {category}
                           </span>
 
-                          <span className="
+                          {readTime && <span className="
                             flex
                             items-center
                             gap-1
                           ">
                             <Clock className="w-3 h-3" />
-                            {post.readTime}
-                          </span>
+                            {readTime}
+                          </span>}
 
                         </div>
 
                         <Link
-                          href={post.href}
+                          href={postHref}
                           className="
                             block
                             mt-1.5
@@ -2929,7 +3128,7 @@ const latestMandiDateText = latestMandiDate
                       mt-2
                       line-clamp-2
                     ">
-                      {post.excerpt}
+                      {post.excerpt || post.description || ""}
                     </p>
 
                     <div className="
@@ -2946,11 +3145,11 @@ const latestMandiDateText = latestMandiDate
                         text-[9px]
                         text-slate-400
                       ">
-                        {post.date}
+                        {postDate}
                       </span>
 
                       <Link
-                        href={post.href}
+                        href={postHref}
                         className="
                           text-[10px]
                           font-bold
@@ -2968,103 +3167,13 @@ const latestMandiDateText = latestMandiDate
 
                   </article>
 
-                ))}
-
-              </div>
-
-            </section>
-
-            {/* =================================================
-                FAQ
-            ================================================= */}
-
-            <section className="
-              bg-white
-              border border-slate-200
-              rounded-3xl
-              p-5
-              shadow-sm
-            ">
-
-              <div className="
-                flex
-                items-center
-                gap-2
-                pb-3
-                border-b
-                border-slate-100
-              ">
-
-                <div className="
-                  w-8 h-8
-                  rounded-lg
-                  bg-amber-100
-                  flex
-                  items-center
-                  justify-center
-                ">
-                  <HelpCircle className="
-                    w-4 h-4
-                    text-amber-700
-                  " />
-                </div>
-
-                <div>
-
-                  <h2 className="
-                    text-sm
-                    font-black
-                  ">
-                    किसान प्रश्नोत्तरी
-                  </h2>
-
-                  <p className="
-                    text-[9px]
-                    text-slate-400
-                  ">
-                    खेती से जुड़े सामान्य सवाल
+                      );
+                    })
+                ) : (
+                  <p className="py-5 text-center text-xs text-slate-500">
+                    {blogError || "अभी कोई प्रकाशित ब्लॉग उपलब्ध नहीं है।"}
                   </p>
-
-                </div>
-
-              </div>
-
-              <div className="space-y-2 mt-4">
-
-               {quickTips.map((tip) => {
-  const active = activeAccordion === tip.id;
-
-  return (
-    <div
-      key={tip.id}
-      className="border border-slate-200 rounded-xl overflow-hidden"
-    >
-      <button
-        type="button"
-        onClick={() => toggleAccordion(tip.id)}
-        className="w-full flex items-center justify-between gap-3 p-3 text-left hover:bg-slate-50 transition"
-      >
-        <span className="flex items-start gap-2 text-[11px] font-bold text-slate-800">
-          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-
-          {tip.question}
-        </span>
-
-        <ChevronDown
-          className={`w-4 h-4 shrink-0 text-slate-400 transition-transform ${
-            active ? "rotate-180" : ""
-          }`}
-        />
-      </button>
-
-      {active && (
-        <div className="px-3 pb-3 pt-1 text-[10px] text-slate-600 leading-relaxed border-t border-slate-100">
-          {tip.answer}
-        </div>
-      )}
-    </div>
-  );
-})}
+                )}
 
               </div>
 

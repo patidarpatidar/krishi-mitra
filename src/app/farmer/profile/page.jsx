@@ -13,7 +13,7 @@ import {
   Loader2,
 } from "lucide-react";
 
-import { farmerApi, getFarmerUser } from "@/lib/farmerApi";
+import { farmerApi } from "@/lib/farmerApi";
 
 export default function FarmerProfile() {
   const [form, setForm] = useState(null);
@@ -26,11 +26,6 @@ export default function FarmerProfile() {
     async function loadProfile() {
       try {
         setLoading(true);
-        const cached = getFarmerUser();
-        if (cached) {
-          setForm(cached);
-        }
-
         const res = await farmerApi.getProfile();
         if (res.data?.user) {
           setForm(res.data.user);

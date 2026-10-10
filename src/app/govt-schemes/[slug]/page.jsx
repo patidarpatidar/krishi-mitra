@@ -2,7 +2,7 @@
 
 import { use } from "react";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import {
   ArrowLeft,
@@ -17,7 +17,7 @@ import {
   Sprout,
 } from "lucide-react";
 
-import governmentSchemes from "@/data/governmentSchemes";
+import { publicApiRequest } from "@/lib/publicApi";
 
 const iconMap = {
   sprout: Sprout,
@@ -129,14 +129,35 @@ function SectionCard({
 export default function GovernmentSchemeDetails({
   params,
 }) {
- const scheme = governmentSchemes.find(
-    (item) =>
-      item.slug === params.slug &&
-      item.status === "active"
-  );
+  const [scheme, setScheme] = useState(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  if (!scheme) {
-    notFound();
+  useEffect(() => {
+    let cancelled = false;
+    publicApiRequest(`/schemes/slug/${encodeURIComponent(params.slug)}`)
+      .then((result) => {
+        if (!cancelled) setScheme(result.data || null);
+      })
+      .catch((loadError) => {
+        if (!cancelled) setError(loadError.message || "योजना लोड नहीं हो सकी।");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [params.slug]);
+
+  if (loading) return <main className="min-h-screen p-8 text-center">योजना लोड हो रही है...</main>;
+  if (error || !scheme) {
+    return (
+      <main className="min-h-screen p-8 text-center">
+        <p role="alert">{error || "योजना नहीं मिली।"}</p>
+        <Link href="/govt-schemes" className="mt-4 inline-block text-emerald-700">सभी योजनाएं देखें</Link>
+      </main>
+    );
   }
 
   const Icon =
@@ -205,7 +226,7 @@ export default function GovernmentSchemeDetails({
               {/* ACTION BUTTONS */}
               <div className="mt-7 flex flex-wrap gap-3">
 
-                {scheme.importantLinks.map(
+                {(scheme.importantLinks || []).map(
                   (link) => (
                     <a
                       key={link.url}
@@ -476,7 +497,7 @@ export default function GovernmentSchemeDetails({
         {/* TAGS */}
         <div className="mt-6 flex flex-wrap gap-2">
 
-          {scheme.tags.map((tag) => (
+          {(scheme.tags || []).map((tag) => (
 
             <span
               key={tag}

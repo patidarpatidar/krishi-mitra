@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { getAdminAuthHeaders } from "@/lib/apiClient";
 import {
   Plus,
   Trash2,
@@ -21,9 +22,9 @@ const EMPTY_RECIPE = {
   title: "",
   titleEn: "",
   type: "",
-  category: "fertilizer",
+  category: "",
   categoryId: "",
-  categorySlug: "fertilizer",
+  categorySlug: "",
   target: "",
   shelfLife: "",
   costMin: 0,
@@ -95,21 +96,6 @@ const AREA_OPTIONS = [
   {
     value: "bigha",
     label: "बीघा",
-  },
-];
-
-const CATEGORY_OPTIONS = [
-  {
-    value: "fertilizer",
-    label: "प्राकृतिक खाद",
-  },
-  {
-    value: "pesticide",
-    label: "कीट प्रबंधन",
-  },
-  {
-    value: "fungicide",
-    label: "फफूंद प्रबंधन",
   },
 ];
 
@@ -206,9 +192,13 @@ export default function OrganicRecipeForm({
         );
       }
 
-      setCategories(result.data || []);
+      if (!response.ok || result.success === false) {
+        throw new Error(result.message || "Categories load failed");
+      }
+      setCategories(Array.isArray(result.data) ? result.data : []);
     } catch (err) {
       console.error(err);
+      setError(err.message || "Categories load नहीं हो सकीं।");
     }
   };
 
@@ -652,6 +642,7 @@ export default function OrganicRecipeForm({
           headers: {
             "Content-Type":
               "application/json",
+            ...getAdminAuthHeaders(),
           },
 
           body: JSON.stringify(
@@ -893,8 +884,9 @@ export default function OrganicRecipeForm({
                         item.name,
                     })
                   )
-                : CATEGORY_OPTIONS
+                : []
             }
+            disabled={!categories.length}
           />
 
           <Input

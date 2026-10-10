@@ -50,249 +50,43 @@ import {
 } from 'recharts';
 
 import { getDynamicMandiRates } from '@/services/mandiApi';
+import {
+  publicApiRequest,
+  unwrapApiItem,
+  unwrapApiList,
+} from '@/lib/publicApi';
 
 /* =========================================================
    CROP DATABASE
 ========================================================= */
 
-const cropDetailsDatabase = {
-  garlic: {
-    slug: 'garlic',
-    name: 'लहसुन',
-    englishName: 'Garlic',
-    scientificName: 'Allium sativum',
-    category: 'नगदी / मसाला फसल',
-    season: 'रबी (Rabi)',
-    icon: '🧄',
-
-    overview:
-      'लहसुन मालवा क्षेत्र (विशेषकर नीमच और मंदसौर) की सबसे प्रमुख नगदी फसलों में से एक है। जी-2, रियावन और ऊंटनी लहसुन की किस्में देश भर की मंडियों में प्रसिद्ध हैं।',
-
-    author: 'कृषि मित्र टीम',
-
-    publishedAt: '03 अक्टूबर 2026',
-
-    updatedAt: 'आज',
-
-    readTime: '8 मिनट',
-
-    views: 18320,
-
-    likes: 1260,
-
-    tags: [
-      'लहसुन',
-      'रबी फसल',
-      'नीमच',
-      'मंदसौर',
-      'मसाला फसल',
-      'मंडी भाव',
-    ],
-
-    varieties: [
-      {
-        name: 'जी-2 (G-2 Garlic)',
-        yield: '100-120 क्विंटल/हेक्टेयर',
-        feature: 'सफेद और मोटे कंद, लंबी भंडारण क्षमता।',
-      },
-      {
-        name: 'रियावन सिल्वर',
-        yield: '120-140 क्विंटल/हेक्टेयर',
-        feature: 'तीखा गंध, चमकदार सिल्वर रंग, मंडी में उच्चतम दाम।',
-      },
-      {
-        name: 'ऊंटनी लहसुन',
-        yield: '130-150 क्विंटल/हेक्टेयर',
-        feature: 'अत्यधिक आकार, कम कलियां, निर्यात हेतु उपयुक्त।',
-      },
-      {
-        name: 'यमुना सफेद (G-1)',
-        yield: '90-110 क्विंटल/हेक्टेयर',
-        feature: 'रोग प्रतिरोधी, सभी मिट्टी प्रकारों हेतु अनुकूल।',
-      },
-    ],
-
-    soilRequirement:
-      'अच्छे जल निकास वाली बलुई दोमट या मध्यम काली मिट्टी। भूमि का pH मान 6.0 से 7.0 उत्तम माना जाता है।',
-
-    sowingTime:
-      '15 अक्टूबर से 15 नवंबर (उपयुक्त तापमान: 20°C - 25°C)',
-
-    waterRequirement:
-      '8 से 10 सिंचाइयां (मृदा प्रकार के अनुसार 10-12 दिन के अंतराल पर)।',
-
-    seedRate: '500-600 किग्रा कलियां प्रति हेक्टेयर',
-
-    harvestingTime: 'मार्च - अप्रैल',
-
-    topDemandMandi: 'नीमच, मंदसौर, पिपलिया मंडी',
-
-    diseases: [
-      {
-        name: 'बैंगनी धब्बा रोग (Purple Blotch)',
-        symptoms:
-          'पत्तियों पर छोटे बैंगनी रंग के धब्बे बनना, जो बाद में सूख जाती हैं।',
-        solution:
-          'रोग प्रबंधन के लिए स्थानीय कृषि विशेषज्ञ या कृषि विभाग की अनुशंसित विधि अपनाएं।',
-      },
-      {
-        name: 'थ्रिप्स (Thrips Pest)',
-        symptoms:
-          'पत्तियों का पीला पड़ना और ऊपर की ओर मुड़ना।',
-        solution:
-          'कीट की पुष्टि के बाद स्थानीय कृषि विशेषज्ञ की अनुशंसा के अनुसार नियंत्रण उपाय अपनाएं।',
-      },
-    ],
-
-    mandiPrice: {
-      min: 7500,
-      max: 16200,
-      modal: 12500,
-      previousModal: 11800,
-      unit: 'क्विंटल',
-      mandiName: 'नीमच मंडी',
-    },
-
-    priceHistory: [
-      { date: '28 Sep', min: 7000, max: 15500, modal: 11500 },
-      { date: '29 Sep', min: 7200, max: 15800, modal: 11800 },
-      { date: '30 Sep', min: 7100, max: 15600, modal: 11600 },
-      { date: '01 Oct', min: 7300, max: 16000, modal: 12000 },
-      { date: '02 Oct', min: 7400, max: 16100, modal: 12200 },
-      { date: '03 Oct', min: 7500, max: 16200, modal: 12500 },
-    ],
-  },
-
-  soyabean: {
-    slug: 'soyabean',
-    name: 'सोयाबीन',
-    englishName: 'Soyabean',
-    scientificName: 'Glycine max',
-    category: 'खरीफ / तिलहन फसल',
-    season: 'खरीफ (Kharif)',
-    icon: '🌱',
-
-    overview:
-      'सोयाबीन मध्य प्रदेश को "सोया राज्य" का दर्जा दिलाती है। यह प्रोटीन एवं खाद्य तेल का मुख्य स्रोत है।',
-
-    author: 'कृषि मित्र टीम',
-
-    publishedAt: '03 अक्टूबर 2026',
-
-    updatedAt: 'आज',
-
-    readTime: '7 मिनट',
-
-    views: 12450,
-
-    likes: 842,
-
-    tags: [
-      'सोयाबीन',
-      'खरीफ',
-      'तिलहन',
-      'नीमच',
-      'मंदसौर',
-      'मंडी भाव',
-    ],
-
-    varieties: [
-      {
-        name: 'JS 20-34',
-        yield: '20-25 क्विंटल/हेक्टेयर',
-        feature: 'कम समय में पकने वाली, सूखा सहनशील।',
-      },
-      {
-        name: 'JS 20-29',
-        yield: '25-30 क्विंटल/हेक्टेयर',
-        feature: 'रोग प्रतिरोधी, घनी फलियां।',
-      },
-      {
-        name: 'NRC 86',
-        yield: '22-26 क्विंटल/हेक्टेयर',
-        feature: 'पीला मोज़ेक रोग के प्रति अत्यधिक प्रतिरोधी।',
-      },
-    ],
-
-    soilRequirement:
-      'मध्यम से गहरी काली मिट्टी जिसमें जल निकास की उत्तम व्यवस्था हो। pH मान 6.5 - 7.5।',
-
-    sowingTime:
-      '20 जून से 15 जुलाई (मानसून की पहली पर्याप्त वर्षा के बाद)',
-
-    waterRequirement:
-      'मुख्यतः मानसूनी वर्षा पर निर्भर; फली बनते समय सिंचाई आवश्यक।',
-
-    seedRate: '75-80 किग्रा प्रति हेक्टेयर',
-
-    harvestingTime: 'सितंबर - अक्टूबर',
-
-    topDemandMandi: 'उज्जैन, नीमच, इंदौर मंडी',
-
-    diseases: [
-      {
-        name: 'पीला मोज़ेक वायरस (Yellow Mosaic)',
-        symptoms:
-          'पत्तियों पर पीले रंग के चकत्ते बनना और वृद्धि रुकना।',
-        solution:
-          'रोग की पुष्टि और नियंत्रण के लिए स्थानीय कृषि विशेषज्ञ या कृषि विभाग की अनुशंसा अपनाएं।',
-      },
-    ],
-
-    mandiPrice: {
-      min: 4200,
-      max: 4850,
-      modal: 4650,
-      previousModal: 4720,
-      unit: 'क्विंटल',
-      mandiName: 'नीमच मंडी',
-    },
-
-    priceHistory: [
-      { date: '28 Sep', min: 4100, max: 4750, modal: 4500 },
-      { date: '29 Sep', min: 4150, max: 4800, modal: 4580 },
-      { date: '30 Sep', min: 4200, max: 4820, modal: 4620 },
-      { date: '01 Oct', min: 4250, max: 4900, modal: 4700 },
-      { date: '02 Oct', min: 4200, max: 4880, modal: 4720 },
-      { date: '03 Oct', min: 4200, max: 4850, modal: 4650 },
-    ],
-  },
+const emptyCrop = {
+  slug: '',
+  name: '',
+  englishName: '',
+  scientificName: '',
+  category: '',
+  season: '',
+  icon: '',
+  overview: '',
+  author: '',
+  publishedAt: '',
+  updatedAt: '',
+  readTime: '',
+  views: 0,
+  likes: 0,
+  tags: [],
+  varieties: [],
+  soilRequirement: '',
+  sowingTime: '',
+  waterRequirement: '',
+  seedRate: '',
+  harvestingTime: '',
+  topDemandMandi: '',
+  diseases: [],
+  mandiPrice: { min: 0, max: 0, modal: 0, previousModal: 0, unit: 'क्विंटल', mandiName: '' },
+  priceHistory: [],
 };
-
-/* =========================================================
-   RELATED CROPS
-========================================================= */
-
-const relatedCrops = [
-  {
-    slug: 'garlic',
-    name: 'लहसुन',
-    icon: '🧄',
-    category: 'मसाला',
-  },
-  {
-    slug: 'soyabean',
-    name: 'सोयाबीन',
-    icon: '🌱',
-    category: 'तिलहन',
-  },
-  {
-    slug: 'wheat',
-    name: 'गेहूं',
-    icon: '🌾',
-    category: 'अनाज',
-  },
-  {
-    slug: 'gram',
-    name: 'चना',
-    icon: '🫘',
-    category: 'दलहन',
-  },
-];
-
-/* =========================================================
-   ARTICLE SECTIONS
-========================================================= */
 
 const articleSections = [
   {
@@ -330,14 +124,13 @@ const articleSections = [
 ========================================================= */
 
 export default function CropDetailPage({ params }) {
-  const slug = params?.slug || 'garlic';
-
-  const initialCrop =
-    cropDetailsDatabase[slug] || cropDetailsDatabase.garlic;
-
-  const [crop, setCrop] = useState(initialCrop);
-
+  const slug = params?.slug || '';
+  const [crop, setCrop] = useState(emptyCrop);
+  const [relatedCrops, setRelatedCrops] = useState([]);
+  const [relatedCropsError, setRelatedCropsError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [priceError, setPriceError] = useState('');
 
   const [activeSection, setActiveSection] =
     useState('overview');
@@ -348,11 +141,8 @@ export default function CropDetailPage({ params }) {
   const [isLiked, setIsLiked] =
     useState(false);
 
-  const [likes, setLikes] =
-    useState(initialCrop.likes);
-
-  const [views, setViews] =
-    useState(initialCrop.views);
+  const [likes, setLikes] = useState(0);
+  const [views, setViews] = useState(0);
 
   const [showShare, setShowShare] =
     useState(false);
@@ -367,7 +157,7 @@ export default function CropDetailPage({ params }) {
     useState('bigha');
 
   const [yieldPerUnit, setYieldPerUnit] =
-    useState(10);
+    useState(0);
 
   const [activeTab, setActiveTab] =
     useState('agronomy');
@@ -387,8 +177,6 @@ export default function CropDetailPage({ params }) {
 
     const bookmarkKey = `krishi-bookmark-${slug}`;
     const likeKey = `krishi-like-${slug}`;
-    const viewKey = `krishi-view-${slug}`;
-
     setIsBookmarked(
       localStorage.getItem(bookmarkKey) === 'true'
     );
@@ -397,82 +185,136 @@ export default function CropDetailPage({ params }) {
       localStorage.getItem(likeKey) === 'true'
     );
 
-    const viewed = sessionStorage.getItem(viewKey);
-
-    if (!viewed) {
-      setViews(initialCrop.views + 1);
-      sessionStorage.setItem(viewKey, 'true');
-    }
-  }, [slug, initialCrop.views]);
+  }, [slug]);
 
   /* =====================================================
      LIVE MANDI API
   ===================================================== */
 
   useEffect(() => {
-    async function fetchLatestPrice() {
-      setLoading(true);
-
+    let cancelled = false;
+    setLoading(true);
+    setLoadError('');
+    setPriceError('');
+    async function loadCrop() {
       try {
-        const rates = await getDynamicMandiRates({
-          crop: initialCrop.slug,
-        });
+        const result = await publicApiRequest(
+          `/crops/slug/${encodeURIComponent(slug)}`,
+        );
+        const record = unwrapApiItem(result, ['crop', 'item', 'record']);
+        if (!record || !(record.slug || record._id || record.id)) {
+          throw new Error('इस फसल की प्रकाशित जानकारी उपलब्ध नहीं है।');
+        }
+        const displayValue = (value) =>
+          typeof value === 'string'
+            ? value
+            : value?.label || value?.name || '';
+        const apiCrop = {
+          ...emptyCrop,
+          ...record,
+          category: displayValue(record.category),
+          season: displayValue(record.season),
+          publishedAt: record.publishedAt || '',
+          updatedAt: record.updatedAtContent || record.updatedAt || '',
+          soilRequirement:
+            record.soilRequirement || record.idealSoil || '',
+          waterRequirement:
+            record.waterRequirement || displayValue(record.water),
+          tags: Array.isArray(record.tags) ? record.tags : [],
+          varieties: Array.isArray(record.varieties)
+            ? record.varieties
+            : [],
+          diseases: Array.isArray(record.diseases)
+            ? record.diseases
+            : [],
+          views: Number(record.views) || 0,
+          likes: Number(record.likes) || 0,
+          mandiPrice: {
+            ...emptyCrop.mandiPrice,
+            ...(record.mandiPrice || {}),
+          },
+          priceHistory: Array.isArray(record.priceHistory)
+            ? record.priceHistory
+            : [],
+        };
+        if (cancelled) return;
+        setCrop(apiCrop);
+        setLikes(apiCrop.likes);
+        setViews(apiCrop.views);
+        setYieldPerUnit(Number(apiCrop.yieldPerUnit) || 0);
+        setLoading(false);
 
-        if (rates && rates.length > 0) {
+        try {
+          const rates = await getDynamicMandiRates({ crop: apiCrop.slug });
+          if (cancelled) return;
           const matchedRate =
             rates.find(
               (rate) =>
-                rate.cropEnglish
-                  ?.toLowerCase()
-                  .includes(initialCrop.slug) ||
-                rate.crop
-                  ?.toLowerCase()
-                  .includes(initialCrop.slug)
+                rate.cropEnglish?.toLowerCase().includes(apiCrop.slug) ||
+                rate.crop?.toLowerCase().includes(apiCrop.slug),
             ) || rates[0];
 
           if (matchedRate) {
             setCrop((previous) => ({
               ...previous,
-
               mandiPrice: {
-                min:
-                  matchedRate.minPrice ||
-                  previous.mandiPrice.min,
-
-                max:
-                  matchedRate.maxPrice ||
-                  previous.mandiPrice.max,
-
-                modal:
-                  matchedRate.modalPrice ||
-                  previous.mandiPrice.modal,
-
-                previousModal:
-                  previous.mandiPrice.modal,
-
-                unit:
-                  matchedRate.unit ||
-                  previous.mandiPrice.unit,
-
-                mandiName:
-                  matchedRate.mandi ||
-                  previous.mandiPrice.mandiName,
+                min: matchedRate.minPrice ?? 0,
+                max: matchedRate.maxPrice ?? 0,
+                modal: matchedRate.modalPrice ?? 0,
+                previousModal: previous.mandiPrice.modal,
+                unit: matchedRate.unit || previous.mandiPrice.unit,
+                mandiName: matchedRate.mandi || '',
               },
             }));
           }
+        } catch (error) {
+          if (!cancelled) {
+            setPriceError(error.message || 'मंडी भाव लोड नहीं हो सके।');
+          }
         }
       } catch (error) {
-        console.error(
-          'Failed to update crop price:',
-          error
-        );
+        if (!cancelled) setLoadError(error.message || 'फसल की जानकारी लोड नहीं हो सकी।');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
 
-    fetchLatestPrice();
-  }, [initialCrop.slug]);
+    if (slug) loadCrop();
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    publicApiRequest('/crops?status=published&limit=5')
+      .then((result) => {
+        if (cancelled) return;
+
+        setRelatedCrops(
+          unwrapApiList(result, ['crops']).map((item) => ({
+            ...item,
+            slug: item.slug || item._id || item.id,
+            category:
+              typeof item.category === 'string'
+                ? item.category
+                : item.category?.label || item.category?.name || '',
+          }))
+        );
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setRelatedCropsError(
+            error.message || 'संबंधित फसलें लोड नहीं हो सकीं।'
+          );
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   /* =====================================================
      SCROLL SECTION TRACKING
@@ -719,6 +561,19 @@ export default function CropDetailPage({ params }) {
       answer: crop.harvestingTime,
     },
   ];
+
+  if (loading) {
+    return <main className="mx-auto max-w-4xl px-4 py-16 text-center text-slate-500">फसल की जानकारी लोड हो रही है...</main>;
+  }
+
+  if (loadError) {
+    return (
+      <main className="mx-auto max-w-4xl px-4 py-16 text-center">
+        <p role="alert" className="mb-5 text-red-700">{loadError}</p>
+        <Link href="/crops" className="font-bold text-emerald-700">फसल सूची पर वापस जाएं</Link>
+      </main>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -1542,20 +1397,26 @@ export default function CropDetailPage({ params }) {
                 subtitle="कृषि मित्र पर और जानकारी पढ़ें"
               />
 
+              {relatedCropsError && (
+                <p role="alert" className="mt-4 text-sm text-amber-700">
+                  {relatedCropsError}
+                </p>
+              )}
+
               <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {relatedCrops
                   .filter(
                     (item) =>
-                      item.slug !== crop.slug
+                      item.slug && item.slug !== crop.slug
                   )
                   .map((item) => (
                     <Link
                       key={item.slug}
-                      href={`/crops/${item.slug}`}
+                      href={`/crops/${encodeURIComponent(item.slug)}`}
                       className="group rounded-2xl border border-slate-200 bg-white p-4 transition hover:-translate-y-1 hover:border-emerald-300 hover:shadow-md"
                     >
                       <div className="text-3xl">
-                        {item.icon}
+                        {item.icon || '🌱'}
                       </div>
 
                       <div className="mt-3 font-extrabold text-slate-900 group-hover:text-emerald-700">
@@ -1573,6 +1434,14 @@ export default function CropDetailPage({ params }) {
                     </Link>
                   ))}
               </div>
+              {!relatedCropsError &&
+                relatedCrops.filter(
+                  (item) => item.slug && item.slug !== crop.slug
+                ).length === 0 && (
+                  <p className="mt-4 text-sm text-slate-500">
+                    अभी अन्य प्रकाशित फसलें उपलब्ध नहीं हैं।
+                  </p>
+                )}
             </section>
           </article>
 

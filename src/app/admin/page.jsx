@@ -64,7 +64,7 @@ const COLLECTIONS = [
   {
     key: "inquiries",
     label: "Inquiries",
-    endpoint: "/inquiries",
+    endpoint: "/inquiries?limit=5&sort=newest",
   },
 ];
 
@@ -264,6 +264,18 @@ export default function AdminDashboardPage() {
       )
       .slice(0, 5);
   }, [data.blogs]);
+
+  const recentInquiries = useMemo(() => {
+    if (data.inquiries === null) return null;
+
+    return [...data.inquiries]
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt || b.updatedAt || 0).getTime() -
+          new Date(a.createdAt || a.updatedAt || 0).getTime()
+      )
+      .slice(0, 5);
+  }, [data.inquiries]);
 
   const analytics = useMemo(
     () => getViewsAndLikes(data),
@@ -627,6 +639,73 @@ export default function AdminDashboardPage() {
             description="पहला blog create करके शुरुआत करें।"
             actionHref="/admin/blog/new"
             actionText="Create Blog"
+          />
+        )}
+      </div>
+
+      {/* Recent contact inquiries */}
+      <div className="rounded-2xl border bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b px-5 py-4">
+          <div>
+            <h2 className="font-bold text-slate-900">Top 5 Recent Inquiries</h2>
+            <p className="mt-1 text-xs text-slate-500">
+              नवीनतम contact messages और संपर्क विवरण
+            </p>
+          </div>
+          <Link
+            href="/admin/inquiries"
+            className="flex items-center gap-1 text-sm font-semibold text-green-600 hover:text-green-700"
+          >
+            सभी देखें <ArrowRight size={15} />
+          </Link>
+        </div>
+
+        {recentInquiries === null ? (
+          <DataError message={errors.inquiries} />
+        ) : recentInquiries.length ? (
+          <div className="divide-y">
+            {recentInquiries.map((inquiry, index) => (
+              <div
+                key={getId(inquiry) || inquiry.inquiryNumber || index}
+                className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="flex min-w-0 items-start gap-3">
+                  <div className="rounded-xl bg-orange-50 p-2.5 text-orange-600">
+                    <MessageCircle size={18} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-slate-900">
+                      {inquiry.subject || inquiry.name || "Contact inquiry"}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-600">
+                      {inquiry.name || "नाम उपलब्ध नहीं"}
+                      {inquiry.phone ? ` · ${inquiry.phone}` : ""}
+                      {inquiry.email ? ` · ${inquiry.email}` : ""}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-400">
+                      {inquiry.queryType || "सामान्य संपर्क"}
+                      {inquiry.createdAt
+                        ? ` · ${new Date(inquiry.createdAt).toLocaleString("hi-IN")}`
+                        : ""}
+                    </p>
+                  </div>
+                </div>
+                {inquiry.phone && (
+                  <a
+                    href={`tel:${inquiry.phone}`}
+                    className="shrink-0 rounded-lg border px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    संपर्क करें
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            icon={MessageCircle}
+            title="अभी inquiries नहीं हैं"
+            description="नए contact messages यहां दिखाई देंगे।"
           />
         )}
       </div>

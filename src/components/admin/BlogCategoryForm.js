@@ -48,7 +48,7 @@ export default function BlogCategoryForm({ categoryId }) {
       setError("");
 
       try {
-        const response = await blogApi.getCategory(categoryId);
+        const response = await blogApi.getCategory(categoryId, true);
         const category = unwrapItem(response, ["category"]);
 
         if (cancelled) return;

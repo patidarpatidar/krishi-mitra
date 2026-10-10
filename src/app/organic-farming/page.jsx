@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Leaf,
   Calculator,
@@ -26,316 +26,7 @@ import {
   FlaskConical,
   BookOpen,
 } from 'lucide-react';
-
-/* =========================================================
-   ORGANIC RECIPES DATA
-========================================================= */
-
-const ORGANIC_RECIPES = [
-  {
-    id: 'jeevamrut',
-    title: 'जीवामृत (Jeevamrut)',
-    type: 'प्राकृतिक तरल खाद',
-    category: 'fertilizer',
-    target: 'मृदा स्वास्थ्य, सूक्ष्मजीव वृद्धि, फसल पोषण',
-    shelfLife: '10–12 दिन',
-    costMin: 100,
-    costMax: 150,
-    baseArea: 1,
-    baseWater: 200,
-
-    baseIngredients: [
-      {
-        name: 'देसी गाय का ताजा गोबर',
-        amount: 10,
-        unit: 'किग्रा',
-      },
-      {
-        name: 'पुराना गौमूत्र',
-        amount: 10,
-        unit: 'लीटर',
-      },
-      {
-        name: 'गुड़',
-        amount: 2,
-        unit: 'किग्रा',
-      },
-      {
-        name: 'बेसन',
-        amount: 2,
-        unit: 'किग्रा',
-      },
-      {
-        name: 'उपजाऊ मिट्टी',
-        amount: 1,
-        unit: 'किग्रा',
-      },
-    ],
-
-    processSteps: [
-      '200 लीटर ड्रम में स्वच्छ पानी भरें।',
-      'गोबर और गौमूत्र का घोल बनाकर ड्रम में मिलाएं।',
-      'गुड़ और बेसन को अलग पानी में घोलकर मिलाएं।',
-      'अंत में उपजाऊ मिट्टी मिलाएं।',
-      'छायादार स्थान पर रखें और समय-समय पर लकड़ी से चलाएं।',
-    ],
-
-    usage:
-      'सिंचाई के पानी के साथ या उचित रूप से छानकर फसल पर प्रयोग किया जाता है।',
-
-    precautions:
-      'छायादार स्थान में रखें और तैयार घोल की गुणवत्ता, स्वच्छता तथा फसल के लिए उपयुक्त मात्रा का ध्यान रखें।',
-  },
-
-  {
-    id: 'neemastra',
-    title: 'नीमास्त्र (Neemastra)',
-    type: 'जैविक कीट प्रबंधन',
-    category: 'pesticide',
-    target: 'रसचूसक कीट, थ्रिप्स, सफेद मक्खी आदि',
-    shelfLife: 'निर्माता निर्देश अनुसार',
-    costMin: 50,
-    costMax: 80,
-    baseArea: 1,
-    baseWater: 100,
-
-    baseIngredients: [
-      {
-        name: 'गौमूत्र',
-        amount: 5,
-        unit: 'लीटर',
-      },
-      {
-        name: 'ताजा गोबर',
-        amount: 1,
-        unit: 'किग्रा',
-      },
-      {
-        name: 'नीम पत्ती पेस्ट',
-        amount: 5,
-        unit: 'किग्रा',
-      },
-    ],
-
-    processSteps: [
-      'पानी में गौमूत्र और गोबर मिलाएं।',
-      'नीम पत्ती का पेस्ट मिलाएं।',
-      'छायादार स्थान में मिश्रण रखें।',
-      'छानकर प्रयोग से पहले फसल और स्थानीय कृषि सलाह के अनुसार उपयोग करें।',
-    ],
-
-    usage:
-      'उपयोग से पहले फसल, कीट और स्थानीय कृषि विशेषज्ञ की सलाह के अनुसार घोल की मात्रा निर्धारित करें।',
-
-    precautions:
-      'पहले छोटे हिस्से पर परीक्षण करें। तेज धूप, तेज हवा या बारिश के समय छिड़काव न करें।',
-  },
-
-  {
-    id: 'brahmastra',
-    title: 'ब्रह्मास्त्र (Brahmastra)',
-    type: 'प्राकृतिक कीट प्रबंधन',
-    category: 'pesticide',
-    target: 'इल्लियां और अन्य कीट',
-    shelfLife: 'निर्माता निर्देश अनुसार',
-    costMin: 120,
-    costMax: 180,
-    baseArea: 1,
-    baseWater: 100,
-
-    baseIngredients: [
-      {
-        name: 'गौमूत्र',
-        amount: 10,
-        unit: 'लीटर',
-      },
-      {
-        name: 'नीम पत्ती पेस्ट',
-        amount: 3,
-        unit: 'किग्रा',
-      },
-      {
-        name: 'करंज/अरंडी पत्ती पेस्ट',
-        amount: 2,
-        unit: 'किग्रा',
-      },
-      {
-        name: 'सीताफल पत्ती पेस्ट',
-        amount: 2,
-        unit: 'किग्रा',
-      },
-      {
-        name: 'अन्य कड़वी पत्तियों का पेस्ट',
-        amount: 2,
-        unit: 'किग्रा',
-      },
-    ],
-
-    processSteps: [
-      'सभी सामग्री को उचित पात्र में मिलाएं।',
-      'मिश्रण को छायादार स्थान पर रखें।',
-      'निर्धारित अवधि में मिश्रण को स्वच्छ तरीके से संभालें।',
-      'छानकर उपयोग से पहले स्थानीय कृषि सलाह लें।',
-    ],
-
-    usage:
-      'फसल एवं कीट की स्थिति के अनुसार कृषि विशेषज्ञ की सलाह से उपयोग करें।',
-
-    precautions:
-      'किसी भी जैविक कीट-प्रबंधन घोल को पहले छोटे क्षेत्र पर परीक्षण करें और सुरक्षात्मक दस्ताने/कपड़े का उपयोग करें।',
-  },
-
-  {
-    id: 'agniastra',
-    title: 'अग्निअस्त्र (Agniastra)',
-    type: 'प्राकृतिक कीट प्रबंधन',
-    category: 'pesticide',
-    target: 'इल्ली एवं पत्ती खाने वाले कीट',
-    shelfLife: 'निर्माता निर्देश अनुसार',
-    costMin: 150,
-    costMax: 200,
-    baseArea: 1,
-    baseWater: 100,
-
-    baseIngredients: [
-      {
-        name: 'गौमूत्र',
-        amount: 10,
-        unit: 'लीटर',
-      },
-      {
-        name: 'तीखी मिर्च पेस्ट',
-        amount: 500,
-        unit: 'ग्राम',
-      },
-      {
-        name: 'लहसुन पेस्ट',
-        amount: 250,
-        unit: 'ग्राम',
-      },
-      {
-        name: 'नीम पत्ती पेस्ट',
-        amount: 2,
-        unit: 'किग्रा',
-      },
-    ],
-
-    processSteps: [
-      'सभी सामग्री को उचित पात्र में मिलाएं।',
-      'मिश्रण को सुरक्षित स्थान पर रखें।',
-      'छानकर प्रयोग से पहले उचित dilution और crop-safety की पुष्टि करें।',
-    ],
-
-    usage:
-      'फसल और कीट की स्थिति के अनुसार कृषि विशेषज्ञ/लेबल निर्देश के अनुसार उपयोग करें।',
-
-    precautions:
-      'आंखों, त्वचा और सांस के संपर्क से बचें। दस्ताने और अन्य उचित सुरक्षा उपकरण पहनें। बच्चों से दूर रखें।',
-  },
-
-  {
-    id: 'dashparni',
-    title: 'दशपर्णी अर्क (Dashparni Arka)',
-    type: 'प्राकृतिक कीट प्रबंधन अर्क',
-    category: 'pesticide',
-    target: 'विभिन्न प्रकार के कीट',
-    shelfLife: 'निर्माता निर्देश अनुसार',
-    costMin: 200,
-    costMax: 250,
-    baseArea: 1,
-    baseWater: 200,
-
-    baseIngredients: [
-      {
-        name: 'पानी',
-        amount: 200,
-        unit: 'लीटर',
-      },
-      {
-        name: 'गौमूत्र',
-        amount: 20,
-        unit: 'लीटर',
-      },
-      {
-        name: 'गोबर',
-        amount: 2,
-        unit: 'किग्रा',
-      },
-      {
-        name: 'कड़वी/औषधीय पत्तियों का मिश्रण',
-        amount: 20,
-        unit: 'किग्रा',
-      },
-      {
-        name: 'हल्दी',
-        amount: 500,
-        unit: 'ग्राम',
-      },
-      {
-        name: 'अदरक/सोंठ',
-        amount: 500,
-        unit: 'ग्राम',
-      },
-    ],
-
-    processSteps: [
-      'सामग्री को स्वच्छ पात्र में मिलाएं।',
-      'छायादार स्थान पर fermentation के लिए रखें।',
-      'मिश्रण को स्वच्छ तरीके से संभालें।',
-      'उपयोग से पहले अच्छी तरह छानें।',
-    ],
-
-    usage:
-      'फसल एवं कीट स्थिति के अनुसार कृषि विशेषज्ञ की सलाह से उपयोग करें।',
-
-    precautions:
-      'लंबे fermentation के दौरान पात्र को स्वच्छ रखें और बच्चों/पशुओं की पहुंच से दूर रखें।',
-  },
-
-  {
-    id: 'sont-astra',
-    title: 'सोंठ-दूध / छाछ फफूंद प्रबंधन',
-    type: 'प्राकृतिक फफूंद प्रबंधन',
-    category: 'fungicide',
-    target: 'कुछ फफूंदजनित समस्याएं',
-    shelfLife: 'ताजा तैयार करना बेहतर',
-    costMin: 80,
-    costMax: 120,
-    baseArea: 1,
-    baseWater: 100,
-
-    baseIngredients: [
-      {
-        name: 'दूध / छाछ',
-        amount: 5,
-        unit: 'लीटर',
-      },
-      {
-        name: 'सोंठ पाउडर',
-        amount: 200,
-        unit: 'ग्राम',
-      },
-      {
-        name: 'पानी',
-        amount: 100,
-        unit: 'लीटर',
-      },
-    ],
-
-    processSteps: [
-      'सामग्री को स्वच्छ पात्र में मिलाएं।',
-      'घोल को अच्छी तरह मिश्रित करें।',
-      'उपयोग से पहले छानें।',
-      'पहले छोटे क्षेत्र पर परीक्षण करें।',
-    ],
-
-    usage:
-      'फसल में समस्या के लक्षण दिखने पर स्थानीय कृषि सलाह के अनुसार उपयोग करें।',
-
-    precautions:
-      'प्राकृतिक घोल को रासायनिक fungicide का स्वतः विकल्प न मानें। रोग की सही पहचान जरूरी है।',
-  },
-];
+import { publicApiRequest, unwrapApiList } from '@/lib/publicApi';
 
 /* =========================================================
    HELPERS
@@ -356,25 +47,6 @@ const UNIT_OPTIONS = [
     value: 'bigha',
     label: 'बीघा',
     short: 'Bigha',
-  },
-];
-
-const CATEGORY_OPTIONS = [
-  {
-    value: 'all',
-    label: 'सभी',
-  },
-  {
-    value: 'fertilizer',
-    label: 'प्राकृतिक खाद',
-  },
-  {
-    value: 'pesticide',
-    label: 'कीट प्रबंधन',
-  },
-  {
-    value: 'fungicide',
-    label: 'फफूंद प्रबंधन',
   },
 ];
 
@@ -429,12 +101,8 @@ const formatAmount = (amount, unit) => {
   return `${formatNumber(value)} ${unit}`;
 };
 
-const getCategoryLabel = (category) => {
-  const item = CATEGORY_OPTIONS.find(
-    (x) => x.value === category
-  );
-
-  return item?.label || category;
+const getCategoryLabel = (category, categories) => {
+  return categories.find((item) => item.value === category)?.label || category;
 };
 
 /* =========================================================
@@ -442,6 +110,10 @@ const getCategoryLabel = (category) => {
 ========================================================= */
 
 export default function OrganicFarmingPage() {
+  const [recipes, setRecipes] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [landArea, setLandArea] = useState(1);
   const [landUnit, setLandUnit] = useState('acre');
 
@@ -462,6 +134,115 @@ export default function OrganicFarmingPage() {
 
   const [copiedRecipe, setCopiedRecipe] =
     useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    Promise.all([
+      publicApiRequest('/organic-recipes?status=active&limit=100'),
+      publicApiRequest('/organic-categories?status=active'),
+    ])
+      .then(([recipeResult, categoryResult]) => {
+        if (cancelled) return;
+
+        const nextCategories = unwrapApiList(categoryResult).map((category) => ({
+          value: category.slug || category._id || category.id,
+          slug: category.slug,
+          id: category._id || category.id,
+          label: category.name || category.label || '',
+        }));
+        const nextRecipes = unwrapApiList(recipeResult, [
+          'recipes',
+          'organicRecipes',
+        ]).map((recipe) => {
+          const categoryReference =
+            recipe.categorySlug ||
+            recipe.category?.slug ||
+            recipe.category?.key ||
+            recipe.categoryId?.slug ||
+            recipe.categoryId?._id ||
+            recipe.categoryId ||
+            (typeof recipe.category === 'string'
+              ? recipe.category
+              : recipe.category?._id) ||
+            '';
+          const categoryMatch = nextCategories.find(
+            (category) =>
+              category.value === categoryReference ||
+              category.id === categoryReference ||
+              category.slug === categoryReference
+          );
+
+          return {
+            ...recipe,
+            id: recipe._id || recipe.id || recipe.slug,
+            title: recipe.title || recipe.name || '',
+            type:
+              recipe.type ||
+              recipe.category?.name ||
+              recipe.categoryName ||
+              categoryMatch?.label ||
+              '',
+            category: categoryMatch?.value || categoryReference,
+            target: recipe.target || '',
+            shelfLife: recipe.shelfLife || '',
+            costMin: Number(recipe.costMin) || 0,
+            costMax: Number(recipe.costMax) || 0,
+            baseArea: Number(recipe.baseArea) || 1,
+            baseAreaUnit: recipe.baseAreaUnit || 'acre',
+            baseWater: Number(recipe.baseWater) || 0,
+            baseIngredients: Array.isArray(recipe.baseIngredients)
+              ? recipe.baseIngredients
+              : [],
+            processSteps: Array.isArray(recipe.processSteps)
+              ? recipe.processSteps
+              : [],
+            usage: recipe.usage || '',
+            precautions: recipe.precautions || '',
+          };
+        });
+
+        setRecipes(nextRecipes);
+        setCategories(nextCategories);
+        const requestedCategory = new URLSearchParams(
+          window.location.search,
+        ).get('category');
+        if (requestedCategory) setSelectedCategory(requestedCategory);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setLoadError(error.message || 'जैविक खेती की जानकारी लोड नहीं हो सकी।');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const categoryOptions = useMemo(() => {
+    if (categories.length) {
+      return [{ value: 'all', label: 'सभी' }, ...categories];
+    }
+
+    const recipeCategories = new Map();
+    recipes.forEach((recipe) => {
+      if (recipe.category) {
+        recipeCategories.set(recipe.category, {
+          value: recipe.category,
+          label: recipe.type || recipe.category,
+        });
+      }
+    });
+
+    return [
+      { value: 'all', label: 'सभी' },
+      ...Array.from(recipeCategories.values()),
+    ];
+  }, [categories, recipes]);
 
   /*
   |--------------------------------------------------------------------------
@@ -486,7 +267,7 @@ export default function OrganicFarmingPage() {
     const search =
       searchTerm.trim().toLowerCase();
 
-    return ORGANIC_RECIPES.filter(
+    return recipes.filter(
       (recipe) => {
         const categoryMatch =
           filterCategory === 'all' ||
@@ -514,7 +295,12 @@ export default function OrganicFarmingPage() {
   }, [
     filterCategory,
     searchTerm,
+    recipes,
   ]);
+
+  const getRecipeScale = (recipe) =>
+    areaInAcres /
+    convertToAcres(recipe.baseArea, recipe.baseAreaUnit);
 
   /*
   |--------------------------------------------------------------------------
@@ -527,8 +313,7 @@ export default function OrganicFarmingPage() {
       (total, recipe) => {
         return (
           total +
-          recipe.costMin *
-            areaInAcres
+          recipe.costMin * getRecipeScale(recipe)
         );
       },
       0
@@ -543,8 +328,7 @@ export default function OrganicFarmingPage() {
       (total, recipe) => {
         return (
           total +
-          recipe.costMax *
-            areaInAcres
+          recipe.costMax * getRecipeScale(recipe)
         );
       },
       0
@@ -603,8 +387,7 @@ export default function OrganicFarmingPage() {
     );
     lines.push(
       `पानी: ${formatNumber(
-        recipe.baseWater *
-          areaInAcres
+        recipe.baseWater * getRecipeScale(recipe)
       )} लीटर`
     );
 
@@ -617,8 +400,7 @@ export default function OrganicFarmingPage() {
           `• ${
             ingredient.name
           }: ${formatAmount(
-            ingredient.amount *
-              areaInAcres,
+            ingredient.amount * getRecipeScale(recipe),
             ingredient.unit
           )}`
         );
@@ -701,7 +483,7 @@ export default function OrganicFarmingPage() {
   */
 
   const selectedRecipe =
-    ORGANIC_RECIPES.find(
+    recipes.find(
       (recipe) =>
         recipe.id ===
         selectedRecipeId
@@ -768,6 +550,16 @@ export default function OrganicFarmingPage() {
       `}</style>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        {loadError && (
+          <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            {loadError}
+          </p>
+        )}
+        {loading && (
+          <p role="status" className="text-center text-sm text-slate-500">
+            जैविक खेती की जानकारी लोड हो रही है...
+          </p>
+        )}
 
         {/* ====================================================
             HERO
@@ -1102,7 +894,7 @@ export default function OrganicFarmingPage() {
               className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500"
             >
 
-              {CATEGORY_OPTIONS.map(
+              {categoryOptions.map(
                 (item) => (
                   <option
                     key={
@@ -1172,17 +964,10 @@ export default function OrganicFarmingPage() {
                   recipe.id
                 );
 
-              const scaledWater =
-                recipe.baseWater *
-                areaInAcres;
-
-              const scaledCostMin =
-                recipe.costMin *
-                areaInAcres;
-
-              const scaledCostMax =
-                recipe.costMax *
-                areaInAcres;
+              const scale = getRecipeScale(recipe);
+              const scaledWater = recipe.baseWater * scale;
+              const scaledCostMin = recipe.costMin * scale;
+              const scaledCostMax = recipe.costMax * scale;
 
               return (
                 <article
@@ -1322,9 +1107,7 @@ export default function OrganicFarmingPage() {
                           ingredient,
                           index
                         ) => {
-                          const amount =
-                            ingredient.amount *
-                            areaInAcres;
+                          const amount = ingredient.amount * scale;
 
                           return (
                             <div
@@ -1478,9 +1261,7 @@ export default function OrganicFarmingPage() {
                         </p>
 
                         <p className="text-xs font-black text-slate-800 mt-1">
-                          {getCategoryLabel(
-                            recipe.category
-                          )}
+                          {getCategoryLabel(recipe.category, categoryOptions)}
                         </p>
 
                       </div>
@@ -1795,7 +1576,7 @@ export default function OrganicFarmingPage() {
                     <p className="font-black text-sm">
                       {formatNumber(
                         selectedRecipe.baseWater *
-                          areaInAcres
+                          getRecipeScale(selectedRecipe)
                       )}{' '}
                       L
                     </p>
@@ -1809,13 +1590,13 @@ export default function OrganicFarmingPage() {
                       ₹
                       {formatNumber(
                         selectedRecipe.costMin *
-                          areaInAcres
+                          getRecipeScale(selectedRecipe)
                       )}{' '}
                       –
                       ₹
                       {formatNumber(
                         selectedRecipe.costMax *
-                          areaInAcres
+                          getRecipeScale(selectedRecipe)
                       )}
                     </p>
                   </div>
@@ -1853,7 +1634,7 @@ export default function OrganicFarmingPage() {
                         <strong className="text-sm text-emerald-800">
                           {formatAmount(
                             ingredient.amount *
-                              areaInAcres,
+                              getRecipeScale(selectedRecipe),
                             ingredient.unit
                           )}
                         </strong>

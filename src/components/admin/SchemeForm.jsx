@@ -10,6 +10,7 @@ import {
   Loader2,
   ExternalLink,
 } from "lucide-react";
+import { getAdminAuthHeaders } from "@/lib/apiClient";
 import Link from "next/link";
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -538,6 +539,7 @@ export default function SchemeForm({
           headers: {
             "Content-Type":
               "application/json",
+            ...getAdminAuthHeaders(),
           },
           body: JSON.stringify(payload),
         }

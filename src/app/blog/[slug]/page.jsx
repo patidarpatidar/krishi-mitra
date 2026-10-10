@@ -28,13 +28,14 @@ import {
   VolumeX,
 } from 'lucide-react';
 
-import {
-  getBlogBySlug,
-  getRelatedBlogs,
-} from '@/data/blogData';
+import { publicApiRequest, unwrapApiList } from '@/lib/publicApi';
 
 export default function BlogDetailPage({ params }) {
-  const blog = getBlogBySlug(params?.slug);
+  const [blog, setBlog] = useState(null);
+  const [relatedBlogs, setRelatedBlogs] = useState([]);
+  const [relatedError, setRelatedError] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   const [progress, setProgress] = useState(0);
   const [activeSection, setActiveSection] = useState('');
@@ -42,7 +43,7 @@ export default function BlogDetailPage({ params }) {
 
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [likes, setLikes] = useState(blog?.likes || 0);
+  const [likes, setLikes] = useState(0);
 
   const [copied, setCopied] = useState(false);
   const [speaking, setSpeaking] = useState(false);
@@ -54,28 +55,63 @@ export default function BlogDetailPage({ params }) {
 
   const [helpful, setHelpful] = useState(null);
 
-  const [comments, setComments] = useState([
-    {
-      id: 1,
-      name: 'रामेश्वर धाकड़',
-      location: 'नीमच',
-      text: 'जानकारी उपयोगी लगी।',
-      date: 'आज',
-    },
-    {
-      id: 2,
-      name: 'विक्रम सिंह',
-      location: 'मंदसौर',
-      text: 'ऐसे और practical articles डालिए।',
-      date: 'कल',
-    },
-  ]);
+  const [comments, setComments] = useState([]);
 
   const [commentForm, setCommentForm] = useState({
     name: '',
     location: '',
     text: '',
   });
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadBlog() {
+      try {
+        const result = await publicApiRequest(
+          `/blogs/slug/${encodeURIComponent(params?.slug || '')}`,
+        );
+        const record = result.data;
+        const dateValue = record.date || record.publishedAt;
+        const apiBlog = {
+          ...record,
+          dateLabel: dateValue
+            ? new Intl.DateTimeFormat('hi-IN', { dateStyle: 'medium' }).format(new Date(dateValue))
+            : '',
+        };
+        if (cancelled) return;
+        setBlog(apiBlog);
+        setLikes(apiBlog.likes || 0);
+      } catch (error) {
+        if (!cancelled) setLoadError(error.message || 'लेख लोड नहीं हो सका।');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    loadBlog();
+    return () => {
+      cancelled = true;
+    };
+  }, [params?.slug]);
+
+  useEffect(() => {
+    const categoryId = blog?.categoryId?._id || blog?.categoryId;
+    if (!categoryId) return;
+    let cancelled = false;
+    publicApiRequest(`/blogs?category=${encodeURIComponent(categoryId)}&limit=4`)
+      .then((result) => {
+        if (!cancelled) {
+          setRelatedBlogs(
+            unwrapApiList(result).filter((item) => item.slug !== blog.slug),
+          );
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) setRelatedError(error.message || 'संबंधित लेख लोड नहीं हो सके।');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [blog]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -127,16 +163,36 @@ export default function BlogDetailPage({ params }) {
     };
   }, [blog]);
 
+  const calculatorData = useMemo(() => {
+    const acres =
+      landUnit === 'acre'
+        ? Number(landArea) || 0
+        : (Number(landArea) || 0) * 0.625;
+
+    const water = (blog?.calculator?.waterPerAcre || 0) * acres;
+    const recommendations =
+      blog?.calculator?.recommendations?.map((item) => ({
+        ...item,
+        calculated: item.quantity * acres,
+      })) || [];
+
+    return { acres, water, recommendations };
+  }, [landArea, landUnit, blog]);
+
+  if (loading) {
+    return <main className="mx-auto max-w-4xl px-4 py-16 text-center text-slate-500">लेख लोड हो रहा है...</main>;
+  }
+
   if (!blog) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
         <div className="bg-white border border-slate-200 rounded-3xl p-10 text-center max-w-lg">
           <h1 className="text-2xl font-black text-slate-900">
-            लेख नहीं मिला
+            {loadError ? 'लेख लोड नहीं हो सका' : 'लेख नहीं मिला'}
           </h1>
 
           <p className="text-sm text-slate-500 mt-2">
-            यह article मौजूद नहीं है या हटाया जा चुका है।
+            {loadError || 'यह लेख उपलब्ध नहीं है या प्रकाशित नहीं किया गया है।'}
           </p>
 
           <Link
@@ -149,30 +205,6 @@ export default function BlogDetailPage({ params }) {
       </div>
     );
   }
-
-  const relatedBlogs = getRelatedBlogs(blog);
-
-  const calculatorData = useMemo(() => {
-    const acres =
-      landUnit === 'acre'
-        ? Number(landArea) || 0
-        : (Number(landArea) || 0) * 0.625;
-
-    const water =
-      (blog.calculator?.waterPerAcre || 0) * acres;
-
-    const recommendations =
-      blog.calculator?.recommendations?.map((item) => ({
-        ...item,
-        calculated: item.quantity * acres,
-      })) || [];
-
-    return {
-      acres,
-      water,
-      recommendations,
-    };
-  }, [landArea, landUnit, blog]);
 
   const scrollToSection = (id) => {
     document.getElementById(id)?.scrollIntoView({

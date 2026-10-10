@@ -23,49 +23,38 @@ export default function FarmerWeatherPage() {
   const [weather, setWeather] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState("");
 
   const locationName = `${farmer.district || "नीमच"}, ${farmer.state || "मध्य प्रदेश"}`;
 
   const loadWeather = useCallback(async () => {
     try {
       setLoading(true);
+      setError("");
       const res = await getNeemuchWeather();
 
-      if (res) {
-        setWeather({
-          location: locationName,
-          temperature: res.temperature,
-          humidity: res.humidity,
-          windSpeed: res.windSpeed,
-          weatherCode: res.weatherCode,
-          maxTemp: res.maxTemp,
-          minTemp: res.minTemp,
-          rainProb: res.rainProb,
-          condition:
-            res.weatherCode === 0
-              ? "साफ एवं धूप"
-              : res.weatherCode <= 3
-              ? "आंशिक बादल"
-              : res.weatherCode >= 51 && res.weatherCode <= 67
-              ? "वर्षा की संभावना"
-              : "हल्की धूप व बादल",
-        });
-      } else {
-        // Fallback default realistic reading
-        setWeather({
-          location: locationName,
-          temperature: 29,
-          humidity: 58,
-          windSpeed: 14,
-          weatherCode: 2,
-          maxTemp: 32,
-          minTemp: 22,
-          rainProb: 25,
-          condition: "आंशिक बादल",
-        });
-      }
+      setWeather({
+        location: locationName,
+        temperature: res.temperature,
+        humidity: res.humidity,
+        windSpeed: res.windSpeed,
+        weatherCode: res.weatherCode,
+        maxTemp: res.maxTemp,
+        minTemp: res.minTemp,
+        rainProb: res.rainProb,
+        condition:
+          res.weatherCode === 0
+            ? "साफ एवं धूप"
+            : res.weatherCode <= 3
+            ? "आंशिक बादल"
+            : res.weatherCode >= 51 && res.weatherCode <= 67
+            ? "वर्षा की संभावना"
+            : "हल्की धूप व बादल",
+      });
     } catch (err) {
       console.error("Load weather error:", err);
+      setWeather(null);
+      setError(err.message || "मौसम डेटा लोड नहीं हो सका।");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -159,7 +148,11 @@ export default function FarmerWeatherPage() {
           <Loader2 className="w-8 h-8 animate-spin mx-auto text-emerald-400 mb-3" />
           <p className="text-slate-400">मौसम डेटा लोड हो रहा है...</p>
         </div>
-      ) : (
+      ) : error ? (
+        <div role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
+          {error}
+        </div>
+      ) : weather ? (
         <>
           {/* Main Weather Hero Card */}
           <section className="bg-gradient-to-br from-slate-900 via-slate-850 to-slate-800 border border-slate-700 rounded-3xl p-6 sm:p-8 shadow-2xl">
@@ -197,6 +190,7 @@ export default function FarmerWeatherPage() {
                 ) : (
                   <CloudSun className="w-16 h-16 text-emerald-400" />
                 )}
+
               </div>
             </div>
 
@@ -257,7 +251,7 @@ export default function FarmerWeatherPage() {
             </div>
           </div>
         </>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -12,7 +12,7 @@ import {
   X,
 } from "lucide-react";
 
-import { farmerApi, getFarmerUser } from "@/lib/farmerApi";
+import { farmerApi } from "@/lib/farmerApi";
 
 export default function MyCropsPage() {
   const [crops, setCrops] = useState([]);
@@ -36,14 +36,11 @@ export default function MyCropsPage() {
       setLoading(true);
       setError("");
 
-      const cached = getFarmerUser();
-      if (cached?.crops) {
-        setCrops(cached.crops);
-      }
-
       const res = await farmerApi.getCrops();
       if (Array.isArray(res.data)) {
         setCrops(res.data);
+      } else {
+        setCrops([]);
       }
     } catch (err) {
       console.error("Load crops error:", err);

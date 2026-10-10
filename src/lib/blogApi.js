@@ -76,8 +76,12 @@ export const blogApi = {
   getCategories: (admin = false) =>
     request(admin ? "/blog-categories/admin" : "/blog-categories"),
 
-  getCategory: (id) =>
-    request(`/blog-categories/${encodeURIComponent(id)}`),
+  getCategory: (id, admin = false) =>
+    request(
+      admin
+        ? `/blog-categories/admin/${encodeURIComponent(id)}`
+        : `/blog-categories/${encodeURIComponent(id)}`
+    ),
 
   createCategory: (body) =>
     request("/blog-categories", {

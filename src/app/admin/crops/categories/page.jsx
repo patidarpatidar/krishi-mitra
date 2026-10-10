@@ -16,6 +16,7 @@ import {
   CircleSlash,
   Layers3,
 } from "lucide-react";
+import { getAdminAuthHeaders } from "@/lib/apiClient";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -106,7 +107,10 @@ export default function CropCategoriesPage() {
 
       const response = await fetch(
         `${API_URL}/crop-categories/${item._id}`,
-        { method: "DELETE" }
+        {
+          method: "DELETE",
+          headers: getAdminAuthHeaders(),
+        }
       );
 
       const result = await response.json();

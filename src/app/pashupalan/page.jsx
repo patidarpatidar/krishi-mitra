@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Search,
@@ -26,6 +26,7 @@ import {
   CheckCircle2,
   MessageCircle,
 } from "lucide-react";
+import { publicApiRequest, unwrapApiList } from "@/lib/publicApi";
 
 const livestockCategories = [
   {
@@ -60,92 +61,23 @@ const livestockCategories = [
   },
 ];
 
-const livestockServices = [
-  {
-    id: "dairy",
-    title: "गाय-भैंस पालन",
-    subtitle: "डेयरी व्यवसाय की जानकारी",
-    description:
-      "दूध उत्पादन, नस्ल का चुनाव, पशु आवास, दुहाई और डेयरी प्रबंधन के व्यावहारिक सुझाव।",
-    icon: Beef,
-    color: "bg-amber-50 text-amber-800",
-    category: "dairy",
-    image:
-      "https://images.unsplash.com/photo-1516467508483-a7212febe31a?auto=format&fit=crop&w=900&q=85",
-    points: ["दूध उत्पादन", "आहार प्रबंधन", "डेयरी हिसाब"],
-    href: "/pashupalan/gay-bhains-palan",
-  },
-  {
-    id: "goat",
-    title: "बकरी पालन",
-    subtitle: "छोटे निवेश से शुरुआत",
-    description:
-      "बकरी आवास, नस्ल चयन, बच्चों की देखभाल, पोषण और व्यवसाय की लागत समझें।",
-    icon: Beef,
-    color: "bg-green-50 text-green-800",
-    category: "goat",
-    image:
-      "https://images.unsplash.com/photo-1524024973431-2ad916746881?auto=format&fit=crop&w=900&q=85",
-    points: ["नस्ल चयन", "बच्चों की देखभाल", "लागत प्रबंधन"],
-    href: "/pashupalan/bakri-palan",
-  },
-  {
-    id: "poultry",
-    title: "मुर्गी पालन",
-    subtitle: "अंडा और ब्रॉयलर उत्पादन",
-    description:
-      "पोल्ट्री शेड, साफ पानी, आहार, जैव-सुरक्षा और उत्पादन लागत की जानकारी।",
-    icon: Bird,
-    color: "bg-orange-50 text-orange-800",
-    category: "poultry",
-    image:
-      "https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?auto=format&fit=crop&w=900&q=85",
-    points: ["पोल्ट्री शेड", "आहार", "स्वच्छता"],
-    href: "/pashupalan/murgi-palan",
-  },
-  {
-    id: "fodder",
-    title: "हरा चारा और पशु आहार",
-    subtitle: "संतुलित आहार की जानकारी",
-    description:
-      "हरे चारे, सूखे चारे, पानी और संतुलित पशु आहार की योजना बनाना सीखें।",
-    icon: Wheat,
-    color: "bg-lime-50 text-lime-800",
-    category: "fodder",
-    image:
-      "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=900&q=85",
-    points: ["हरा चारा", "साइलेज", "पोषण"],
-    href: "/pashupalan/chara-prabandhan",
-  },
-  {
-    id: "health",
-    title: "पशु स्वास्थ्य",
-    subtitle: "देखभाल और समय पर सलाह",
-    description:
-      "बीमारी के चेतावनी संकेत, स्वच्छता, टीकाकरण रिकॉर्ड और पशु चिकित्सक से संपर्क।",
-    icon: HeartPulse,
-    color: "bg-rose-50 text-rose-800",
-    category: "health",
-    image:
-      "https://images.unsplash.com/photo-1546445317-29f4545e9d53?auto=format&fit=crop&w=900&q=85",
-    points: ["स्वास्थ्य रिकॉर्ड", "स्वच्छता", "विशेषज्ञ सलाह"],
-    href: "/pashupalan/pashu-swasthya",
-  },
-  {
-    id: "schemes",
-    title: "पशुपालन सरकारी योजनाएँ",
-    subtitle: "योजनाओं की जानकारी",
-    description:
-      "पात्रता, आवश्यक दस्तावेज और आवेदन प्रक्रिया की आधिकारिक जानकारी खोजें।",
-    icon: ShieldCheck,
-    color: "bg-sky-50 text-sky-800",
-    category: "health",
-    image:
-      "https://images.unsplash.com/photo-1500595046743-cd271d694d30?auto=format&fit=crop&w=900&q=85",
-    points: ["पात्रता", "दस्तावेज", "आवेदन प्रक्रिया"],
-    href: "/pashupalan/sarkari-yojana",
-  },
-];
+const livestockArticleIcons = {
+  dairy: Beef,
+  goat: Beef,
+  poultry: Bird,
+  fodder: Wheat,
+  health: HeartPulse,
+  schemes: ShieldCheck,
+};
+
+const livestockArticleColors = {
+  dairy: "bg-amber-50 text-amber-800",
+  goat: "bg-green-50 text-green-800",
+  poultry: "bg-orange-50 text-orange-800",
+  fodder: "bg-lime-50 text-lime-800",
+  health: "bg-rose-50 text-rose-800",
+  schemes: "bg-sky-50 text-sky-800",
+};
 
 const quickGuides = [
   {
@@ -216,6 +148,9 @@ function SectionHeading({ eyebrow, title, description }) {
 }
 
 export default function PashupalanPage() {
+  const [articles, setArticles] = useState([]);
+  const [loadingArticles, setLoadingArticles] = useState(true);
+  const [articlesError, setArticlesError] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
   const [search, setSearch] = useState("");
   const [faqOpen, setFaqOpen] = useState(0);
@@ -227,25 +162,87 @@ export default function PashupalanPage() {
 
   const [showCalculator, setShowCalculator] = useState(false);
 
-  const filteredServices = useMemo(() => {
-    const query = search.trim().toLowerCase();
+  useEffect(() => {
+      let cancelled = false;
 
-    return livestockServices.filter((item) => {
-      const categoryMatch =
-        activeCategory === "all" ||
-        item.category === activeCategory ||
-        (activeCategory === "health" && item.id === "schemes");
+      publicApiRequest("/livestock?status=published&limit=20")
+        .then((result) => {
+          if (cancelled) return;
+
+          const publishedArticles = unwrapApiList(result, [
+            "articles",
+            "livestock",
+          ]).map((article) => {
+            const category =
+              typeof article.category === "string"
+                ? article.category
+                : article.category?.key || article.category?.slug || "";
+            const firstSection = Array.isArray(article.sections)
+              ? article.sections.find((section) => section?.content)
+              : null;
+            const points = [
+              ...(Array.isArray(article.facts)
+                ? article.facts.map((fact) =>
+                    Array.isArray(fact) ? fact.filter(Boolean).join(": ") : ""
+                  )
+                : []),
+              ...(Array.isArray(article.sections)
+                ? article.sections.flatMap((section) =>
+                    Array.isArray(section.points) ? section.points : []
+                  )
+                : []),
+            ].filter(Boolean);
+
+            return {
+              ...article,
+              id: article._id || article.id || article.slug,
+              category,
+              title: article.title || "",
+              subtitle: article.subtitle || article.categoryLabel || "",
+              description:
+                article.intro || firstSection?.content || article.subtitle || "",
+              points,
+              icon: livestockArticleIcons[category] || Sprout,
+              color: livestockArticleColors[category] || "bg-green-50 text-green-800",
+              href: `/pashupalan/${encodeURIComponent(article.slug || "")}`,
+            };
+          });
+
+          setArticles(publishedArticles);
+        })
+        .catch((error) => {
+          if (!cancelled) {
+            setArticlesError(error.message || "पशुपालन की जानकारी लोड नहीं हो सकी।");
+          }
+        })
+        .finally(() => {
+          if (!cancelled) setLoadingArticles(false);
+        });
+
+      return () => {
+        cancelled = true;
+      };
+  }, []);
+
+  const filteredServices = useMemo(() => {
+      const query = search.trim().toLowerCase();
+
+      return articles.filter((item) => {
+        const categoryMatch =
+          activeCategory === "all" ||
+          item.category === activeCategory ||
+          (activeCategory === "health" && item.category === "schemes");
 
       const searchMatch = [
         item.title,
         item.subtitle,
         item.description,
         ...item.points,
-      ].some((value) => value.toLowerCase().includes(query));
+      ].some((value) => String(value || "").toLowerCase().includes(query));
 
-      return categoryMatch && searchMatch;
-    });
-  }, [activeCategory, search]);
+        return categoryMatch && searchMatch;
+      });
+  }, [activeCategory, articles, search]);
 
   const animals = Math.max(0, Number(animalCount) || 0);
   const milk = Math.max(0, Number(milkPerAnimal) || 0);
@@ -392,6 +389,18 @@ export default function PashupalanPage() {
           description="अपनी जरूरत के अनुसार विषय चुनें या खोजकर पशुपालन से जुड़ी जानकारी पाएँ।"
         />
 
+        {articlesError && (
+          <p role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            {articlesError}
+          </p>
+        )}
+
+        {loadingArticles && (
+          <p role="status" className="mb-5 text-sm text-slate-500">
+            पशुपालन की जानकारी लोड हो रही है...
+          </p>
+        )}
+
         <div className="mb-7 flex gap-2 overflow-x-auto pb-2">
           {livestockCategories.map((category) => {
             const Icon = category.icon;
@@ -433,7 +442,9 @@ export default function PashupalanPage() {
             <Search className="mx-auto mb-3 text-slate-400" size={32} />
             <p className="font-bold">कोई जानकारी नहीं मिली</p>
             <p className="mt-2 text-sm text-slate-500">
-              दूसरी category चुनें या search बदलें।
+              {loadingArticles
+                ? "जानकारी लोड होने तक प्रतीक्षा करें।"
+                : "दूसरी category चुनें या search बदलें।"}
             </p>
             <button
               type="button"
@@ -456,13 +467,17 @@ export default function PashupalanPage() {
                   key={service.id}
                   className="group overflow-hidden rounded-2xl border border-slate-200 bg-white transition duration-300 hover:-translate-y-1 hover:border-green-200 hover:shadow-xl hover:shadow-green-950/5"
                 >
-                  <div className="relative h-52 overflow-hidden bg-green-50">
-                    <img
-                      src={service.image}
-                      alt={service.title}
-                      loading="lazy"
-                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                    />
+                  <div className="relative flex h-52 items-center justify-center overflow-hidden bg-green-50">
+                    {service.image ? (
+                      <img
+                        src={service.image}
+                        alt={service.title}
+                        loading="lazy"
+                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                      />
+                    ) : (
+                      <Icon size={56} className="text-green-200" />
+                    )}
                     <div
                       className={`absolute left-4 top-4 rounded-xl p-3 shadow-sm ${service.color}`}
                     >

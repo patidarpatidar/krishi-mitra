@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   ArrowRight,
@@ -21,7 +21,7 @@ import {
   X,
 } from 'lucide-react';
 
-import { blogsData, BLOG_CATEGORIES } from '@/data/blogData';
+import { publicApiRequest, unwrapApiList } from '@/lib/publicApi';
 
 const SORT_OPTIONS = [
   { value: 'latest', label: 'नवीनतम' },
@@ -30,7 +30,7 @@ const SORT_OPTIONS = [
   { value: 'mostViewed', label: 'सबसे ज्यादा देखे गए' },
 ];
 
-function formatNumber(value) {
+function formatNumber(value = 0) {
   if (value >= 1000) {
     return `${(value / 1000).toFixed(1)}K`;
   }
@@ -38,7 +38,16 @@ function formatNumber(value) {
   return value;
 }
 
+function formatBlogDate(value) {
+  if (!value) return '';
+  return new Intl.DateTimeFormat('hi-IN', { dateStyle: 'medium' }).format(new Date(value));
+}
+
 export default function BlogListingPage() {
+  const [blogsData, setBlogsData] = useState([]);
+  const [blogCategories, setBlogCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedTag, setSelectedTag] = useState('');
@@ -47,22 +56,58 @@ export default function BlogListingPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [visibleCount, setVisibleCount] = useState(6);
 
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      publicApiRequest('/blogs?limit=100'),
+      publicApiRequest('/blog-categories'),
+    ])
+      .then(([blogResult, categoryResult]) => {
+        if (cancelled) return;
+        setBlogsData(unwrapApiList(blogResult));
+        setBlogCategories(unwrapApiList(categoryResult));
+        const requestedCategory = new URLSearchParams(
+          window.location.search,
+        ).get('category');
+        if (requestedCategory) setSelectedCategory(requestedCategory);
+      })
+      .catch((loadError) => {
+        if (!cancelled) setError(loadError.message || 'लेख लोड नहीं हो सके।');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const allTags = useMemo(() => {
     const tags = blogsData.flatMap((blog) => blog.tags || []);
     return [...new Set(tags)];
-  }, []);
+  }, [blogsData]);
 
   const featuredPost = blogsData.find((post) => post.isFeatured);
 
   const categoryCounts = useMemo(() => {
-    return BLOG_CATEGORIES.map((category) => ({
+    return [
+      {
+        _id: 'all',
+        label: 'सभी विषय',
+        icon: '📚',
+        count: blogsData.length,
+      },
+      ...blogCategories.map((category) => ({
       ...category,
-      count:
-        category.id === 'all'
-          ? blogsData.length
-          : blogsData.filter((blog) => blog.category === category.id).length,
-    }));
-  }, []);
+        count: blogsData.filter(
+          (blog) =>
+            blog.categoryId?._id === category._id ||
+            blog.categoryId === category._id ||
+            blog.category === category.label,
+        ).length,
+      })),
+    ];
+  }, [blogCategories, blogsData]);
 
   const filteredBlogs = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
@@ -70,7 +115,9 @@ export default function BlogListingPage() {
     const result = blogsData.filter((blog) => {
       const categoryMatch =
         selectedCategory === 'all' ||
-        blog.category === selectedCategory;
+        blog.categoryId?._id === selectedCategory ||
+        blog.categoryId === selectedCategory ||
+        blog.category === blogCategories.find((item) => item._id === selectedCategory)?.label;
 
       const tagMatch =
         !selectedTag ||
@@ -94,20 +141,20 @@ export default function BlogListingPage() {
 
     return [...result].sort((a, b) => {
       if (sortBy === 'popular') {
-        return b.likes + b.comments - (a.likes + a.comments);
+        return (b.likes || 0) + (b.comments || 0) - ((a.likes || 0) + (a.comments || 0));
       }
 
       if (sortBy === 'mostLiked') {
-        return b.likes - a.likes;
+        return (b.likes || 0) - (a.likes || 0);
       }
 
       if (sortBy === 'mostViewed') {
-        return b.views - a.views;
+        return (b.views || 0) - (a.views || 0);
       }
 
-      return new Date(b.date) - new Date(a.date);
+      return new Date(b.date || b.publishedAt || 0) - new Date(a.date || a.publishedAt || 0);
     });
-  }, [searchTerm, selectedCategory, selectedTag, sortBy]);
+  }, [blogsData, blogCategories, searchTerm, selectedCategory, selectedTag, sortBy]);
 
   const visibleBlogs = filteredBlogs.slice(0, visibleCount);
 
@@ -150,7 +197,7 @@ export default function BlogListingPage() {
 
             <div className="flex flex-wrap gap-3 mt-7">
               <div className="bg-white/10 border border-white/10 rounded-xl px-4 py-3">
-                <div className="text-xl font-black">{blogsData.length}+</div>
+                <div className="text-xl font-black">{blogsData.length}</div>
                 <div className="text-[11px] text-emerald-200">
                   कृषि लेख
                 </div>
@@ -169,7 +216,7 @@ export default function BlogListingPage() {
 
               <div className="bg-white/10 border border-white/10 rounded-xl px-4 py-3">
                 <div className="text-xl font-black">
-                  {BLOG_CATEGORIES.length - 1}
+                  {blogCategories.length}
                 </div>
                 <div className="text-[11px] text-emerald-200">
                   विषय
@@ -178,6 +225,9 @@ export default function BlogListingPage() {
             </div>
           </div>
         </section>
+
+        {error && <p role="alert" className="rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</p>}
+        {loading && <p className="text-sm text-slate-500">लेख लोड हो रहे हैं...</p>}
 
         {/* SEARCH */}
         <section className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
@@ -272,18 +322,18 @@ export default function BlogListingPage() {
                 <div className="flex flex-wrap gap-2">
                   {categoryCounts.map((category) => (
                     <button
-                      key={category.id}
+                      key={category._id}
                       onClick={() => {
-                        setSelectedCategory(category.id);
+                        setSelectedCategory(category._id);
                         setVisibleCount(6);
                       }}
                       className={`px-3 py-2 rounded-xl text-xs font-bold border transition ${
-                        selectedCategory === category.id
+                        selectedCategory === category._id
                           ? 'bg-emerald-700 text-white border-emerald-700'
                           : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-emerald-300'
                       }`}
                     >
-                      {category.icon} {category.label}
+                      {category.icon || '📚'} {category.label}
                       <span className="ml-1 opacity-70">
                         ({category.count})
                       </span>
@@ -337,7 +387,7 @@ export default function BlogListingPage() {
             <h2 className="text-xl font-black text-slate-900">
               {selectedCategory === 'all'
                 ? 'नवीनतम कृषि लेख एवं गाइड'
-                : selectedCategory}
+                : blogCategories.find((category) => category._id === selectedCategory)?.label}
             </h2>
 
             <p className="text-xs text-slate-500 mt-1">
@@ -468,7 +518,7 @@ export default function BlogListingPage() {
                 key={blog.slug}
                 blog={blog}
                 onCategoryClick={() => {
-                  setSelectedCategory(blog.category);
+                  setSelectedCategory(blog.categoryId?._id || blog.categoryId || 'all');
                   setVisibleCount(6);
                 }}
               />
@@ -545,7 +595,7 @@ function BlogCard({ blog, onCategoryClick }) {
         <div className="flex items-center justify-between text-[10px] text-slate-500">
           <span className="flex items-center gap-1">
             <Calendar className="w-3 h-3 text-emerald-600" />
-            {blog.dateLabel}
+            {formatBlogDate(blog.date || blog.publishedAt)}
           </span>
 
           <span className="flex items-center gap-1">
@@ -565,7 +615,7 @@ function BlogCard({ blog, onCategoryClick }) {
         </p>
 
         <div className="flex flex-wrap gap-1.5 mt-4">
-          {blog.tags.slice(0, 3).map((tag) => (
+          {(blog.tags || []).slice(0, 3).map((tag) => (
             <span
               key={tag}
               className="bg-slate-100 px-2 py-1 rounded-full text-[9px] font-bold text-slate-600"
@@ -585,7 +635,7 @@ function BlogCard({ blog, onCategoryClick }) {
 
             <span className="flex items-center gap-1">
               <MessageSquare className="w-3 h-3" />
-              {blog.comments}
+              {blog.comments || 0}
             </span>
           </div>
 
@@ -643,7 +693,7 @@ function BlogListCard({ blog }) {
         </p>
 
         <div className="flex flex-wrap gap-2 mt-4">
-          {blog.tags.map((tag) => (
+          {(blog.tags || []).map((tag) => (
             <span
               key={tag}
               className="text-[10px] bg-slate-100 px-2 py-1 rounded-full font-bold text-slate-600"
@@ -657,7 +707,7 @@ function BlogListCard({ blog }) {
 
           <div className="flex gap-4 text-xs text-slate-500">
             <span>
-              📅 {blog.dateLabel}
+              📅 {formatBlogDate(blog.date || blog.publishedAt)}
             </span>
 
             <span>
@@ -669,7 +719,7 @@ function BlogListCard({ blog }) {
             </span>
 
             <span>
-              💬 {blog.comments}
+              💬 {blog.comments || 0}
             </span>
           </div>
 

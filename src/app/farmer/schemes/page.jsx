@@ -21,65 +21,26 @@ export default function FarmerSchemesPage() {
   const [search, setSearch] = useState("");
   const [savedIds, setSavedIds] = useState(new Set());
   const [toastMessage, setToastMessage] = useState("");
+  const [error, setError] = useState("");
 
   const loadSchemes = useCallback(async () => {
     try {
       setLoading(true);
+      setError("");
 
-      // 1. Fetch published schemes from backend API
-      const list = await farmerApi.getSchemes().catch(() => []);
+      const [list, savedRes] = await Promise.all([
+        farmerApi.getSchemes(),
+        farmerApi.getSavedItems(),
+      ]);
+      setSchemes(list);
 
-      if (Array.isArray(list) && list.length > 0) {
-        setSchemes(list);
-      } else {
-        // Fallback default government schemes
-        setSchemes([
-          {
-            _id: "pm-kisan",
-            name: "प्रधानमंत्री किसान सम्मान निधि",
-            shortName: "PM-KISAN",
-            category: "आय सहायता",
-            description: "पात्र भूमिधारी किसान परिवारों को प्रति वर्ष ₹6,000 की वित्तीय सहायता।",
-            officialUrl: "https://pmkisan.gov.in/",
-            level: "केंद्र सरकार",
-          },
-          {
-            _id: "pmfby",
-            name: "प्रधानमंत्री फसल बीमा योजना",
-            shortName: "PMFBY",
-            category: "फसल बीमा",
-            description: "प्राकृतिक आपदाओं, सूखा, बाढ़ एवं कीट प्रकोप से फसल क्षति की स्थिति में आर्थिक संबल।",
-            officialUrl: "https://pmfby.gov.in/",
-            level: "केंद्र सरकार",
-          },
-          {
-            _id: "kcc",
-            name: "किसान क्रेडिट कार्ड",
-            shortName: "KCC",
-            category: "कृषि ऋण",
-            description: "रियायती ब्याज दर (4%) पर कृषि आदानों, खाद-बीज और खेती संबंधी जरूरतों हेतु ऋण।",
-            officialUrl: "https://www.myscheme.gov.in/schemes/kcc",
-            level: "केंद्र सरकार",
-          },
-          {
-            _id: "pm-kusum",
-            name: "पीएम कुसुम योजना (सोलर पंप)",
-            shortName: "PM-KUSUM",
-            category: "सौर ऊर्जा सब्सिडी",
-            description: "सिंचाई हेतु सौर ऊर्जा पंपों की स्थापना पर केंद्र व राज्य सरकार द्वारा 60% तक का अनुदान।",
-            officialUrl: "https://pmkusum.mnre.gov.in/",
-            level: "केंद्र सरकार",
-          },
-        ]);
-      }
-
-      // Check already saved items
-      const savedRes = await farmerApi.getSavedItems().catch(() => null);
       if (Array.isArray(savedRes?.data)) {
         setSavedIds(new Set(savedRes.data.map((s) => s.itemId || s.title)));
       }
     } catch (err) {
       console.error("Load schemes error:", err);
+      setSchemes([]);
+      setError(err.message || "योजनाएं लोड नहीं हो सकीं।");
     } finally {
       setLoading(false);
     }
@@ -137,6 +98,12 @@ export default function FarmerSchemesPage() {
             पात्रता, अनुदान विवरण और आधिकारिक पोर्टल्स से सीधा आवेदन।
           </p>
         </div>
+
+        {error && (
+          <div role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
+            {error}
+          </div>
+        )}
 
         <button
           onClick={loadSchemes}

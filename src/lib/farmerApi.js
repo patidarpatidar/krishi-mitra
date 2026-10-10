@@ -288,14 +288,17 @@ export const farmerApi = {
   },
 
   // ------------------------------------
-  // PUBLIC DATA APIS (Dynamic fallback)
+  // PUBLIC DATA APIS
   // ------------------------------------
   async getSchemes() {
-    const response = await fetch(`${API_BASE}/schemes?status=published`, {
+    const response = await fetch(`${API_BASE}/schemes?status=active`, {
       cache: "no-store",
     });
     const result = await response.json().catch(() => ({}));
-    return result.data || [];
+    if (!response.ok || result.success === false) {
+      throw new Error(result.message || `Request failed (${response.status})`);
+    }
+    return Array.isArray(result.data) ? result.data : [];
   },
 
   async getCropsList() {
@@ -303,6 +306,9 @@ export const farmerApi = {
       cache: "no-store",
     });
     const result = await response.json().catch(() => ({}));
-    return result.data || [];
+    if (!response.ok || result.success === false) {
+      throw new Error(result.message || `Request failed (${response.status})`);
+    }
+    return Array.isArray(result.data) ? result.data : [];
   },
 };

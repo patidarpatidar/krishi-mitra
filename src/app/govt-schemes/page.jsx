@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 import {
@@ -14,7 +14,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
-import governmentSchemes from "@/data/governmentSchemes";
+import { publicApiRequest, unwrapApiList } from "@/lib/publicApi";
 
 const iconMap = {
   sprout: Sprout,
@@ -63,22 +63,34 @@ function CreditCardIcon({ className }) {
 export default function GovernmentSchemesPage() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("सभी");
+  const [activeSchemes, setActiveSchemes] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const activeSchemes = governmentSchemes.filter(
-    (scheme) => scheme.status === "active"
-  );
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      publicApiRequest("/schemes?status=active&limit=100"),
+      publicApiRequest("/scheme-categories?status=active"),
+    ])
+      .then(([schemeResult, categoryResult]) => {
+        if (cancelled) return;
+        setActiveSchemes(unwrapApiList(schemeResult));
+        setCategories(unwrapApiList(categoryResult));
+      })
+      .catch((loadError) => {
+        if (!cancelled) setError(loadError.message || "योजनाएं लोड नहीं हो सकीं।");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-  const categories = useMemo(() => {
-    const unique = [
-      ...new Set(
-        activeSchemes.map(
-          (scheme) => scheme.category
-        )
-      ),
-    ];
-
-    return ["सभी", ...unique];
-  }, [activeSchemes]);
+  const categoryOptions = ["सभी", ...categories.map((item) => item.name)];
 
   const filteredSchemes = useMemo(() => {
     const query = search
@@ -103,9 +115,7 @@ export default function GovernmentSchemesPage() {
             tag.toLowerCase().includes(query)
           );
 
-        const matchesCategory =
-          category === "सभी" ||
-          scheme.category === category;
+        const matchesCategory = category === "सभी" || scheme.category === category;
 
         return (
           matchesSearch &&
@@ -255,7 +265,7 @@ export default function GovernmentSchemesPage() {
 
           <Filter className="h-5 w-5 shrink-0 text-slate-400" />
 
-          {categories.map((item) => (
+          {categoryOptions.map((item) => (
 
             <button
               key={item}
@@ -274,6 +284,13 @@ export default function GovernmentSchemesPage() {
           ))}
 
         </div>
+
+        {error && (
+          <p role="alert" className="mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</p>
+        )}
+        {loading && (
+          <p className="mt-5 text-sm text-slate-500">योजनाएं लोड हो रही हैं...</p>
+        )}
 
         {/* RESULTS */}
         <div className="mt-6 flex items-center justify-between">

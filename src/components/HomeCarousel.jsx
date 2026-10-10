@@ -15,11 +15,12 @@ export default function HomeCarousel({ slides = [] }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [paused, setPaused] = useState(false);
 
-  const activeSlide = slides[activeIndex];
+  const safeIndex = Math.min(activeIndex, slides.length - 1);
+  const activeSlide = slides[safeIndex];
 
   const nextSlide = () => {
     setActiveIndex((current) =>
-      current === slides.length - 1 ? 0 : current + 1
+      current >= slides.length - 1 ? 0 : current + 1
     );
   };
 
@@ -28,6 +29,10 @@ export default function HomeCarousel({ slides = [] }) {
       current === 0 ? slides.length - 1 : current - 1
     );
   };
+
+  useEffect(() => {
+    setActiveIndex((current) => Math.min(current, slides.length - 1));
+  }, [slides.length]);
 
   useEffect(() => {
     if (paused || slides.length <= 1) return;
@@ -54,16 +59,15 @@ export default function HomeCarousel({ slides = [] }) {
     >
       {/* Background Image */}
       <div className="absolute inset-0">
-        <img
-          src={activeSlide.image}
-          alt={activeSlide.title}
-          className="
-            w-full h-full
-            object-cover
-            transition-all
-            duration-700
-          "
-        />
+        {activeSlide.image ? (
+          <img
+            src={activeSlide.image}
+            alt=""
+            className="w-full h-full object-cover transition-all duration-700"
+          />
+        ) : (
+          <div className="h-full w-full bg-gradient-to-br from-emerald-900 via-teal-800 to-slate-900" />
+        )}
 
         {/* Dark overlay */}
         <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/90 via-emerald-900/70 to-slate-950/20" />
@@ -97,10 +101,11 @@ export default function HomeCarousel({ slides = [] }) {
             {/* Heading */}
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-[1.05] tracking-tight">
               {activeSlide.title}
-
-              <span className="block text-amber-300 mt-2">
-                {activeSlide.highlight}
-              </span>
+              {activeSlide.highlight && (
+                <span className="block text-amber-300 mt-2">
+                  {activeSlide.highlight}
+                </span>
+              )}
             </h1>
 
             {/* Description */}
@@ -160,7 +165,7 @@ export default function HomeCarousel({ slides = [] }) {
       </div>
 
       {/* Previous */}
-      <button
+      {slides.length > 1 && <button
         onClick={previousSlide}
         className="
           absolute
@@ -181,10 +186,10 @@ export default function HomeCarousel({ slides = [] }) {
         aria-label="Previous slide"
       >
         <ChevronLeft className="w-5 h-5" />
-      </button>
+      </button>}
 
       {/* Next */}
-      <button
+      {slides.length > 1 && <button
         onClick={nextSlide}
         className="
           absolute
@@ -205,21 +210,21 @@ export default function HomeCarousel({ slides = [] }) {
         aria-label="Next slide"
       >
         <ChevronRight className="w-5 h-5" />
-      </button>
+      </button>}
 
       {/* Bottom Controls */}
       <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3">
 
         {/* Dots */}
-        <div className="flex items-center gap-1.5 bg-black/20 backdrop-blur-md px-3 py-2 rounded-full">
+        {slides.length > 1 && <div className="flex items-center gap-1.5 bg-black/20 backdrop-blur-md px-3 py-2 rounded-full">
           {slides.map((slide, index) => (
             <button
-              key={slide.id}
+              key={slide.id || index}
               onClick={() => setActiveIndex(index)}
               className={`
                 h-2 rounded-full transition-all
                 ${
-                  index === activeIndex
+                  index === safeIndex
                     ? "w-7 bg-amber-400"
                     : "w-2 bg-white/60 hover:bg-white"
                 }
@@ -227,10 +232,10 @@ export default function HomeCarousel({ slides = [] }) {
               aria-label={`Go to slide ${index + 1}`}
             />
           ))}
-        </div>
+        </div>}
 
         {/* Pause */}
-        <button
+        {slides.length > 1 && <button
           onClick={() => setPaused(!paused)}
           className="
             w-8 h-8
@@ -247,13 +252,13 @@ export default function HomeCarousel({ slides = [] }) {
           ) : (
             <Pause className="w-3.5 h-3.5" />
           )}
-        </button>
+        </button>}
       </div>
 
       {/* Slide counter */}
       <div className="absolute right-5 bottom-5 z-20 hidden sm:block">
         <span className="text-xs font-bold text-white/80 bg-black/20 backdrop-blur-md px-3 py-1.5 rounded-full">
-          {activeIndex + 1} / {slides.length}
+          {safeIndex + 1} / {slides.length}
         </span>
       </div>
     </section>

@@ -14,7 +14,7 @@ import {
   Plus,
 } from "lucide-react";
 
-import { farmerApi, getFarmerUser } from "@/lib/farmerApi";
+import { farmerApi } from "@/lib/farmerApi";
 
 export default function SavedPage() {
   const [items, setItems] = useState([]);
@@ -24,11 +24,6 @@ export default function SavedPage() {
   const loadSaved = useCallback(async () => {
     try {
       setLoading(true);
-
-      const cached = getFarmerUser();
-      if (Array.isArray(cached?.savedItems)) {
-        setItems(cached.savedItems);
-      }
 
       const res = await farmerApi.getSavedItems();
       if (Array.isArray(res.data)) {

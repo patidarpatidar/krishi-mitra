@@ -21,21 +21,24 @@ export default function AdvisoryPage() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [savedIds, setSavedIds] = useState(new Set());
   const [toastMessage, setToastMessage] = useState("");
+  const [error, setError] = useState("");
 
   const loadAdvisories = useCallback(async () => {
     try {
       setLoading(true);
+      setError("");
 
-      // 1. Fetch dashboard overview which compiles advisories from DB crops
-      const dash = await farmerApi.getDashboard().catch(() => null);
+      const [dash, crops, savedRes] = await Promise.all([
+        farmerApi.getDashboard(),
+        farmerApi.getCropsList(),
+        farmerApi.getSavedItems(),
+      ]);
 
       let list = [];
-      if (Array.isArray(dash?.data?.advisories) && dash.data.advisories.length > 0) {
+      if (Array.isArray(dash?.data?.advisories)) {
         list = dash.data.advisories;
       }
 
-      // 2. Also fetch DB crops to supplement with disease solutions & advice
-      const crops = await farmerApi.getCropsList().catch(() => []);
       if (Array.isArray(crops) && crops.length > 0) {
         crops.forEach((crop) => {
           if (Array.isArray(crop.diseases)) {
@@ -76,12 +79,13 @@ export default function AdvisoryPage() {
       setAdvisories(unique);
 
       // Check already saved items
-      const savedRes = await farmerApi.getSavedItems().catch(() => null);
       if (Array.isArray(savedRes?.data)) {
         setSavedIds(new Set(savedRes.data.map((s) => s.title)));
       }
     } catch (err) {
       console.error("Load advisories error:", err);
+      setAdvisories([]);
+      setError(err.message || "सलाह लोड नहीं हो सकी।");
     } finally {
       setLoading(false);
     }
@@ -142,6 +146,12 @@ export default function AdvisoryPage() {
             फसलों के रोग, कीट, खाद और बुवाई से संबंधित प्रमाणित कृषि सलाह।
           </p>
         </div>
+
+        {error && (
+          <div role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
+            {error}
+          </div>
+        )}
 
         <button
           onClick={loadAdvisories}

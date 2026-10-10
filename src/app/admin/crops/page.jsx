@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { getAdminAuthHeaders } from "@/lib/apiClient";
 import {
   Plus,
   Search,
@@ -89,6 +90,7 @@ export default function CropsPage() {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
+            ...getAdminAuthHeaders(),
           },
           cache: "no-store",
         }
@@ -129,6 +131,7 @@ export default function CropsPage() {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
+            ...getAdminAuthHeaders(),
           },
           cache: "no-store",
         }
@@ -187,6 +190,7 @@ export default function CropsPage() {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json",
+            ...getAdminAuthHeaders(),
           },
         }
       );
@@ -227,6 +231,7 @@ export default function CropsPage() {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
+            ...getAdminAuthHeaders(),
           },
           body: JSON.stringify({
             featured: !crop.featured,
@@ -280,6 +285,7 @@ export default function CropsPage() {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
+            ...getAdminAuthHeaders(),
           },
           body: JSON.stringify({
             status: nextStatus,

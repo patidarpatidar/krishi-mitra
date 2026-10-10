@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Save, Sprout } from "lucide-react";
+import { getAdminAuthHeaders } from "@/lib/apiClient";
 
 const API_URL = (
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
@@ -170,6 +171,7 @@ export default function CropCategoryForm({ categoryId = null }) {
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",
+          ...getAdminAuthHeaders(),
         },
         body: JSON.stringify(payload),
       });

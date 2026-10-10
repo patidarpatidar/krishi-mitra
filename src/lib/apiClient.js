@@ -59,3 +59,8 @@ export function getAdminToken() {
 
   return localStorage.getItem("krishi_mitra_admin_token");
 }
+
+export function getAdminAuthHeaders() {
+  const token = getAdminToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}

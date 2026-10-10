@@ -4,13 +4,15 @@ const RESOURCE_ID =
   process.env.DATA_GOV_MANDI_RESOURCE_ID ||
   '9ef0be32-0771-470a-81cd-77b53a9efd6b';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
 
-    const state = searchParams.get('state') || 'Madhya Pradesh';
-    const district = searchParams.get('district') || 'Neemuch';
-    const mandi = searchParams.get('mandi') || 'Neemuch';
+    const state = searchParams.get('state') || '';
+    const district = searchParams.get('district') || '';
+    const mandi = searchParams.get('mandi') || '';
 
     const apiUrl = new URL(
       `https://api.data.gov.in/resource/${RESOURCE_ID}`
@@ -24,16 +26,8 @@ export async function GET(request) {
     apiUrl.searchParams.set('format', 'json');
     apiUrl.searchParams.set('limit', '100');
 
-    // Filters
-    apiUrl.searchParams.set(
-      'filters[state]',
-      state
-    );
-
-    apiUrl.searchParams.set(
-      'filters[district]',
-      district
-    );
+    if (state) apiUrl.searchParams.set('filters[state]', state);
+    if (district) apiUrl.searchParams.set('filters[district]', district);
 
     if (mandi) {
       apiUrl.searchParams.set(

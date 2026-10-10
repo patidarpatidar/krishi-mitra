@@ -25,7 +25,7 @@ export default function BlogCategoriesPage() {
     setError("");
 
     try {
-      const response = await blogApi.getCategories();
+      const response = await blogApi.getCategories(true);
       setCategories(unwrapList(response, ["categories", "items"]));
     } catch (err) {
       setError(err.message || "Categories load nahi ho sakin.");

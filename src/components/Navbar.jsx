@@ -17,7 +17,7 @@ import {
   Sprout,
 } from "lucide-react";
 
-import governmentSchemes from "@/data/governmentSchemes";
+import { publicApiRequest, unwrapApiList } from "@/lib/publicApi";
 
 const navRoutes = [
   { name: "होम", path: "/" },
@@ -85,16 +85,20 @@ export default function Navbar() {
   const [schemeOpen, setSchemeOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 const [farmerLoggedIn, setFarmerLoggedIn] = useState(false);
+  const [activeSchemes, setActiveSchemes] = useState([]);
+  const [schemeError, setSchemeError] = useState("");
 
   const pathname = usePathname();
 
-  const activeSchemes = governmentSchemes.filter(
-    (scheme) => scheme.status === "active"
-  );
-
   const featuredSchemes = activeSchemes.filter(
-    (scheme) => scheme.featured
+    (scheme) => scheme.featured || scheme.isFeatured
   );
+  const navigationSchemes = [
+    ...featuredSchemes,
+    ...activeSchemes.filter(
+      (scheme) => !featuredSchemes.includes(scheme)
+    ),
+  ].slice(0, 5);
 
   const isActive = (path) => {
     if (path === "/") return pathname === "/";
@@ -104,6 +108,20 @@ const [farmerLoggedIn, setFarmerLoggedIn] = useState(false);
       pathname.startsWith(`${path}/`)
     );
   };
+
+  useEffect(() => {
+    let cancelled = false;
+    publicApiRequest("/schemes?status=active&limit=100")
+      .then((result) => {
+        if (!cancelled) setActiveSchemes(unwrapApiList(result));
+      })
+      .catch((error) => {
+        if (!cancelled) setSchemeError(error.message || "योजनाएं लोड नहीं हो सकीं।");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const token = typeof window !== "undefined" ? localStorage.getItem("krishi_mitra_farmer_token") : null;
@@ -378,8 +396,13 @@ const [farmerLoggedIn, setFarmerLoggedIn] = useState(false);
 
                         </Link>
 
-                        {/* STATIC REAL SCHEMES */}
-                        {featuredSchemes.map((item) => {
+                        {schemeError && (
+                          <p role="alert" className="px-3 py-2 text-xs text-red-600">
+                            {schemeError}
+                          </p>
+                        )}
+
+                        {navigationSchemes.map((item) => {
 
                           const Icon =
                             iconMap[item.icon] ||
@@ -510,7 +533,7 @@ const [farmerLoggedIn, setFarmerLoggedIn] = useState(false);
                           सभी सरकारी योजनाएं
                         </Link>
 
-                        {featuredSchemes.map(
+                        {navigationSchemes.map(
                           (item) => {
 
                             const Icon =

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { getAdminAuthHeaders } from "@/lib/apiClient";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -84,25 +85,6 @@ const initialForm = {
   status: "draft",
 };
 
-const categories = [
-  {
-    key: "grain",
-    label: "अनाज",
-  },
-  {
-    key: "oilseed",
-    label: "तिलहन",
-  },
-  {
-    key: "spice",
-    label: "मसाला",
-  },
-  {
-    key: "pulse",
-    label: "दलहन",
-  },
-];
-
 const seasons = [
   {
     key: "kharif",
@@ -159,6 +141,7 @@ export default function CropForm({
   const router = useRouter();
 
   const [form, setForm] = useState(initialForm);
+  const [categories, setCategories] = useState([]);
 
   const [loading, setLoading] = useState(
     mode === "edit"
@@ -169,6 +152,30 @@ export default function CropForm({
   const [error, setError] = useState("");
 
   const [success, setSuccess] = useState("");
+
+  useEffect(() => {
+    async function loadCategories() {
+      try {
+        const response = await fetch(`${API_URL}/crop-categories?status=active`, {
+          cache: "no-store",
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || result.success === false) {
+          throw new Error(result.message || `Request failed (${response.status})`);
+        }
+        setCategories(
+          (Array.isArray(result.data) ? result.data : []).map((category) => ({
+            key: category.slug,
+            label: category.name,
+          }))
+        );
+      } catch (err) {
+        setError(err.message || "Crop categories load नहीं हो सकीं।");
+      }
+    }
+
+    loadCategories();
+  }, []);
 
   // ---------------------------------------
   // LOAD CROP
@@ -517,6 +524,7 @@ export default function CropForm({
 
         headers: {
           "Content-Type": "application/json",
+          ...getAdminAuthHeaders(),
         },
 
         body: JSON.stringify(payload),

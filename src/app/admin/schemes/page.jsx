@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import StatusBadge from "@/components/admin/StatusBadge";
+import { getAdminAuthHeaders } from "@/lib/apiClient";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -144,6 +145,7 @@ export default function AdminSchemesPage() {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
+            ...getAdminAuthHeaders(),
           },
           body: JSON.stringify({
             status: newStatus,
@@ -176,6 +178,7 @@ export default function AdminSchemesPage() {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
+            ...getAdminAuthHeaders(),
           },
           body: JSON.stringify({
             featured: !scheme.featured,
@@ -212,6 +215,7 @@ export default function AdminSchemesPage() {
         `${API_URL}/schemes/${scheme._id}`,
         {
           method: "DELETE",
+          headers: getAdminAuthHeaders(),
         }
       );
 
