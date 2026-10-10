@@ -54,8 +54,18 @@ export default function BlogDetailPage({ params }) {
   const [openFaq, setOpenFaq] = useState(null);
 
   const [helpful, setHelpful] = useState(null);
+  const [visitorId, setVisitorId] = useState('');
+  const [feedbackCounts, setFeedbackCounts] = useState({ helpful: 0, 'needs-improvement': 0 });
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+  const [feedbackError, setFeedbackError] = useState('');
 
   const [comments, setComments] = useState([]);
+  const [commentCount, setCommentCount] = useState(0);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [commentSubmitting, setCommentSubmitting] = useState(false);
+  const [commentsError, setCommentsError] = useState('');
+  const [commentNotice, setCommentNotice] = useState('');
 
   const [commentForm, setCommentForm] = useState({
     name: '',
@@ -92,6 +102,69 @@ export default function BlogDetailPage({ params }) {
       cancelled = true;
     };
   }, [params?.slug]);
+
+  useEffect(() => {
+    if (!blog?.slug) return undefined;
+
+    let cancelled = false;
+    let id = window.localStorage.getItem('krishi-blog-visitor-id');
+    if (!id) {
+      id = window.crypto?.randomUUID?.() ||
+        `visitor-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      window.localStorage.setItem('krishi-blog-visitor-id', id);
+    }
+    setVisitorId(id);
+    setFeedbackLoading(true);
+    setCommentsLoading(true);
+    setFeedbackError('');
+    setCommentsError('');
+
+    publicApiRequest(
+      `/blogs/slug/${encodeURIComponent(blog.slug)}/feedback?visitorId=${encodeURIComponent(id)}`,
+    )
+      .then((result) => {
+        if (cancelled) return;
+        setFeedbackCounts(result.data || { helpful: 0, 'needs-improvement': 0 });
+        setHelpful(
+          result.data?.visitorRating === 'helpful'
+            ? 'yes'
+            : result.data?.visitorRating === 'needs-improvement'
+              ? 'no'
+              : null,
+        );
+      })
+      .catch((error) => {
+        if (!cancelled) setFeedbackError(error.message || 'प्रतिक्रिया लोड नहीं हो सकी।');
+      })
+      .finally(() => {
+        if (!cancelled) setFeedbackLoading(false);
+      });
+
+    publicApiRequest(`/blogs/slug/${encodeURIComponent(blog.slug)}/comments`)
+      .then((result) => {
+        if (cancelled) return;
+        setComments(
+          unwrapApiList(result).map((item) => ({
+            ...item,
+            id: item._id || item.id,
+            date: item.createdAt
+              ? new Intl.DateTimeFormat('hi-IN', { dateStyle: 'medium' }).format(new Date(item.createdAt))
+              : '',
+          })),
+        );
+        setCommentCount(Number(result.count) || 0);
+      })
+      .catch((error) => {
+        if (!cancelled) setCommentsError(error.message || 'टिप्पणियां लोड नहीं हो सकीं।');
+      })
+      .finally(() => {
+        if (!cancelled) setCommentsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [blog?.slug]);
 
   useEffect(() => {
     const categoryId = blog?.categoryId?._id || blog?.categoryId;
@@ -293,32 +366,67 @@ export default function BlogDetailPage({ params }) {
     setSpeaking(true);
   };
 
-  const handleCommentSubmit = (event) => {
+  const handleFeedbackSubmit = async (rating) => {
+    if (!blog?.slug || !visitorId || feedbackSubmitting) return;
+    setFeedbackSubmitting(true);
+    setFeedbackError('');
+    try {
+      const result = await publicApiRequest(
+        `/blogs/slug/${encodeURIComponent(blog.slug)}/feedback`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            visitorId,
+            rating: rating === 'yes' ? 'helpful' : 'needs-improvement',
+          }),
+        },
+      );
+      setHelpful(rating);
+      setFeedbackCounts(result.data || feedbackCounts);
+    } catch (error) {
+      setFeedbackError(error.message || 'प्रतिक्रिया भेजी नहीं जा सकी।');
+    } finally {
+      setFeedbackSubmitting(false);
+    }
+  };
+
+  const handleCommentSubmit = async (event) => {
     event.preventDefault();
 
-    if (
-      !commentForm.name.trim() ||
-      !commentForm.text.trim()
-    ) {
+    if (!blog?.slug || commentSubmitting || !commentForm.name.trim() || !commentForm.text.trim()) {
       return;
     }
 
-    setComments((previous) => [
-      ...previous,
-      {
-        id: Date.now(),
-        name: commentForm.name,
-        location: commentForm.location,
-        text: commentForm.text,
-        date: 'अभी',
-      },
-    ]);
-
-    setCommentForm({
-      name: '',
-      location: '',
-      text: '',
-    });
+    setCommentSubmitting(true);
+    setCommentsError('');
+    setCommentNotice('');
+    try {
+      const result = await publicApiRequest(
+        `/blogs/slug/${encodeURIComponent(blog.slug)}/comments`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(commentForm),
+        },
+      );
+      const item = result.data;
+      setComments((previous) => [
+        {
+          ...item,
+          id: item._id || item.id,
+          date: 'अभी',
+        },
+        ...previous,
+      ]);
+      setCommentCount((previous) => previous + 1);
+      setCommentForm({ name: '', location: '', text: '' });
+      setCommentNotice('आपकी टिप्पणी भेज दी गई है।');
+    } catch (error) {
+      setCommentsError(error.message || 'टिप्पणी भेजी नहीं जा सकी।');
+    } finally {
+      setCommentSubmitting(false);
+    }
   };
 
   return (
@@ -582,7 +690,8 @@ export default function BlogDetailPage({ params }) {
               <div className="flex justify-center gap-3 mt-4">
 
                 <button
-                  onClick={() => setHelpful('yes')}
+                  onClick={() => handleFeedbackSubmit('yes')}
+                  disabled={feedbackSubmitting || feedbackLoading}
                   className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 ${
                     helpful === 'yes'
                       ? 'bg-emerald-700 text-white'
@@ -590,11 +699,12 @@ export default function BlogDetailPage({ params }) {
                   }`}
                 >
                   <ThumbsUp className="w-4 h-4" />
-                  उपयोगी
+                  उपयोगी ({feedbackCounts.helpful || 0})
                 </button>
 
                 <button
-                  onClick={() => setHelpful('no')}
+                  onClick={() => handleFeedbackSubmit('no')}
+                  disabled={feedbackSubmitting || feedbackLoading}
                   className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 ${
                     helpful === 'no'
                       ? 'bg-red-600 text-white'
@@ -602,15 +712,26 @@ export default function BlogDetailPage({ params }) {
                   }`}
                 >
                   <ThumbsDown className="w-4 h-4" />
-                  सुधार चाहिए
+                  सुधार चाहिए ({feedbackCounts['needs-improvement'] || 0})
                 </button>
 
               </div>
+              {feedbackError && (
+                <p role="alert" className="mt-3 text-xs text-red-600">{feedbackError}</p>
+              )}
+              {feedbackLoading && (
+                <p className="mt-3 text-xs text-slate-500">प्रतिक्रिया लोड हो रही है...</p>
+              )}
             </section>
 
             {/* COMMENTS */}
             <CommentsSection
               comments={comments}
+              commentCount={commentCount}
+              commentsLoading={commentsLoading}
+              commentsError={commentsError}
+              commentNotice={commentNotice}
+              commentSubmitting={commentSubmitting}
               commentForm={commentForm}
               setCommentForm={setCommentForm}
               handleCommentSubmit={handleCommentSubmit}
@@ -718,7 +839,7 @@ export default function BlogDetailPage({ params }) {
 
                   <Stat
                     label="Comments"
-                    value={blog.comments}
+                    value={commentCount}
                   />
 
                   <Stat
@@ -1110,6 +1231,11 @@ function CalculatorSection({
 
 function CommentsSection({
   comments,
+  commentCount,
+  commentsLoading,
+  commentsError,
+  commentNotice,
+  commentSubmitting,
   commentForm,
   setCommentForm,
   handleCommentSubmit,
@@ -1125,7 +1251,7 @@ function CommentsSection({
         </h2>
 
         <span className="text-xs text-slate-500">
-          ({comments.length})
+          ({commentCount})
         </span>
       </div>
 
@@ -1179,15 +1305,25 @@ function CommentsSection({
 
         <button
           type="submit"
+          disabled={commentSubmitting}
           className="bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2"
         >
-          टिप्पणी भेजें
+          {commentSubmitting ? 'भेज रहे हैं...' : 'टिप्पणी भेजें'}
           <Send className="w-4 h-4" />
         </button>
+        {commentsError && (
+          <p role="alert" className="text-xs text-red-600">{commentsError}</p>
+        )}
+        {commentNotice && (
+          <p role="status" className="text-xs text-emerald-700">{commentNotice}</p>
+        )}
       </form>
 
       <div className="mt-6 space-y-4">
 
+        {commentsLoading && (
+          <p className="text-sm text-slate-500">टिप्पणियां लोड हो रही हैं...</p>
+        )}
         {comments.map((comment) => (
           <div
             key={comment.id}
@@ -1225,9 +1361,18 @@ function CommentsSection({
             <p className="text-sm text-slate-700 leading-6 mt-3">
               {comment.text}
             </p>
+            {comment.answer && (
+              <div className="mt-3 rounded-xl border border-emerald-100 bg-emerald-50 p-3">
+                <p className="text-xs font-bold text-emerald-800">कृषि मित्र का जवाब</p>
+                <p className="mt-1 text-sm leading-6 text-emerald-900">{comment.answer}</p>
+              </div>
+            )}
 
           </div>
         ))}
+        {!commentsLoading && !commentsError && comments.length === 0 && (
+          <p className="text-sm text-slate-500">अभी तक कोई टिप्पणी नहीं है।</p>
+        )}
 
       </div>
     </section>

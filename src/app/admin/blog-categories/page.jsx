@@ -233,6 +233,13 @@ export default function BlogCategoriesPage() {
                         <td className="px-4 py-4">
                           <div className="flex justify-end gap-2">
                             <Link
+                              href={`/admin/view/blog-categories/${id}`}
+                              title="View category details"
+                              className="rounded-lg border border-slate-200 p-2 text-emerald-700 hover:bg-emerald-50"
+                            >
+                              View
+                            </Link>
+                            <Link
                               href={`/admin/blog-categories/${id}/edit`}
                               title="Edit category"
                               className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-green-50 hover:text-green-700"

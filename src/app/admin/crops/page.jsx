@@ -752,6 +752,13 @@ export default function CropsPage() {
                       <td className="px-5 py-4">
                         <div className="flex justify-end gap-2">
                           <Link
+                            href={`/admin/view/crops/${id}`}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-600"
+                            title="View details"
+                          >
+                            <Eye size={16} />
+                          </Link>
+                          <Link
                             href={`/admin/crops/${id}/edit`}
                             className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-600"
                             title="Edit"

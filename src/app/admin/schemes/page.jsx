@@ -638,6 +638,12 @@ export default function AdminSchemesPage() {
 
               {/* Actions */}
               <div className="flex gap-2 mt-5">
+                <Link
+                  href={`/admin/view/schemes/${scheme._id}`}
+                  className="inline-flex items-center justify-center rounded-xl border border-emerald-200 px-3 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-50"
+                >
+                  View
+                </Link>
 
                 <Link
                   href={`/admin/schemes/${scheme._id}`}

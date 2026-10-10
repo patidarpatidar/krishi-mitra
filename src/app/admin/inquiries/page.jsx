@@ -2,6 +2,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import {
   Search,
   RefreshCw,
@@ -381,6 +382,12 @@ export default function AdminInquiriesPage() {
                     </div>
 
                     <div className="flex flex-wrap items-start gap-2 xl:w-56 xl:flex-col">
+                      <Link
+                        href={`/admin/view/inquiries/${item._id}`}
+                        className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 px-3 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50"
+                      >
+                        View full details
+                      </Link>
                       <label className="w-full text-xs font-semibold text-slate-500">
                         Update status
                       </label>

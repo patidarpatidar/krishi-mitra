@@ -127,6 +127,8 @@ export default function CropDetailPage({ params }) {
   const slug = params?.slug || '';
   const [crop, setCrop] = useState(emptyCrop);
   const [relatedCrops, setRelatedCrops] = useState([]);
+  const [relatedCategories, setRelatedCategories] = useState([]);
+  const [relatedCategoryFilter, setRelatedCategoryFilter] = useState('all');
   const [relatedCropsError, setRelatedCropsError] = useState('');
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -167,6 +169,10 @@ export default function CropDetailPage({ params }) {
 
   const [comments, setComments] =
     useState([]);
+  const [questionsLoading, setQuestionsLoading] = useState(true);
+  const [questionSubmitting, setQuestionSubmitting] = useState(false);
+  const [questionError, setQuestionError] = useState('');
+  const [questionNotice, setQuestionNotice] = useState('');
 
   /* =====================================================
      STORAGE
@@ -288,8 +294,11 @@ export default function CropDetailPage({ params }) {
   useEffect(() => {
     let cancelled = false;
 
-    publicApiRequest('/crops?status=published&limit=5')
-      .then((result) => {
+    Promise.all([
+      publicApiRequest('/crops?status=published&limit=100'),
+      publicApiRequest('/crop-categories?status=active'),
+    ])
+      .then(([result, categoryResult]) => {
         if (cancelled) return;
 
         setRelatedCrops(
@@ -298,9 +307,15 @@ export default function CropDetailPage({ params }) {
             slug: item.slug || item._id || item.id,
             category:
               typeof item.category === 'string'
-                ? item.category
-                : item.category?.label || item.category?.name || '',
+                ? { key: item.category, label: item.category }
+                : item.category || {},
           }))
+        );
+        setRelatedCategories(
+          unwrapApiList(categoryResult).map((category) => ({
+            key: category.key || category.slug,
+            label: category.name || category.label || category.key,
+          })).filter((category) => category.key && category.label),
         );
       })
       .catch((error) => {
@@ -315,6 +330,40 @@ export default function CropDetailPage({ params }) {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!slug) return undefined;
+    let cancelled = false;
+    setQuestionsLoading(true);
+    setQuestionError('');
+    publicApiRequest(`/crops/slug/${encodeURIComponent(slug)}/questions`)
+      .then((result) => {
+        if (!cancelled) {
+          setComments(
+            unwrapApiList(result).map((item) => ({
+              id: item._id,
+              text: item.question,
+              name: item.name,
+              answer: item.answer || '',
+              time: item.createdAt
+                ? new Intl.DateTimeFormat('hi-IN', { dateStyle: 'medium' }).format(new Date(item.createdAt))
+                : '',
+            })),
+          );
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setQuestionError(error.message || 'किसान सवाल लोड नहीं हो सके।');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setQuestionsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
 
   /* =====================================================
      SCROLL SECTION TRACKING
@@ -522,21 +571,40 @@ export default function CropDetailPage({ params }) {
      COMMENT
   ===================================================== */
 
-  const submitComment = () => {
+  const submitComment = async () => {
     const text = comment.trim();
 
-    if (!text) return;
-
-    setComments((previous) => [
-      ...previous,
-      {
-        id: Date.now(),
-        text,
-        time: 'अभी',
-      },
-    ]);
-
-    setComment('');
+    if (!text || questionSubmitting) return;
+    setQuestionSubmitting(true);
+    setQuestionError('');
+    setQuestionNotice('');
+    try {
+      const result = await publicApiRequest(
+        `/crops/slug/${encodeURIComponent(slug)}/questions`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: text }),
+        },
+      );
+      const item = result.data;
+      setComments((previous) => [
+        {
+          id: item._id,
+          text: item.question,
+          name: item.name || 'किसान',
+          answer: item.answer || '',
+          time: 'अभी',
+        },
+        ...previous,
+      ]);
+      setComment('');
+      setQuestionNotice('आपका सवाल सफलतापूर्वक भेज दिया गया है।');
+    } catch (error) {
+      setQuestionError(error.message || 'सवाल भेजा नहीं जा सका।');
+    } finally {
+      setQuestionSubmitting(false);
+    }
   };
 
   /* =====================================================
@@ -1300,17 +1368,32 @@ export default function CropDetailPage({ params }) {
                   className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
                 />
 
+                {questionError && (
+                  <p role="alert" className="mt-2 text-sm text-red-600">
+                    {questionError}
+                  </p>
+                )}
+                {questionNotice && (
+                  <p role="status" className="mt-2 text-sm text-emerald-700">
+                    {questionNotice}
+                  </p>
+                )}
+
                 <div className="mt-3 flex justify-end">
                   <button
                     type="button"
                     onClick={submitComment}
+                    disabled={questionSubmitting || !comment.trim()}
                     className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white hover:bg-emerald-800"
                   >
-                    सवाल पोस्ट करें
+                    {questionSubmitting ? 'भेज रहे हैं...' : 'सवाल पोस्ट करें'}
                     <Send className="h-4 w-4" />
                   </button>
                 </div>
 
+                {questionsLoading && (
+                  <p className="mt-5 text-sm text-slate-500">सवाल लोड हो रहे हैं...</p>
+                )}
                 {comments.length > 0 && (
                   <div className="mt-5 space-y-3 border-t border-slate-100 pt-5">
                     {comments.map((item) => (
@@ -1320,7 +1403,7 @@ export default function CropDetailPage({ params }) {
                       >
                         <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
                           <User className="h-4 w-4" />
-                          किसान
+                          {item.name || 'किसान'}
                           <span className="font-normal text-slate-400">
                             • {item.time}
                           </span>
@@ -1329,9 +1412,20 @@ export default function CropDetailPage({ params }) {
                         <p className="mt-2 text-sm leading-6 text-slate-700">
                           {item.text}
                         </p>
+                        {item.answer && (
+                          <div className="mt-3 rounded-xl border border-emerald-100 bg-emerald-50 p-3">
+                            <p className="text-xs font-bold text-emerald-800">कृषि मित्र का जवाब</p>
+                            <p className="mt-1 text-sm leading-6 text-emerald-900">{item.answer}</p>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
+                )}
+                {!questionsLoading && !questionError && comments.length === 0 && (
+                  <p className="mt-5 border-t border-slate-100 pt-5 text-sm text-slate-500">
+                    अभी तक कोई सवाल नहीं पूछा गया है।
+                  </p>
                 )}
               </div>
             </section>
@@ -1403,11 +1497,46 @@ export default function CropDetailPage({ params }) {
                 </p>
               )}
 
+              {relatedCategories.length > 0 && (
+                <div className="mt-5 flex flex-wrap gap-2" aria-label="फसल श्रेणियां">
+                  <button
+                    type="button"
+                    onClick={() => setRelatedCategoryFilter('all')}
+                    aria-pressed={relatedCategoryFilter === 'all'}
+                    className={`rounded-full px-4 py-2 text-xs font-bold ${
+                      relatedCategoryFilter === 'all'
+                        ? 'bg-emerald-700 text-white'
+                        : 'bg-white text-slate-600 ring-1 ring-slate-200'
+                    }`}
+                  >
+                    सभी
+                  </button>
+                  {relatedCategories.map((category) => (
+                    <button
+                      type="button"
+                      key={category.key}
+                      onClick={() => setRelatedCategoryFilter(category.key)}
+                      aria-pressed={relatedCategoryFilter === category.key}
+                      className={`rounded-full px-4 py-2 text-xs font-bold ${
+                        relatedCategoryFilter === category.key
+                          ? 'bg-emerald-700 text-white'
+                          : 'bg-white text-slate-600 ring-1 ring-slate-200'
+                      }`}
+                    >
+                      {category.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {relatedCrops
                   .filter(
                     (item) =>
-                      item.slug && item.slug !== crop.slug
+                      item.slug &&
+                      item.slug !== crop.slug &&
+                      (relatedCategoryFilter === 'all' ||
+                        item.category?.key === relatedCategoryFilter)
                   )
                   .map((item) => (
                     <Link
@@ -1424,7 +1553,7 @@ export default function CropDetailPage({ params }) {
                       </div>
 
                       <div className="mt-1 text-xs text-slate-400">
-                        {item.category}
+                        {item.category?.label || item.category?.name || ''}
                       </div>
 
                       <div className="mt-3 flex items-center gap-1 text-xs font-bold text-emerald-700">
@@ -1436,7 +1565,11 @@ export default function CropDetailPage({ params }) {
               </div>
               {!relatedCropsError &&
                 relatedCrops.filter(
-                  (item) => item.slug && item.slug !== crop.slug
+                  (item) =>
+                    item.slug &&
+                    item.slug !== crop.slug &&
+                    (relatedCategoryFilter === 'all' ||
+                      item.category?.key === relatedCategoryFilter)
                 ).length === 0 && (
                   <p className="mt-4 text-sm text-slate-500">
                     अभी अन्य प्रकाशित फसलें उपलब्ध नहीं हैं।

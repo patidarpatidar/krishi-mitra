@@ -128,12 +128,18 @@ export default function OrganicAdminPage() {
       }
 
       const response = await fetch(
-        `${API_URL}/organic-recipes/admin?${params.toString()}`
+        `${API_URL}/organic-recipes/admin?${params.toString()}`,
+        {
+          headers: {
+            ...getAdminAuthHeaders(),
+          },
+          cache: "no-store",
+        }
       );
 
       const result = await response.json();
 
-      if (!response.ok) {
+      if (!response.ok || result.success === false) {
         throw new Error(
           result.message ||
             "Recipes fetch failed"
@@ -705,6 +711,13 @@ export default function OrganicAdminPage() {
 
                     <td className="px-4 py-4">
                       <div className="flex justify-end gap-2">
+                        <Link
+                          href={`/admin/view/organic/${recipe._id}`}
+                          className="rounded-lg border p-2 text-emerald-700 hover:bg-emerald-50"
+                          title="View details"
+                        >
+                          <Eye size={16} />
+                        </Link>
                         <Link
                           href={`/admin/organic/${recipe._id}`}
                           className="rounded-lg border p-2 text-gray-600 hover:bg-gray-50"

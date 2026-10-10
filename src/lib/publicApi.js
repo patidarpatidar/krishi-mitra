@@ -2,8 +2,9 @@ const API_BASE = (
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
 ).replace(/\/+$/, "");
 
-export async function publicApiRequest(path) {
+export async function publicApiRequest(path, options = {}) {
   const response = await fetch(`${API_BASE}${path}`, {
+    ...options,
     cache: "no-store",
   });
   const result = await response.json().catch(() => ({}));

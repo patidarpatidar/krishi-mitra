@@ -238,6 +238,9 @@ export default function AdminBlogsPage() {
                       </td>
                       <td className="p-4">
                         <div className="flex justify-end gap-2">
+                          <Link href={`/admin/view/blogs/${id}`} title="View details" className="rounded-lg border p-2 text-emerald-700 hover:bg-emerald-50">
+                            <Eye size={16} />
+                          </Link>
                           <Link href={`/admin/blog/${id}/edit`} title="Edit" className="rounded-lg border p-2 text-blue-700 hover:bg-blue-50">
                             <Pencil size={16} />
                           </Link>

@@ -17,6 +17,7 @@ import {
   ExternalLink,
   LogOut,
   MessageCircle,
+  MessagesSquare,
   ShieldCheck,
   Users,
 } from "lucide-react";
@@ -75,6 +76,11 @@ const menu = [
     title: "Inquiries",
     href: "/admin/inquiries",
     icon: MessageCircle,
+  },
+  {
+    title: "Farmer discussions",
+    href: "/admin/discussions",
+    icon: MessagesSquare,
   },
 ];
 

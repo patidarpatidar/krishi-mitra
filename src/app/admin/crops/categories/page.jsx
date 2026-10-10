@@ -400,6 +400,12 @@ export default function CropCategoriesPage() {
               {/* ACTIONS */}
               <div className="mt-5 flex gap-3 border-t border-slate-100 pt-4">
                 <Link
+                  href={`/admin/view/crop-categories/${item._id}`}
+                  className="inline-flex flex-1 items-center justify-center rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  View details
+                </Link>
+                <Link
                   href={`/admin/crops/categories/${item._id}`}
                   className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-100"
                 >

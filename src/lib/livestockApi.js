@@ -1,33 +1,35 @@
 
+import { clearAdminSession, getAdminToken } from "@/lib/apiClient";
+
 const API_BASE = (
   process.env.NEXT_PUBLIC_API_URL ||
   "http://localhost:5000/api"
 ).replace(/\/+$/, "");
 
-function getAdminToken() {
-  if (typeof window === "undefined") return null;
-
-  return localStorage.getItem("krishi_mitra_admin_token");
-}
-
 async function request(path, options = {}) {
   const token = getAdminToken();
+  if (!token) {
+    clearAdminSession();
+    if (typeof window !== "undefined") {
+      window.location.assign("/admin/login");
+    }
+    throw new Error("Admin session नहीं मिली। कृपया फिर से login करें।");
+  }
 
-  const headers = {
+  const headers = new Headers({
     ...(options.body instanceof FormData
       ? {}
       : { "Content-Type": "application/json" }),
     ...options.headers,
-  };
+  });
 
   // Send JWT token with protected admin requests
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
+  headers.set("Authorization", `Bearer ${token.trim()}`);
 
   const response = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers,
+    credentials: "include",
     cache: "no-store",
   });
 
@@ -45,8 +47,8 @@ async function request(path, options = {}) {
       response.status === 401 &&
       typeof window !== "undefined"
     ) {
-      localStorage.removeItem("krishi_mitra_admin_token");
-      localStorage.removeItem("krishi_mitra_admin");
+      clearAdminSession();
+      window.location.assign("/admin/login");
     }
 
     throw new Error(

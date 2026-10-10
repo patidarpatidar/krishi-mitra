@@ -234,6 +234,12 @@ export default function LivestockAdminPage() {
                       <td className="p-3">
                         <div className="flex gap-3">
                           <Link
+                            href={`/admin/view/livestock/${article._id}`}
+                            className="font-semibold text-emerald-700 hover:underline"
+                          >
+                            View
+                          </Link>
+                          <Link
                             href={`/admin/livestock/${article._id}/edit`}
                             className="font-semibold text-blue-700 hover:underline"
                           >

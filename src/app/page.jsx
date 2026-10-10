@@ -272,7 +272,7 @@ export default function HomePage() {
       ["blogs", "/blogs?limit=100"],
       ["blogCategories", "/blog-categories"],
       ["organicCategories", "/organic-categories?status=active"],
-      ["livestock", "/livestock?status=published&limit=100"],
+      ["livestock", "/livestock?status=published&limit=10"],
       ["schemes", "/schemes?status=active&limit=100"],
     ];
 
