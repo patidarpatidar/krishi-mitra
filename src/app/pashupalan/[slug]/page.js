@@ -1,6 +1,8 @@
 
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -15,6 +17,7 @@ import {
   ChevronRight,
   Clock3,
   Copy,
+  Eye,
   Heart,
   IndianRupee,
   Lightbulb,
@@ -29,7 +32,11 @@ import {
   Wallet,
   Wheat,
 } from "lucide-react";
-import { publicApiRequest, unwrapApiItem } from "@/lib/publicApi";
+import {
+  getOrCreateVisitorId,
+  publicApiRequest,
+  unwrapApiItem,
+} from "@/lib/publicApi";
 
 function InfoCard({ icon: Icon, label, value }) {
   return (
@@ -58,6 +65,14 @@ export default function PashupalanArticlePage() {
   const [milkPrice, setMilkPrice] = useState(50);
   const [monthlyCost, setMonthlyCost] = useState(12000);
   const [copied, setCopied] = useState(false);
+  const [visitorId, setVisitorId] = useState("");
+  const [liked, setLiked] = useState(false);
+  const [likeSubmitting, setLikeSubmitting] = useState(false);
+  const [engagementError, setEngagementError] = useState("");
+
+  useEffect(() => {
+    setVisitorId(getOrCreateVisitorId());
+  }, []);
 
   useEffect(() => {
     if (!slug) return;
@@ -127,6 +142,44 @@ export default function PashupalanArticlePage() {
     };
   }, [slug]);
 
+  useEffect(() => {
+    if (!article?._id || loading || !visitorId) return undefined;
+
+    let cancelled = false;
+    publicApiRequest(`/livestock/${encodeURIComponent(article._id)}/view`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ visitorId }),
+    })
+      .then((result) => {
+        if (cancelled) return;
+        setArticle((current) =>
+          current
+            ? {
+                ...current,
+                viewsCount: Number(result.data?.viewsCount) || 0,
+                likesCount: Number(result.data?.likesCount) || 0,
+              }
+            : current
+        );
+        const nextLiked = Boolean(result.data?.liked);
+        setLiked(nextLiked);
+        window.localStorage.setItem(
+          `krishi-livestock-like-${article._id}`,
+          String(nextLiked),
+        );
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setEngagementError(error.message || "आंकड़े अपडेट नहीं हो सके।");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [article?._id, loading, visitorId]);
+
   const sections = article?.sections || [];
   const faqs = article?.faqs || [];
 
@@ -147,6 +200,41 @@ export default function PashupalanArticlePage() {
       currency: "INR",
       maximumFractionDigits: 0,
     }).format(Number.isFinite(amount) ? amount : 0);
+
+  const toggleLike = async () => {
+    if (!article?._id || !visitorId || likeSubmitting) return;
+
+    setLikeSubmitting(true);
+    setEngagementError("");
+    try {
+      const result = await publicApiRequest(
+        `/livestock/${encodeURIComponent(article._id)}/like`,
+        {
+          method: liked ? "DELETE" : "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ visitorId }),
+        }
+      );
+      const nextLiked = Boolean(result.data?.liked);
+      setLiked(nextLiked);
+      window.localStorage.setItem(
+        `krishi-livestock-like-${article._id}`,
+        String(nextLiked),
+      );
+      setArticle((current) =>
+        current
+          ? {
+              ...current,
+              likesCount: Number(result.data?.likesCount) || 0,
+            }
+          : current
+      );
+    } catch (error) {
+      setEngagementError(error.message || "लाइक अपडेट नहीं हो सका।");
+    } finally {
+      setLikeSubmitting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -237,6 +325,32 @@ export default function PashupalanArticlePage() {
             <span>•</span>
             <span>अपडेट: {article.updated}</span>
           </div>
+
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm text-gray-600">
+              <Eye size={16} />
+              {Number(article.viewsCount || 0).toLocaleString("hi-IN")} views
+            </span>
+            <button
+              type="button"
+              onClick={toggleLike}
+              disabled={!visitorId || likeSubmitting}
+              aria-pressed={liked}
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold ${
+                liked
+                  ? "border-rose-200 bg-rose-50 text-rose-700"
+                  : "border-gray-200 bg-white text-gray-600"
+              } disabled:cursor-wait disabled:opacity-60`}
+            >
+              <Heart size={16} fill={liked ? "currentColor" : "none"} />
+              {Number(article.likesCount || 0).toLocaleString("hi-IN")}
+            </button>
+          </div>
+          {engagementError && (
+            <p className="mt-2 text-sm text-red-700" role="alert">
+              {engagementError}
+            </p>
+          )}
 
           <div className="mt-7 flex flex-wrap gap-3">
             <a

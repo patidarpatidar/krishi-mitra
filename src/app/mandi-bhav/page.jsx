@@ -1,7 +1,9 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import dynamic from 'next/dynamic';
+import nextDynamic from 'next/dynamic';
 import Link from 'next/link';
 
 import {
@@ -34,37 +36,37 @@ import {
    RECHARTS
 ========================================================= */
 
-const ResponsiveContainer = dynamic(
+const ResponsiveContainer = nextDynamic(
   () => import('recharts').then((mod) => mod.ResponsiveContainer),
   { ssr: false }
 );
 
-const AreaChart = dynamic(
+const AreaChart = nextDynamic(
   () => import('recharts').then((mod) => mod.AreaChart),
   { ssr: false }
 );
 
-const Area = dynamic(
+const Area = nextDynamic(
   () => import('recharts').then((mod) => mod.Area),
   { ssr: false }
 );
 
-const XAxis = dynamic(
+const XAxis = nextDynamic(
   () => import('recharts').then((mod) => mod.XAxis),
   { ssr: false }
 );
 
-const YAxis = dynamic(
+const YAxis = nextDynamic(
   () => import('recharts').then((mod) => mod.YAxis),
   { ssr: false }
 );
 
-const Tooltip = dynamic(
+const Tooltip = nextDynamic(
   () => import('recharts').then((mod) => mod.Tooltip),
   { ssr: false }
 );
 
-const CartesianGrid = dynamic(
+const CartesianGrid = nextDynamic(
   () => import('recharts').then((mod) => mod.CartesianGrid),
   { ssr: false }
 );

@@ -1,12 +1,16 @@
 
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Search,
   ArrowRight,
   ArrowUpRight,
+  Eye,
+  Heart,
   Milk,
   HeartPulse,
   Sprout,
@@ -26,7 +30,11 @@ import {
   CheckCircle2,
   MessageCircle,
 } from "lucide-react";
-import { publicApiRequest, unwrapApiList } from "@/lib/publicApi";
+import {
+  getOrCreateVisitorId,
+  publicApiRequest,
+  unwrapApiList,
+} from "@/lib/publicApi";
 
 const livestockCategories = [
   {
@@ -151,6 +159,9 @@ export default function PashupalanPage() {
   const [articles, setArticles] = useState([]);
   const [loadingArticles, setLoadingArticles] = useState(true);
   const [articlesError, setArticlesError] = useState("");
+  const [visitorId, setVisitorId] = useState("");
+  const [likePendingId, setLikePendingId] = useState(null);
+  const [engagementError, setEngagementError] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
   const [search, setSearch] = useState("");
   const [faqOpen, setFaqOpen] = useState(0);
@@ -161,6 +172,10 @@ export default function PashupalanPage() {
   const [dailyCost, setDailyCost] = useState("500");
 
   const [showCalculator, setShowCalculator] = useState(false);
+
+  useEffect(() => {
+    setVisitorId(getOrCreateVisitorId());
+  }, []);
 
   useEffect(() => {
       let cancelled = false;
@@ -196,6 +211,13 @@ export default function PashupalanPage() {
             return {
               ...article,
               id: article._id || article.id || article.slug,
+              viewsCount: Number(article.viewsCount ?? article.views) || 0,
+              likesCount: Number(article.likesCount ?? article.likes) || 0,
+              liked:
+                typeof window !== "undefined" &&
+                window.localStorage.getItem(
+                  `krishi-livestock-like-${article._id || article.id}`,
+                ) === "true",
               category,
               title: article.title || "",
               subtitle: article.subtitle || article.categoryLabel || "",
@@ -223,6 +245,41 @@ export default function PashupalanPage() {
         cancelled = true;
       };
   }, []);
+
+  const toggleArticleLike = async (article) => {
+    if (!article?._id || !visitorId || likePendingId === article.id) return;
+
+    setLikePendingId(article.id);
+    setEngagementError("");
+    try {
+      const result = await publicApiRequest(
+        `/livestock/${encodeURIComponent(article._id)}/like`,
+        {
+          method: article.liked ? "DELETE" : "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ visitorId }),
+        },
+      );
+      const data = result.data || {};
+      const liked = Boolean(data.liked);
+      const likesCount = Number(data.likesCount ?? data.likes) || 0;
+      setArticles((current) =>
+        current.map((item) =>
+          item.id === article.id
+            ? { ...item, liked, likesCount }
+            : item,
+        ),
+      );
+      window.localStorage.setItem(
+        `krishi-livestock-like-${article._id}`,
+        String(liked),
+      );
+    } catch (error) {
+      setEngagementError(error.message || "लाइक अपडेट नहीं हो सका।");
+    } finally {
+      setLikePendingId(null);
+    }
+  };
 
   const filteredServices = useMemo(() => {
       const query = search.trim().toLowerCase();
@@ -400,6 +457,11 @@ export default function PashupalanPage() {
             पशुपालन की जानकारी लोड हो रही है...
           </p>
         )}
+        {engagementError && (
+          <p role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            {engagementError}
+          </p>
+        )}
 
         <div className="mb-7 flex gap-2 overflow-x-auto pb-2">
           {livestockCategories.map((category) => {
@@ -505,6 +567,32 @@ export default function PashupalanPage() {
                           {point}
                         </span>
                       ))}
+                    </div>
+
+                    <div className="mt-4 flex items-center gap-4 text-xs text-slate-500">
+                      <span className="inline-flex items-center gap-1">
+                        <Eye size={15} />
+                        {service.viewsCount.toLocaleString("hi-IN")} views
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => toggleArticleLike(service)}
+                        disabled={
+                          !visitorId ||
+                          !service._id ||
+                          likePendingId === service.id
+                        }
+                        aria-pressed={Boolean(service.liked)}
+                        className={`inline-flex items-center gap-1 disabled:cursor-wait disabled:opacity-60 ${
+                          service.liked ? "text-rose-700" : "text-slate-500"
+                        }`}
+                      >
+                        <Heart
+                          size={15}
+                          fill={service.liked ? "currentColor" : "none"}
+                        />
+                        {service.likesCount.toLocaleString("hi-IN")}
+                      </button>
                     </div>
 
                     <Link

@@ -28,13 +28,13 @@ const API_URL = (
 ).replace(/\/+$/, "");
 
 const COLLECTIONS = [
-  { key: "crops", label: "Crops", endpoint: "/crops" },
+  { key: "crops", label: "Crops", endpoint: "/crops?limit=50" },
   {
     key: "cropCategories",
     label: "Crop categories",
     endpoint: "/crop-categories",
   },
-  { key: "schemes", label: "Government schemes", endpoint: "/schemes" },
+  { key: "schemes", label: "Government schemes", endpoint: "/schemes?limit=50" },
   {
     key: "schemeCategories",
     label: "Scheme categories",
@@ -43,14 +43,14 @@ const COLLECTIONS = [
   {
     key: "organic",
     label: "Organic recipes",
-    endpoint: "/organic-recipes",
+    endpoint: "/organic-recipes/admin?limit=50",
   },
   {
     key: "organicCategories",
     label: "Organic categories",
     endpoint: "/organic-categories",
   },
-  { key: "blogs", label: "Blogs", endpoint: "/blogs/admin" },
+  { key: "blogs", label: "Blogs", endpoint: "/blogs/admin?limit=50" },
   {
     key: "blogCategories",
     label: "Blog categories",
@@ -59,7 +59,7 @@ const COLLECTIONS = [
   {
     key: "livestock",
     label: "Livestock listings",
-    endpoint: "/livestock/admin",
+    endpoint: "/livestock/admin?limit=50",
   },
   {
     key: "inquiries",
@@ -129,7 +129,81 @@ async function fetchCollection(endpoint, token) {
     throw new Error("API response में records की array नहीं मिली।");
   }
 
-  return items;
+  const total =
+    Number(
+      payload?.pagination?.total ??
+        payload?.meta?.total ??
+        payload?.totalCount ??
+        payload?.data?.pagination?.total ??
+        payload?.data?.meta?.total ??
+        payload?.data?.totalCount ??
+        payload?.total ??
+        payload?.data?.total,
+    );
+
+  return {
+    items,
+    total: Number.isFinite(total) ? total : items.length,
+  };
+}
+
+function normalizeAnalyticsValue(payload, keys) {
+  const candidates = [];
+
+  for (const key of keys) {
+    candidates.push(payload?.[key]);
+    candidates.push(payload?.data?.[key]);
+    candidates.push(payload?.summary?.[key]);
+    candidates.push(payload?.totals?.[key]);
+    candidates.push(payload?.stats?.[key]);
+    candidates.push(payload?.analytics?.[key]);
+  }
+
+  for (const value of candidates) {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) return numeric;
+  }
+
+  return 0;
+}
+
+async function fetchAnalytics(token) {
+  const response = await fetch(`${API_URL}/admin/analytics`, {
+    method: "GET",
+    headers: {
+      Accept: "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    credentials: "include",
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(
+      `${response.status} ${response.statusText}${
+        body ? ` — ${body.slice(0, 180)}` : ""
+      }`
+    );
+  }
+
+  const payload = await response.json();
+  const views = normalizeAnalyticsValue(payload, [
+    "views",
+    "totalViews",
+    "total_views",
+    "viewCount",
+    "view_count",
+  ]);
+  const likes = normalizeAnalyticsValue(payload, [
+    "likes",
+    "totalLikes",
+    "total_likes",
+    "likeCount",
+    "like_count",
+  ]);
+
+  return { views, likes };
 }
 
 function getId(item) {
@@ -155,21 +229,12 @@ function formatNumber(value) {
   return new Intl.NumberFormat("en-IN").format(value || 0);
 }
 
-function getViewsAndLikes(collections) {
-  return Object.values(collections)
-    .filter(Array.isArray)
-    .flat()
-    .reduce(
-      (totals, item) => ({
-        views: totals.views + Number(item?.views || 0),
-        likes: totals.likes + Number(item?.likes || 0),
-      }),
-      { views: 0, likes: 0 }
-    );
-}
-
 export default function AdminDashboardPage() {
   const [data, setData] = useState(INITIAL_DATA);
+  const [counts, setCounts] = useState(
+    Object.fromEntries(COLLECTIONS.map(({ key }) => [key, null])),
+  );
+  const [analytics, setAnalytics] = useState(null);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -188,27 +253,42 @@ export default function AdminDashboardPage() {
           ? localStorage.getItem("krishi_mitra_admin_token")
           : null;
 
-      const results = await Promise.allSettled(
-        COLLECTIONS.map(({ endpoint }) =>
+      const results = await Promise.allSettled([
+        ...COLLECTIONS.map(({ endpoint }) =>
           fetchCollection(endpoint, token)
-        )
-      );
+        ),
+        fetchAnalytics(token),
+      ]);
 
       const nextData = { ...INITIAL_DATA };
+      const nextCounts = Object.fromEntries(
+        COLLECTIONS.map(({ key }) => [key, null]),
+      );
       const nextErrors = {};
 
-      results.forEach((result, index) => {
+      results.slice(0, COLLECTIONS.length).forEach((result, index) => {
         const collection = COLLECTIONS[index];
 
         if (result.status === "fulfilled") {
-          nextData[collection.key] = result.value;
+          nextData[collection.key] = result.value.items;
+          nextCounts[collection.key] = result.value.total;
         } else {
           nextErrors[collection.key] =
             result.reason?.message || "Data load नहीं हो पाया।";
         }
       });
 
+      const analyticsResult = results[COLLECTIONS.length];
+      if (analyticsResult.status === "fulfilled") {
+        setAnalytics(analyticsResult.value);
+      } else {
+        setAnalytics(null);
+        nextErrors.analytics =
+          analyticsResult.reason?.message || "Analytics load नहीं हो सका।";
+      }
+
       setData(nextData);
+      setCounts(nextCounts);
       setErrors(nextErrors);
       setLastUpdated(new Date());
     } finally {
@@ -225,7 +305,7 @@ export default function AdminDashboardPage() {
   }, [loadDashboard]);
 
   const count = (key) =>
-    data[key] === null ? "—" : data[key].length;
+    counts[key] === null ? "—" : counts[key];
 
   const publishedBlogs = useMemo(
     () =>
@@ -277,12 +357,10 @@ export default function AdminDashboardPage() {
       .slice(0, 5);
   }, [data.inquiries]);
 
-  const analytics = useMemo(
-    () => getViewsAndLikes(data),
-    [data]
-  );
-
   const failedCount = Object.keys(errors).length;
+  const failedCollectionCount = COLLECTIONS.filter(
+    ({ key }) => errors[key],
+  ).length;
 
   if (loading) {
     return (
@@ -441,7 +519,7 @@ export default function AdminDashboardPage() {
             <div>
               <h2 className="font-bold text-slate-900">Content Overview</h2>
               <p className="mt-1 text-xs text-slate-500">
-                Loaded content performance
+                Server-recorded engagement across all content
               </p>
             </div>
             <TrendingUp size={20} className="text-green-600" />
@@ -450,41 +528,46 @@ export default function AdminDashboardPage() {
           <div className="mt-5 grid grid-cols-2 gap-4">
             <AnalyticsCard
               title="Total Views"
-              value={formatNumber(analytics.views)}
+              value={analytics ? formatNumber(analytics.views) : "—"}
               icon={Eye}
             />
             <AnalyticsCard
               title="Total Likes"
-              value={formatNumber(analytics.likes)}
+              value={analytics ? formatNumber(analytics.likes) : "—"}
               icon={Heart}
             />
           </div>
 
           <p className="mt-2 text-xs text-slate-400">
-            {failedCount > 0
-              ? "ये totals सिर्फ सफलतापूर्वक load हुए records पर आधारित हैं।"
-              : "सभी requested collections सफलतापूर्वक load हुए।"}
+            {errors.analytics
+              ? `Analytics load नहीं हुआ: ${errors.analytics}`
+              :               "कुल views और likes सर्वर पर दर्ज सभी कंटेंट से प्राप्त होते हैं।"}
           </p>
 
           <div className="mt-6 space-y-4">
             <ProgressRow
               label="Crops"
-              value={data.crops?.length ?? null}
+              value={counts.crops}
               total={50}
             />
             <ProgressRow
               label="Blogs"
-              value={data.blogs?.length ?? null}
+              value={counts.blogs}
               total={50}
             />
             <ProgressRow
               label="Government Schemes"
-              value={data.schemes?.length ?? null}
+              value={counts.schemes}
               total={25}
             />
             <ProgressRow
               label="Organic Recipes"
-              value={data.organic?.length ?? null}
+              value={counts.organic}
+              total={25}
+            />
+            <ProgressRow
+              label="Livestock"
+              value={counts.livestock}
               total={25}
             />
           </div>
@@ -523,63 +606,6 @@ export default function AdminDashboardPage() {
             />
           </div>
         </div>
-      </div>
-
-      {/* Pending approvals */}
-      <div className="rounded-2xl border bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b px-5 py-4">
-          <div>
-            <h2 className="font-bold text-slate-900">Pending Approvals</h2>
-            <p className="mt-1 text-xs text-slate-500">
-              Review करने के लिए pending listings
-            </p>
-          </div>
-          <Link
-            href="/admin/livestock-listings"
-            className="flex items-center gap-1 text-sm font-semibold text-green-600 hover:text-green-700"
-          >
-            View All <ArrowRight size={15} />
-          </Link>
-        </div>
-
-        {pendingListings === null ? (
-          <DataError message={errors.livestock} />
-        ) : pendingListings.length > 0 ? (
-          <div className="divide-y">
-            {pendingListings.slice(0, 5).map((item, index) => (
-              <div
-                key={getId(item) || index}
-                className="flex flex-col gap-3 px-5 py-4 md:flex-row md:items-center md:justify-between"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-                    <PawPrint size={19} />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-slate-900">
-                      {item.title || item.name || "Livestock Listing"}
-                    </h3>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {item.location || "Location not available"}
-                    </p>
-                  </div>
-                </div>
-                <Link
-                  href={`/admin/livestock-listings/${getId(item)}`}
-                  className="flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold hover:bg-slate-50"
-                >
-                  Review <ArrowRight size={14} />
-                </Link>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <EmptyState
-            icon={CheckCircle2}
-            title="No pending approvals"
-            description="अभी कोई pending listing नहीं मिली।"
-          />
-        )}
       </div>
 
       {/* Recent blogs */}
@@ -742,8 +768,8 @@ export default function AdminDashboardPage() {
               }`}
             >
               {failedCount
-                ? `${COLLECTIONS.length - failedCount} of ${COLLECTIONS.length} collections loaded. ऊपर दिए गए errors जाँचें।`
-                : `${COLLECTIONS.length} API endpoints से data सफलतापूर्वक प्राप्त हुआ।`}
+                ? `${COLLECTIONS.length - failedCollectionCount} of ${COLLECTIONS.length} collections loaded. ऊपर दिए गए errors जाँचें।`
+                : `${COLLECTIONS.length} API collections और analytics totals सफलतापूर्वक प्राप्त हुए।`}
             </p>
           </div>
         </div>

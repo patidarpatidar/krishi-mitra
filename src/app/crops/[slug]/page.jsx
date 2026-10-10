@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+export const dynamic = 'force-dynamic';
+
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -51,6 +53,7 @@ import {
 
 import { getDynamicMandiRates } from '@/services/mandiApi';
 import {
+  getOrCreateVisitorId,
   publicApiRequest,
   unwrapApiItem,
   unwrapApiList,
@@ -145,9 +148,14 @@ export default function CropDetailPage({ params }) {
 
   const [likes, setLikes] = useState(0);
   const [views, setViews] = useState(0);
+  const [visitorId, setVisitorId] = useState('');
+  const [likeSubmitting, setLikeSubmitting] = useState(false);
+  const [engagementError, setEngagementError] = useState('');
 
   const [showShare, setShowShare] =
     useState(false);
+
+  const likeBaseCount = useRef(0);
 
   const [chartMode, setChartMode] =
     useState('modal');
@@ -190,6 +198,7 @@ export default function CropDetailPage({ params }) {
     setIsLiked(
       localStorage.getItem(likeKey) === 'true'
     );
+    setVisitorId(getOrCreateVisitorId());
 
   }, [slug]);
 
@@ -244,8 +253,15 @@ export default function CropDetailPage({ params }) {
             : [],
         };
         if (cancelled) return;
+        const storedLikeValue =
+          typeof window !== 'undefined'
+            ? localStorage.getItem(`krishi-crop-like-${apiCrop.slug || slug}`)
+            : null;
+        const isLikedStored = storedLikeValue === 'true';
+        likeBaseCount.current = Number(apiCrop.likes) || 0;
         setCrop(apiCrop);
-        setLikes(apiCrop.likes);
+        setLikes(likeBaseCount.current + (isLikedStored ? 1 : 0));
+        setIsLiked(isLikedStored);
         setViews(apiCrop.views);
         setYieldPerUnit(Number(apiCrop.yieldPerUnit) || 0);
         setLoading(false);
@@ -489,22 +505,77 @@ export default function CropDetailPage({ params }) {
      LIKE
   ===================================================== */
 
-  const toggleLike = () => {
+  useEffect(() => {
+    if (!crop?._id || loading || !visitorId) return undefined;
+
+    let cancelled = false;
+    setEngagementError('');
+    publicApiRequest(`/crops/${encodeURIComponent(crop._id)}/view`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ visitorId }),
+    })
+      .then((result) => {
+        if (cancelled) return;
+        const counts = result.data || {};
+        const nextViews = Number(counts.views) || 0;
+        const nextLikes = Number(counts.likes) || 0;
+        const nextLiked = Boolean(counts.liked);
+        setViews(nextViews);
+        setLikes(nextLikes);
+        setIsLiked(nextLiked);
+        setCrop((current) =>
+          current
+            ? { ...current, views: nextViews, likes: nextLikes }
+            : current,
+        );
+        window.localStorage.setItem(
+          `krishi-crop-like-${crop.slug}`,
+          String(nextLiked),
+        );
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setEngagementError(error.message || 'आंकड़े अपडेट नहीं हो सके।');
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [crop?._id, crop?.slug, loading, visitorId]);
+
+  const toggleLike = async () => {
+    if (!crop?._id || !visitorId || likeSubmitting) return;
+
     const next = !isLiked;
-
-    setIsLiked(next);
-
-    setLikes((previous) =>
-      next
-        ? previous + 1
-        : Math.max(0, previous - 1)
-    );
-
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(
-        `krishi-like-${slug}`,
-        String(next)
+    setLikeSubmitting(true);
+    setEngagementError('');
+    try {
+      const result = await publicApiRequest(
+        `/crops/${encodeURIComponent(crop._id)}/like`,
+        {
+          method: next ? 'PUT' : 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ visitorId }),
+        },
       );
+      const counts = result.data || {};
+      const nextLiked = Boolean(counts.liked);
+      const nextLikes = Number(counts.likes) || 0;
+      setIsLiked(nextLiked);
+      setLikes(nextLikes);
+      setCrop((current) =>
+        current ? { ...current, likes: nextLikes } : current,
+      );
+      window.localStorage.setItem(
+        `krishi-crop-like-${crop.slug}`,
+        String(nextLiked),
+      );
+    } catch (error) {
+      setEngagementError(error.message || 'लाइक अपडेट नहीं हो सका।');
+    } finally {
+      setLikeSubmitting(false);
     }
   };
 
@@ -688,8 +759,11 @@ export default function CropDetailPage({ params }) {
             <button
               type="button"
               onClick={toggleLike}
+              disabled={!visitorId || likeSubmitting}
               className={`inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-bold transition ${
-                isLiked
+                likeSubmitting
+                  ? 'cursor-wait opacity-60'
+                  : isLiked
                   ? 'border-rose-200 bg-rose-50 text-rose-600'
                   : 'border-slate-200 bg-white text-slate-600 hover:border-rose-200'
               }`}
@@ -734,6 +808,11 @@ export default function CropDetailPage({ params }) {
               </span>
             </button>
           </div>
+          {engagementError && (
+            <p className="mt-2 text-xs text-red-600" role="alert">
+              {engagementError}
+            </p>
+          )}
         </div>
       </div>
 
@@ -1694,8 +1773,11 @@ export default function CropDetailPage({ params }) {
         <button
           type="button"
           onClick={toggleLike}
+          disabled={!visitorId || likeSubmitting}
           className={`flex h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-bold ${
-            isLiked
+            likeSubmitting
+              ? 'cursor-wait opacity-60'
+              : isLiked
               ? 'bg-rose-50 text-rose-600'
               : 'text-slate-600'
           }`}

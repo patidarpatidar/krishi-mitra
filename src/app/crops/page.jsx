@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+export const dynamic = 'force-dynamic';
+
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   Search,
@@ -24,7 +26,11 @@ import {
   Check,
   RotateCcw,
 } from 'lucide-react';
-import { publicApiRequest, unwrapApiList } from '@/lib/publicApi';
+import {
+  getOrCreateVisitorId,
+  publicApiRequest,
+  unwrapApiList,
+} from '@/lib/publicApi';
 
 /* =========================================================
    CROP DATA
@@ -44,7 +50,8 @@ const getCropStorage = (key) => {
   if (typeof window === 'undefined') return [];
 
   try {
-    return JSON.parse(localStorage.getItem(getStorageKey(key)) || '[]');
+    const value = JSON.parse(localStorage.getItem(getStorageKey(key)) || '[]');
+    return Array.isArray(value) ? value : [];
   } catch {
     return [];
   }
@@ -72,6 +79,10 @@ export default function CropsPage() {
 
   const [likedCrops, setLikedCrops] = useState([]);
   const [savedCrops, setSavedCrops] = useState([]);
+  const [visitorId, setVisitorId] = useState('');
+  const [likeSubmitting, setLikeSubmitting] = useState({});
+  const [likeError, setLikeError] = useState('');
+  const likeSubmittingRef = useRef(new Set());
 
   const [showFilters, setShowFilters] = useState(false);
   const [showFeaturedOnly, setShowFeaturedOnly] = useState(false);
@@ -84,8 +95,9 @@ export default function CropsPage() {
     ])
       .then(([cropResult, categoryResult]) => {
         if (cancelled) return;
+        const loadedCrops = unwrapApiList(cropResult);
         setCropsData(
-          unwrapApiList(cropResult).map((crop) => ({
+          loadedCrops.map((crop) => ({
             ...crop,
             id: crop._id || crop.slug,
             nameEn: crop.englishName || '',
@@ -102,6 +114,24 @@ export default function CropsPage() {
             views: crop.views || 0,
             likes: crop.likes || 0,
           })),
+        );
+        const storedLikes = getCropStorage('liked-crops');
+        setLikedCrops(
+          loadedCrops.flatMap((crop) => {
+            let storedLike = null;
+            try {
+              storedLike = window.localStorage.getItem(
+                `krishi-crop-like-${crop.slug}`,
+              );
+            } catch {
+              storedLike = null;
+            }
+            const isLiked =
+              storedLike === null
+                ? Array.isArray(storedLikes) && storedLikes.includes(crop.slug)
+                : storedLike === 'true';
+            return isLiked ? [crop.slug] : [];
+          }),
         );
         setCropCategories(unwrapApiList(categoryResult));
         const requestedCategory = new URLSearchParams(
@@ -172,7 +202,7 @@ export default function CropsPage() {
   ===================================================== */
 
   useEffect(() => {
-    setLikedCrops(getCropStorage('liked-crops'));
+    setVisitorId(getOrCreateVisitorId());
     setSavedCrops(getCropStorage('saved-crops'));
   }, []);
 
@@ -319,14 +349,57 @@ export default function CropsPage() {
      LIKE
   ===================================================== */
 
-  const toggleLike = (slug) => {
-    setLikedCrops((previous) => {
-      if (previous.includes(slug)) {
-        return previous.filter((item) => item !== slug);
-      }
+  const toggleLike = async (crop) => {
+    const slug = crop.slug;
+    const cropId = crop._id;
+    if (!cropId || !visitorId || likeSubmittingRef.current.has(slug)) return;
 
-      return [...previous, slug];
-    });
+    const nextLiked = !likedCrops.includes(slug);
+    likeSubmittingRef.current.add(slug);
+    setLikeSubmitting((current) => ({ ...current, [slug]: true }));
+    setLikeError('');
+    try {
+      const result = await publicApiRequest(
+        `/crops/${encodeURIComponent(cropId)}/like`,
+        {
+          method: nextLiked ? 'PUT' : 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ visitorId }),
+        },
+      );
+      const counts = result.data || {};
+      const serverLiked = Boolean(counts.liked);
+      const serverLikes = Number(counts.likes);
+
+      setLikedCrops((current) =>
+        serverLiked
+          ? current.includes(slug) ? current : [...current, slug]
+          : current.filter((item) => item !== slug),
+      );
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(
+          `krishi-crop-like-${slug}`,
+          String(serverLiked),
+        );
+      }
+      if (Number.isFinite(serverLikes)) {
+        setCropsData((current) =>
+          current.map((item) =>
+            item.slug === slug ? { ...item, likes: serverLikes } : item,
+          ),
+        );
+        setQuickViewCrop((current) =>
+          current?.slug === slug
+            ? { ...current, likes: serverLikes }
+            : current,
+        );
+      }
+    } catch (error) {
+      setLikeError(error.message || 'लाइक अपडेट नहीं हो सका।');
+    } finally {
+      likeSubmittingRef.current.delete(slug);
+      setLikeSubmitting((current) => ({ ...current, [slug]: false }));
+    }
   };
 
   /* =====================================================
@@ -731,7 +804,8 @@ export default function CropsPage() {
                 crop={crop}
                 isLiked={likedCrops.includes(crop.slug)}
                 isSaved={savedCrops.includes(crop.slug)}
-                onLike={() => toggleLike(crop.slug)}
+                onLike={() => toggleLike(crop)}
+                likeSubmitting={Boolean(likeSubmitting[crop.slug])}
                 onSave={() => toggleSave(crop.slug)}
                 onShare={() => shareCrop(crop)}
                 onQuickView={() => openQuickView(crop)}
@@ -740,6 +814,11 @@ export default function CropsPage() {
           </div>
         ) : (
           <EmptyState onReset={resetFilters} />
+        )}
+        {likeError && (
+          <p role="alert" className="mt-4 text-sm text-red-700">
+            {likeError}
+          </p>
         )}
       </section>
 
@@ -833,7 +912,8 @@ export default function CropsPage() {
           crop={quickViewCrop}
           isLiked={likedCrops.includes(quickViewCrop.slug)}
           isSaved={savedCrops.includes(quickViewCrop.slug)}
-          onLike={() => toggleLike(quickViewCrop.slug)}
+          onLike={() => toggleLike(quickViewCrop)}
+          likeSubmitting={Boolean(likeSubmitting[quickViewCrop.slug])}
           onSave={() => toggleSave(quickViewCrop.slug)}
           onShare={() => shareCrop(quickViewCrop)}
           onClose={() => setQuickViewCrop(null)}
@@ -914,6 +994,7 @@ function ActiveFilter({ label }) {
 function CropCard({
   crop,
   isLiked,
+  likeSubmitting,
   isSaved,
   onLike,
   onSave,
@@ -949,6 +1030,7 @@ function CropCard({
             active={isLiked}
             title="पसंद करें"
             onClick={onLike}
+            disabled={likeSubmitting}
           >
             <Heart
               className={`h-4 w-4 ${
@@ -1115,6 +1197,7 @@ function IconAction({
   active = false,
   title,
   onClick,
+  disabled = false,
 }) {
   return (
     <button
@@ -1125,6 +1208,7 @@ function IconAction({
         event.stopPropagation();
         onClick();
       }}
+      disabled={disabled}
       className={`flex h-9 w-9 items-center justify-center rounded-full shadow-sm backdrop-blur transition ${
         active
           ? 'bg-rose-500 text-white'
@@ -1214,6 +1298,7 @@ function InfoBox({ icon, title, text }) {
 function QuickViewModal({
   crop,
   isLiked,
+  likeSubmitting,
   isSaved,
   onLike,
   onSave,
@@ -1271,6 +1356,7 @@ function QuickViewModal({
             <button
               type="button"
               onClick={onLike}
+              disabled={likeSubmitting}
               className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-bold ${
                 isLiked
                   ? 'border-rose-200 bg-rose-50 text-rose-600'

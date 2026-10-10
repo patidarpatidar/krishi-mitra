@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+export const dynamic = 'force-dynamic';
+
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Leaf,
   Calculator,
@@ -14,7 +16,10 @@ import {
   AlertTriangle,
   Info,
   Search,
+  Eye,
   Heart,
+  Bookmark,
+  ThumbsUp,
   Copy,
   Check,
   Droplets,
@@ -26,7 +31,11 @@ import {
   FlaskConical,
   BookOpen,
 } from 'lucide-react';
-import { publicApiRequest, unwrapApiList } from '@/lib/publicApi';
+import {
+  getOrCreateVisitorId,
+  publicApiRequest,
+  unwrapApiList,
+} from '@/lib/publicApi';
 
 /* =========================================================
    HELPERS
@@ -114,6 +123,10 @@ export default function OrganicFarmingPage() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
+  const [visitorId, setVisitorId] = useState('');
+  const [engagementError, setEngagementError] = useState('');
+  const [likePendingId, setLikePendingId] = useState(null);
+  const likePendingIds = useRef(new Set());
   const [landArea, setLandArea] = useState(1);
   const [landUnit, setLandUnit] = useState('acre');
 
@@ -136,6 +149,8 @@ export default function OrganicFarmingPage() {
     useState(null);
 
   useEffect(() => {
+    setVisitorId(getOrCreateVisitorId());
+
     let cancelled = false;
 
     Promise.all([
@@ -175,7 +190,15 @@ export default function OrganicFarmingPage() {
 
           return {
             ...recipe,
+            apiId: recipe._id || recipe.id,
             id: recipe._id || recipe.id || recipe.slug,
+            views: Number(recipe.views ?? recipe.viewsCount) || 0,
+            likes: Number(recipe.likes ?? recipe.likesCount) || 0,
+            liked:
+              typeof window !== 'undefined' &&
+              window.localStorage.getItem(
+                `krishi-organic-like-${recipe._id || recipe.id || recipe.slug}`,
+              ) === 'true',
             title: recipe.title || recipe.name || '',
             type:
               recipe.type ||
@@ -207,7 +230,7 @@ export default function OrganicFarmingPage() {
         const requestedCategory = new URLSearchParams(
           window.location.search,
         ).get('category');
-        if (requestedCategory) setSelectedCategory(requestedCategory);
+        if (requestedCategory) setFilterCategory(requestedCategory);
       })
       .catch((error) => {
         if (!cancelled) {
@@ -222,6 +245,21 @@ export default function OrganicFarmingPage() {
       cancelled = true;
     };
   }, []);
+
+  const updateRecipeEngagement = (recipeId, data) => {
+    setRecipes((current) =>
+      current.map((recipe) =>
+        recipe.id === recipeId
+          ? {
+              ...recipe,
+              views: Number(data.views ?? data.viewsCount ?? recipe.views) || 0,
+              likes: Number(data.likes ?? data.likesCount ?? recipe.likes) || 0,
+              liked: Boolean(data.liked ?? data.isLiked ?? recipe.liked),
+            }
+          : recipe
+      )
+    );
+  };
 
   const categoryOptions = useMemo(() => {
     if (categories.length) {
@@ -344,12 +382,100 @@ export default function OrganicFarmingPage() {
   |--------------------------------------------------------------------------
   */
 
-  const toggleExpand = (id) => {
-    setExpandedCard(
-      expandedCard === id
-        ? null
-        : id
-    );
+  const toggleExpand = async (id) => {
+    const nextId = expandedCard === id ? null : id;
+    setExpandedCard(nextId);
+    if (!nextId || !visitorId) return;
+
+    const recipe = recipes.find((item) => item.id === id);
+    if (!recipe?.apiId) return;
+
+    setEngagementError('');
+    try {
+      const result = await publicApiRequest(
+        `/organic-recipes/${encodeURIComponent(recipe.apiId)}/view`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ visitorId }),
+        },
+      );
+      const responseData = result.data?.data || result.data || result;
+      updateRecipeEngagement(id, responseData);
+      const likedValue = responseData.liked ?? responseData.isLiked;
+      if (typeof likedValue === 'boolean') {
+        window.localStorage.setItem(
+          `krishi-organic-like-${recipe.apiId}`,
+          String(likedValue),
+        );
+      }
+    } catch (error) {
+      setEngagementError(error.message || 'आंकड़े अपडेट नहीं हो सके।');
+    }
+  };
+
+  const toggleRecipeLike = async (recipe) => {
+    if (
+      !recipe?.apiId ||
+      !visitorId ||
+      likePendingIds.current.has(recipe.id)
+    ) {
+      return;
+    }
+
+    const previousLiked = Boolean(recipe.liked);
+    const nextLiked = !previousLiked;
+    const previousLikes = Number(recipe.likes) || 0;
+    likePendingIds.current.add(recipe.id);
+    setLikePendingId(recipe.id);
+    setEngagementError('');
+    updateRecipeEngagement(recipe.id, {
+      liked: nextLiked,
+      likes: Math.max(0, previousLikes + (nextLiked ? 1 : -1)),
+    });
+    try {
+      const result = await publicApiRequest(
+        `/organic-recipes/${encodeURIComponent(recipe.apiId)}/like`,
+        {
+          method: nextLiked ? 'PUT' : 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ visitorId }),
+        },
+      );
+      const responseData =
+        result.data?.data?.recipe ||
+        result.data?.recipe ||
+        result.data?.data ||
+        result.data ||
+        result;
+      const responseLiked = responseData.liked ?? responseData.isLiked;
+      const responseLikes = Number(
+        responseData.likes ?? responseData.likesCount ?? responseData.likeCount,
+      );
+      updateRecipeEngagement(recipe.id, {
+        ...responseData,
+        liked:
+          typeof responseLiked === 'boolean' ? responseLiked : nextLiked,
+        likes: Number.isFinite(responseLikes)
+          ? responseLikes
+          : Math.max(0, previousLikes + (nextLiked ? 1 : -1)),
+      });
+      window.localStorage.setItem(
+        `krishi-organic-like-${recipe.apiId}`,
+        String(
+          typeof responseLiked === 'boolean' ? responseLiked : nextLiked,
+        ),
+      );
+    } catch (error) {
+      updateRecipeEngagement(recipe.id, {
+        liked: previousLiked,
+        likes: previousLikes,
+      });
+      setEngagementError(error.message || 'लाइक अपडेट नहीं हो सका।');
+    } finally {
+      likePendingIds.current.delete(recipe.id);
+      setLikePendingId(null);
+    }
   };
 
   /*
@@ -947,6 +1073,12 @@ export default function OrganicFarmingPage() {
 
         </div>
 
+        {engagementError && (
+          <p className="text-sm text-red-700" role="alert">
+            {engagementError}
+          </p>
+        )}
+
         {/* ====================================================
             RECIPE GRID
         ==================================================== */}
@@ -999,31 +1131,56 @@ export default function OrganicFarmingPage() {
 
                     </div>
 
-                    <button
-                      onClick={() =>
-                        toggleSave(
-                          recipe.id
-                        )
-                      }
-                      className={`print-hidden shrink-0 p-2.5 rounded-xl border ${
-                        isSaved
-                          ? 'bg-rose-50 text-rose-600 border-rose-200'
-                          : 'bg-slate-50 text-slate-500 border-slate-200'
-                      }`}
-                      title="Save"
-                    >
+                    <div className="flex shrink-0 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleRecipeLike(recipe)}
+                        disabled={!visitorId || likePendingId === recipe.id}
+                        aria-label={recipe.liked ? 'Unlike recipe' : 'Like recipe'}
+                        aria-pressed={Boolean(recipe.liked)}
+                        className={`print-hidden rounded-xl border p-2.5 disabled:cursor-wait disabled:opacity-60 ${
+                          recipe.liked
+                            ? 'border-rose-200 bg-rose-50 text-rose-600'
+                            : 'border-slate-200 bg-slate-50 text-slate-500'
+                        }`}
+                        title={recipe.liked ? 'पसंद हटाएं' : 'पसंद करें'}
+                      >
+                        <Heart
+                          className="h-4 w-4"
+                          fill={recipe.liked ? 'currentColor' : 'none'}
+                        />
+                      </button>
 
-                      <Heart
-                        className="w-4 h-4"
-                        fill={
+                      <button
+                        type="button"
+                        onClick={() => toggleSave(recipe.id)}
+                        aria-label={isSaved ? 'Unsave recipe' : 'Save recipe'}
+                        aria-pressed={isSaved}
+                        className={`print-hidden rounded-xl border p-2.5 ${
                           isSaved
-                            ? 'currentColor'
-                            : 'none'
-                        }
-                      />
+                            ? 'border-amber-200 bg-amber-50 text-amber-700'
+                            : 'border-slate-200 bg-slate-50 text-slate-500'
+                        }`}
+                        title="सेव करें"
+                      >
+                        <Bookmark
+                          className="h-4 w-4"
+                          fill={isSaved ? 'currentColor' : 'none'}
+                        />
+                      </button>
+                    </div>
 
-                    </button>
+                  </div>
 
+                  <div className="mt-3 flex items-center gap-4 text-xs text-slate-500">
+                    <span className="inline-flex items-center gap-1">
+                      <Eye className="h-3.5 w-3.5" />
+                      {Number(recipe.views || 0).toLocaleString('hi-IN')}
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <ThumbsUp className="h-3.5 w-3.5" />
+                      {Number(recipe.likes || 0).toLocaleString('hi-IN')}
+                    </span>
                   </div>
 
                   {/* Cost */}

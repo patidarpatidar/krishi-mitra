@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
@@ -48,6 +50,7 @@ export default function BlogListingPage() {
   const [blogCategories, setBlogCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [commentsError, setCommentsError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedTag, setSelectedTag] = useState('');
@@ -64,13 +67,67 @@ export default function BlogListingPage() {
     ])
       .then(([blogResult, categoryResult]) => {
         if (cancelled) return;
-        setBlogsData(unwrapApiList(blogResult));
-        setBlogCategories(unwrapApiList(categoryResult));
-        const requestedCategory = new URLSearchParams(
-          window.location.search,
-        ).get('category');
-        if (requestedCategory) setSelectedCategory(requestedCategory);
-      })
+      const blogs = unwrapApiList(blogResult);
+      setBlogsData(blogs);
+      setBlogCategories(unwrapApiList(categoryResult));
+      const requestedCategory = new URLSearchParams(
+        window.location.search,
+      ).get('category');
+      if (requestedCategory) setSelectedCategory(requestedCategory);
+
+      const loadCommentCounts = async () => {
+        let failedCount = 0;
+        for (let index = 0; index < blogs.length; index += 10) {
+          const batch = blogs.slice(index, index + 10);
+          const results = await Promise.allSettled(
+            batch.map(async (blog) => {
+              if (!blog.slug) {
+                throw new Error('Blog slug is missing.');
+              }
+              const result = await publicApiRequest(
+                `/blogs/slug/${encodeURIComponent(blog.slug)}/comments`,
+              );
+              const countValue =
+                result.count ??
+                result.data?.count ??
+                result.pagination?.total;
+              const count = Number(countValue);
+              return {
+                slug: blog.slug,
+                count: Number.isFinite(count)
+                  ? count
+                  : unwrapApiList(result).length,
+              };
+            }),
+          );
+
+          if (cancelled) return;
+          const countsBySlug = new Map();
+          results.forEach((result) => {
+            if (result.status === 'fulfilled') {
+              countsBySlug.set(result.value.slug, result.value.count);
+            } else {
+              failedCount += 1;
+            }
+          });
+          if (countsBySlug.size) {
+            setBlogsData((current) =>
+              current.map((blog) =>
+                countsBySlug.has(blog.slug)
+                  ? { ...blog, comments: countsBySlug.get(blog.slug) }
+                  : blog,
+              ),
+            );
+          }
+        }
+        if (failedCount && !cancelled) {
+          setCommentsError(
+            `कुछ लेखों की टिप्पणी संख्या लोड नहीं हो सकी (${failedCount})।`,
+          );
+        }
+      };
+      loadCommentCounts();
+    })
       .catch((loadError) => {
         if (!cancelled) setError(loadError.message || 'लेख लोड नहीं हो सके।');
       })
@@ -227,6 +284,7 @@ export default function BlogListingPage() {
         </section>
 
         {error && <p role="alert" className="rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</p>}
+        {commentsError && <p role="status" className="rounded-xl bg-amber-50 p-4 text-sm text-amber-800">{commentsError}</p>}
         {loading && <p className="text-sm text-slate-500">लेख लोड हो रहे हैं...</p>}
 
         {/* SEARCH */}
@@ -635,7 +693,7 @@ function BlogCard({ blog, onCategoryClick }) {
 
             <span className="flex items-center gap-1">
               <MessageSquare className="w-3 h-3" />
-              {blog.comments || 0}
+              {formatNumber(blog.comments || 0)}
             </span>
           </div>
 
@@ -719,7 +777,7 @@ function BlogListCard({ blog }) {
             </span>
 
             <span>
-              💬 {blog.comments || 0}
+              💬 {formatNumber(blog.comments || 0)}
             </span>
           </div>
 

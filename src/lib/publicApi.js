@@ -2,6 +2,20 @@ const API_BASE = (
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
 ).replace(/\/+$/, "");
 
+export function getOrCreateVisitorId(storageKey = "krishi-visitor-id") {
+  if (typeof window === "undefined") return "";
+
+  let visitorId = window.localStorage.getItem(storageKey);
+  if (!visitorId) {
+    visitorId =
+      window.crypto?.randomUUID?.() ||
+      `visitor-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    window.localStorage.setItem(storageKey, visitorId);
+  }
+
+  return visitorId;
+}
+
 export async function publicApiRequest(path, options = {}) {
   const response = await fetch(`${API_BASE}${path}`, {
     ...options,

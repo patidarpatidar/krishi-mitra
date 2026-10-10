@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { use } from "react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -8,7 +10,9 @@ import {
   ArrowLeft,
   ExternalLink,
   CheckCircle2,
+  Eye,
   FileText,
+  Heart,
   Landmark,
   Phone,
   ShieldCheck,
@@ -17,7 +21,10 @@ import {
   Sprout,
 } from "lucide-react";
 
-import { publicApiRequest } from "@/lib/publicApi";
+import {
+  getOrCreateVisitorId,
+  publicApiRequest,
+} from "@/lib/publicApi";
 
 const iconMap = {
   sprout: Sprout,
@@ -132,6 +139,14 @@ export default function GovernmentSchemeDetails({
   const [scheme, setScheme] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [visitorId, setVisitorId] = useState("");
+  const [liked, setLiked] = useState(false);
+  const [likeSubmitting, setLikeSubmitting] = useState(false);
+  const [engagementError, setEngagementError] = useState("");
+
+  useEffect(() => {
+    setVisitorId(getOrCreateVisitorId());
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -149,6 +164,70 @@ export default function GovernmentSchemeDetails({
       cancelled = true;
     };
   }, [params.slug]);
+
+  useEffect(() => {
+    if (!scheme?._id || loading || !visitorId) return undefined;
+
+    let cancelled = false;
+    publicApiRequest(`/schemes/${encodeURIComponent(scheme._id)}/view`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ visitorId }),
+    })
+      .then((result) => {
+        if (cancelled) return;
+        setScheme((current) =>
+          current
+            ? {
+                ...current,
+                views: Number(result.data?.views) || 0,
+                likes: Number(result.data?.likes) || 0,
+              }
+            : current
+        );
+        setLiked(Boolean(result.data?.liked));
+      })
+      .catch((trackError) => {
+        if (!cancelled) {
+          setEngagementError(
+            trackError.message || "आंकड़े अपडेट नहीं हो सके।"
+          );
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loading, scheme?._id, visitorId]);
+
+  const toggleLike = async () => {
+    if (!scheme?._id || !visitorId || likeSubmitting) return;
+
+    setLikeSubmitting(true);
+    setEngagementError("");
+    try {
+      const result = await publicApiRequest(
+        `/schemes/${encodeURIComponent(scheme._id)}/like`,
+        {
+          method: liked ? "DELETE" : "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ visitorId }),
+        }
+      );
+      setLiked(Boolean(result.data?.liked));
+      setScheme((current) =>
+        current
+          ? { ...current, likes: Number(result.data?.likes) || 0 }
+          : current
+      );
+    } catch (trackError) {
+      setEngagementError(
+        trackError.message || "लाइक अपडेट नहीं हो सका।"
+      );
+    } finally {
+      setLikeSubmitting(false);
+    }
+  };
 
   if (loading) return <main className="min-h-screen p-8 text-center">योजना लोड हो रही है...</main>;
   if (error || !scheme) {
@@ -246,7 +325,30 @@ export default function GovernmentSchemeDetails({
                   )
                 )}
 
+                <span className="inline-flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-xs font-bold">
+                  <Eye className="h-4 w-4" />
+                  {Number(scheme.views || 0).toLocaleString("hi-IN")} views
+                </span>
+                <button
+                  type="button"
+                  onClick={toggleLike}
+                  disabled={!visitorId || likeSubmitting}
+                  aria-pressed={liked}
+                  className={`inline-flex items-center gap-1.5 rounded-xl border px-4 py-3 text-xs font-bold disabled:cursor-wait disabled:opacity-60 ${
+                    liked
+                      ? "border-rose-200 bg-rose-100 text-rose-800"
+                      : "border-white/15 bg-white/10 text-white"
+                  }`}
+                >
+                  <Heart className="h-4 w-4" fill={liked ? "currentColor" : "none"} />
+                  {Number(scheme.likes || 0).toLocaleString("hi-IN")}
+                </button>
               </div>
+              {engagementError && (
+                <p className="mt-2 text-sm text-rose-100" role="alert">
+                  {engagementError}
+                </p>
+              )}
 
             </div>
 

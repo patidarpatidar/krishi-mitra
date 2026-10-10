@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+export const dynamic = 'force-dynamic';
+
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   AlertTriangle,
@@ -28,7 +30,11 @@ import {
   VolumeX,
 } from 'lucide-react';
 
-import { publicApiRequest, unwrapApiList } from '@/lib/publicApi';
+import {
+  getOrCreateVisitorId,
+  publicApiRequest,
+  unwrapApiList,
+} from '@/lib/publicApi';
 
 export default function BlogDetailPage({ params }) {
   const [blog, setBlog] = useState(null);
@@ -44,6 +50,9 @@ export default function BlogDetailPage({ params }) {
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
   const [likes, setLikes] = useState(0);
+  const likeBaseCount = useRef(0);
+  const [likeSubmitting, setLikeSubmitting] = useState(false);
+  const [engagementError, setEngagementError] = useState('');
 
   const [copied, setCopied] = useState(false);
   const [speaking, setSpeaking] = useState(false);
@@ -89,8 +98,15 @@ export default function BlogDetailPage({ params }) {
             : '',
         };
         if (cancelled) return;
+        const storedLikeValue =
+          typeof window !== 'undefined'
+            ? window.localStorage.getItem(`krishi-blog-like-${apiBlog.slug}`)
+            : null;
+        const isLikedStored = storedLikeValue === 'true';
+        likeBaseCount.current = Number(apiBlog.likes || 0);
         setBlog(apiBlog);
-        setLikes(apiBlog.likes || 0);
+        setLiked(isLikedStored);
+        setLikes(likeBaseCount.current + (isLikedStored ? 1 : 0));
       } catch (error) {
         if (!cancelled) setLoadError(error.message || 'लेख लोड नहीं हो सका।');
       } finally {
@@ -107,12 +123,7 @@ export default function BlogDetailPage({ params }) {
     if (!blog?.slug) return undefined;
 
     let cancelled = false;
-    let id = window.localStorage.getItem('krishi-blog-visitor-id');
-    if (!id) {
-      id = window.crypto?.randomUUID?.() ||
-        `visitor-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      window.localStorage.setItem('krishi-blog-visitor-id', id);
-    }
+    const id = getOrCreateVisitorId('krishi-blog-visitor-id');
     setVisitorId(id);
     setFeedbackLoading(true);
     setCommentsLoading(true);
@@ -165,6 +176,40 @@ export default function BlogDetailPage({ params }) {
       cancelled = true;
     };
   }, [blog?.slug]);
+
+  useEffect(() => {
+    if (!blog?._id || loading || !visitorId) return undefined;
+
+    let cancelled = false;
+    setEngagementError('');
+    publicApiRequest(`/blogs/${encodeURIComponent(blog._id)}/view`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ visitorId }),
+    })
+      .then((result) => {
+        if (cancelled) return;
+        const counts = result.data || {};
+        setBlog((current) =>
+          current ? { ...current, views: Number(counts.views) || 0 } : current,
+        );
+        setLikes(Number(counts.likes) || 0);
+        setLiked(Boolean(counts.liked));
+        window.localStorage.setItem(
+          `krishi-blog-like-${blog.slug}`,
+          String(Boolean(counts.liked)),
+        );
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setEngagementError(error.message || 'आंकड़े अपडेट नहीं हो सके।');
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [blog?._id, blog?.slug, loading, visitorId]);
 
   useEffect(() => {
     const categoryId = blog?.categoryId?._id || blog?.categoryId;
@@ -286,9 +331,33 @@ export default function BlogDetailPage({ params }) {
     });
   };
 
-  const handleLike = () => {
-    setLiked((previous) => !previous);
-    setLikes((previous) => previous + (liked ? -1 : 1));
+  const handleLike = async () => {
+    if (!blog?._id || !visitorId || likeSubmitting) return;
+
+    const nextLikedState = !liked;
+    setLikeSubmitting(true);
+    setEngagementError('');
+    try {
+      const result = await publicApiRequest(
+        `/blogs/${encodeURIComponent(blog._id)}/like`,
+        {
+          method: nextLikedState ? 'PUT' : 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ visitorId }),
+        },
+      );
+      const counts = result.data || {};
+      setLiked(Boolean(counts.liked));
+      setLikes(Number(counts.likes) || 0);
+      window.localStorage.setItem(
+        `krishi-blog-like-${blog.slug}`,
+        String(Boolean(counts.liked)),
+      );
+    } catch (error) {
+      setEngagementError(error.message || 'लाइक अपडेट नहीं हो सका।');
+    } finally {
+      setLikeSubmitting(false);
+    }
   };
 
   const handleBookmark = () => {
@@ -572,8 +641,11 @@ export default function BlogDetailPage({ params }) {
 
               <button
                 onClick={handleLike}
+                disabled={!visitorId || likeSubmitting}
                 className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 ${
-                  liked
+                  likeSubmitting
+                    ? 'cursor-wait opacity-60'
+                    : liked
                     ? 'bg-emerald-700 text-white'
                     : 'bg-slate-100 text-slate-700'
                 }`}
@@ -597,6 +669,11 @@ export default function BlogDetailPage({ params }) {
                 {copied ? 'Copied' : 'Copy Link'}
               </button>
             </div>
+            {engagementError && (
+              <p className="mt-2 text-xs text-red-600" role="alert">
+                {engagementError}
+              </p>
+            )}
           </div>
         </section>
 
