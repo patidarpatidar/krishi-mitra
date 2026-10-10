@@ -19,8 +19,12 @@ import {
   UserCheck,
   BookOpen,
   Target,
-  HelpCircle,
+  Loader2,
 } from "lucide-react";
+
+const API_BASE = (
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
+).replace(/\/+$/, "");
 
 /* =========================================================
    FOOTER CONFIG
@@ -42,15 +46,15 @@ const FOOTER_CONFIG = {
   },
 
   whatsapp: {
-    number: "919826000000",
-    display: "+91 98260 XXXXX",
+    number: "919340004380",
+    display: "+91  9340004380",
   },
 
   social: [
     {
       name: "WhatsApp",
       icon: MessageCircle,
-      href: "https://wa.me/919826000000",
+      href: "https://wa.me/919340004380",
       className:
         "hover:bg-emerald-500 hover:text-white hover:border-emerald-500",
     },
@@ -176,36 +180,46 @@ const whatsappUrl = `https://wa.me/${FOOTER_CONFIG.whatsapp.number}?text=${whats
 
 export default function Footer() {
   const [subscribed, setSubscribed] = useState(false);
-
   const [emailOrPhone, setEmailOrPhone] = useState("");
-
+  const [subscriptionError, setSubscriptionError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [openSection, setOpenSection] = useState(null);
 
   /* =======================================================
      NEWSLETTER
   ======================================================== */
 
-  const handleSubscribe = (e) => {
+  const handleSubscribe = async (e) => {
     e.preventDefault();
 
     if (!emailOrPhone.trim()) return;
 
-    setSubscribed(true);
-    setEmailOrPhone("");
+    setSubmitting(true);
+    setSubscriptionError("");
 
-    /*
-      Future API:
-
-      await fetch("/api/subscribe", {
+    try {
+      const response = await fetch(`${API_BASE}/subscribers`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contact: emailOrPhone,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contact: emailOrPhone.trim() }),
       });
-    */
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok || result.success === false) {
+        throw new Error(
+          result.message || "Subscription दर्ज नहीं हो सकी। कृपया फिर प्रयास करें।",
+        );
+      }
+
+      setSubscribed(true);
+      setEmailOrPhone("");
+    } catch (error) {
+      setSubscriptionError(
+        error.message || "Subscription दर्ज नहीं हो सकी। कृपया फिर प्रयास करें।",
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   /* =======================================================
@@ -298,7 +312,10 @@ export default function Footer() {
 
                   <button
                     type="button"
-                    onClick={() => setSubscribed(false)}
+                    onClick={() => {
+                      setSubscribed(false);
+                      setSubscriptionError("");
+                    }}
                     className="mt-4 text-xs font-semibold text-amber-300 hover:text-amber-200"
                   >
                     दूसरा contact जोड़ें →
@@ -319,26 +336,44 @@ export default function Footer() {
                       type="text"
                       required
                       value={emailOrPhone}
-                      onChange={(e) =>
+                      onChange={(e) => {
                         setEmailOrPhone(e.target.value)
-                      }
+                        setSubscriptionError("");
+                      }}
                       placeholder="Mobile / Email"
+                      autoComplete="off"
                       className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-400 focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20"
                     />
 
                     <button
                       type="submit"
-                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:scale-[1.02] hover:bg-amber-400"
+                      disabled={submitting}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:scale-[1.02] hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      जुड़ें
-                      <Send size={16} />
+                      {submitting ? (
+                        <>
+                          <Loader2 size={16} className="animate-spin" />
+                          भेज रहे हैं…
+                        </>
+                      ) : (
+                        <>
+                          जुड़ें
+                          <Send size={16} />
+                        </>
+                      )}
                     </button>
 
                   </div>
 
-                  <p className="px-1 pt-2 text-[10px] text-slate-400">
-                    अभी यह frontend demo subscription flow है।
-                  </p>
+                  {subscriptionError ? (
+                    <p role="alert" className="px-1 pt-2 text-xs text-red-300">
+                      {subscriptionError}
+                    </p>
+                  ) : (
+                    <p className="px-1 pt-2 text-[10px] text-slate-400">
+                      मोबाइल नंबर या email में से कोई एक दर्ज करें।
+                    </p>
+                  )}
 
                 </form>
 
