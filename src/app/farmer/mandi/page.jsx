@@ -122,10 +122,10 @@ export default function FarmerMandiPage() {
           />
         </div>
 
-        <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 p-1 rounded-2xl">
+        <div className="flex flex-wrap items-center gap-1 bg-slate-900 border border-slate-800 p-1 rounded-2xl">
           <button
             onClick={() => setViewFilter("all")}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition ${
+            className={`min-w-0 flex-1 px-2 sm:px-4 py-2.5 rounded-xl text-xs font-bold transition ${
               viewFilter === "all"
                 ? "bg-emerald-500 text-slate-950"
                 : "text-slate-400 hover:text-white"
@@ -136,7 +136,7 @@ export default function FarmerMandiPage() {
 
           <button
             onClick={() => setViewFilter("watchlist")}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${
+            className={`min-w-0 flex-1 justify-center px-2 sm:px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${
               viewFilter === "watchlist"
                 ? "bg-emerald-500 text-slate-950"
                 : "text-slate-400 hover:text-white"
@@ -160,7 +160,7 @@ export default function FarmerMandiPage() {
           <p className="text-slate-400">मंडी भाव लोड हो रहे हैं...</p>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="bg-slate-900 border border-dashed border-slate-700 rounded-2xl p-12 text-center">
+        <div className="bg-slate-900 border border-dashed border-slate-700 rounded-2xl p-6 sm:p-12 text-center">
           <TrendingUp className="w-10 h-10 text-slate-600 mx-auto mb-3" />
           <p className="text-slate-300 font-semibold">कोई मंडी भाव नहीं मिला</p>
           <p className="text-slate-500 text-sm mt-1">

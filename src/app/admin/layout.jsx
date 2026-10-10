@@ -203,9 +203,12 @@ export default function AdminLayout({ children }) {
   const avatarLetter = adminName.trim().charAt(0).toUpperCase() || "A";
 
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className="admin-portal min-h-screen bg-slate-100">
       {/* Mobile Header */}
-      <header className="fixed left-0 right-0 top-0 z-40 flex h-16 items-center justify-between border-b border-slate-800 bg-slate-950 px-4 lg:hidden">
+      <header
+        className="fixed left-0 right-0 top-0 z-40 flex h-[calc(4rem+env(safe-area-inset-top))] items-center justify-between border-b border-slate-800 bg-slate-950 px-4 lg:hidden"
+        style={{ paddingTop: "env(safe-area-inset-top)" }}
+      >
         <Link href="/admin" className="font-bold text-white">
           🌱 कृषि मित्र
         </Link>
@@ -233,14 +236,17 @@ export default function AdminLayout({ children }) {
 
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 z-50 flex h-screen w-72 flex-col bg-slate-950 text-white transition-transform duration-200 ${
+        className={`fixed left-0 top-0 z-50 flex h-dvh w-72 flex-col bg-slate-950 text-white transition-transform duration-200 ${
           mobileOpen
             ? "translate-x-0"
             : "-translate-x-full lg:translate-x-0"
         }`}
       >
         {/* Logo */}
-        <div className="shrink-0 border-b border-slate-800 px-6 py-5">
+        <div
+          className="shrink-0 border-b border-slate-800 px-6 py-5"
+          style={{ paddingTop: "max(1.25rem, env(safe-area-inset-top))" }}
+        >
           <Link
             href="/admin"
             onClick={() => setMobileOpen(false)}
@@ -311,7 +317,10 @@ export default function AdminLayout({ children }) {
         </nav>
 
         {/* Sidebar Bottom */}
-        <div className="shrink-0 border-t border-slate-800 bg-slate-950 p-3">
+        <div
+          className="shrink-0 border-t border-slate-800 bg-slate-950 p-3"
+          style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+        >
           <Link
             href="/"
             target="_blank"
@@ -340,7 +349,7 @@ export default function AdminLayout({ children }) {
       </aside>
 
       {/* Main Area */}
-      <div className="min-h-screen pt-16 lg:ml-72 lg:pt-0">
+      <div className="min-h-screen min-w-0 pt-[calc(4rem+env(safe-area-inset-top))] lg:ml-72 lg:pt-0">
         {/* Desktop Header */}
         <header className="sticky top-0 z-30 hidden h-16 items-center justify-between border-b bg-white px-6 lg:flex">
           <div>
@@ -384,7 +393,9 @@ export default function AdminLayout({ children }) {
         </header>
 
         {/* Page Content */}
-        <main className="p-4 md:p-6">{children}</main>
+        <main className="min-w-0 p-3 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:p-4 md:p-6">
+          {children}
+        </main>
       </div>
     </div>
   );

@@ -93,7 +93,7 @@ export default function SavedPage() {
           <p className="text-slate-400">सेव की गई जानकारी लोड हो रही है...</p>
         </div>
       ) : items.length === 0 ? (
-        <div className="bg-slate-900 border border-dashed border-slate-700 rounded-2xl p-12 text-center">
+        <div className="bg-slate-900 border border-dashed border-slate-700 rounded-2xl p-6 sm:p-12 text-center">
           <div className="w-14 h-14 bg-emerald-500/10 rounded-2xl flex items-center justify-center mx-auto text-emerald-400 mb-4">
             <Bookmark className="w-8 h-8" />
           </div>
@@ -103,7 +103,7 @@ export default function SavedPage() {
             सरकारी योजनाओं और फसल सलाह के पृष्ठ पर बुकमार्क (🔖) आइकन दबाकर जरूरी जानकारी अपनी पर्सनल लाइब्रेरी में सेव करें।
           </p>
 
-          <div className="flex justify-center gap-3 mt-6">
+          <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
             <Link
               href="/farmer/schemes"
               className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-sm transition"
@@ -128,9 +128,9 @@ export default function SavedPage() {
             return (
               <div
                 key={itemId}
-                className="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-5 flex items-center justify-between gap-4 transition shadow-md"
+                className="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 transition shadow-md"
               >
-                <div className="flex items-center gap-4 min-w-0">
+                <div className="flex min-w-0 items-center gap-3 sm:gap-4">
                   <div className="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center shrink-0">
                     {item.type === "scheme" ? (
                       <Landmark className="text-emerald-400 w-6 h-6" />
@@ -152,7 +152,7 @@ export default function SavedPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex shrink-0 items-center justify-end gap-2">
                   {item.url && (
                     item.url.startsWith("http") ? (
                       <a

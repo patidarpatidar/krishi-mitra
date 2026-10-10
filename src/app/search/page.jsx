@@ -25,6 +25,13 @@ function normalizeText(value) {
     .trim();
 }
 
+function getDisplayLabel(value) {
+  if (typeof value === 'string') return value;
+  if (!value || typeof value !== 'object') return '';
+
+  return value.label || value.name || value.title || value.key || value.slug || '';
+}
+
 function getItemText(item) {
   return [
     item?.title,
@@ -71,7 +78,7 @@ function SearchPageContent() {
           id: crop._id || crop.slug || crop.name,
           title: crop.name || crop.title || crop.nameEn || 'फसल',
           description: crop.description || crop.summary || '',
-          category: crop.categoryLabel || crop.category || 'फसल',
+          category: getDisplayLabel(crop.categoryLabel) || getDisplayLabel(crop.category) || 'फसल',
           href: crop.slug ? `/crops/${encodeURIComponent(crop.slug)}` : '/crops',
           kind: 'फसल',
         }));
@@ -80,7 +87,7 @@ function SearchPageContent() {
           id: scheme._id || scheme.slug || scheme.title,
           title: scheme.title || scheme.name || 'योजना',
           description: scheme.summary || scheme.description || '',
-          category: scheme.category || scheme.department || 'सरकारी योजना',
+          category: getDisplayLabel(scheme.category) || getDisplayLabel(scheme.department) || 'सरकारी योजना',
           href: scheme.slug ? `/govt-schemes/${encodeURIComponent(scheme.slug)}` : '/govt-schemes',
           kind: 'योजना',
         }));
@@ -89,7 +96,7 @@ function SearchPageContent() {
           id: blog._id || blog.slug || blog.title,
           title: blog.title || 'कृषि लेख',
           description: blog.excerpt || blog.summary || blog.description || '',
-          category: blog.category || blog.categoryLabel || 'कृषि ब्लॉग',
+          category: getDisplayLabel(blog.category) || getDisplayLabel(blog.categoryLabel) || 'कृषि ब्लॉग',
           href: blog.slug ? `/blog/${encodeURIComponent(blog.slug)}` : '/blog',
           kind: 'ब्लॉग',
         }));

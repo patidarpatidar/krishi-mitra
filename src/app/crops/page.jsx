@@ -536,13 +536,15 @@ export default function CropsPage() {
           FILTER SECTION
       =================================================== */}
 
-      <section className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur">
+      <section className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-30 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur md:top-0">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between gap-3 py-3">
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setShowFilters(!showFilters)}
+                aria-expanded={showFilters}
+                aria-controls="crop-filter-panel"
                 className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition ${
                   showFilters
                     ? 'border-emerald-600 bg-emerald-700 text-white'
@@ -550,7 +552,8 @@ export default function CropsPage() {
                 }`}
               >
                 <SlidersHorizontal className="h-4 w-4" />
-                फिल्टर
+                <span className="hidden sm:inline">फिल्टर</span>
+                <span className="sm:hidden">फिल्टर व छांटें</span>
 
                 {activeFilterCount > 0 && (
                   <span className="rounded-full bg-amber-400 px-2 py-0.5 text-xs font-bold text-slate-900">
@@ -571,7 +574,8 @@ export default function CropsPage() {
               <select
                 value={sortBy}
                 onChange={(event) => setSortBy(event.target.value)}
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 outline-none focus:border-emerald-500"
+                aria-label="फसलों को क्रमबद्ध करें"
+                className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-2.5 py-2.5 text-xs font-medium text-slate-700 outline-none focus:border-emerald-500 sm:flex-none sm:px-3 sm:text-sm"
               >
                 <option value="popular">लोकप्रिय पहले</option>
                 <option value="likes">सबसे ज्यादा पसंद</option>
@@ -603,7 +607,7 @@ export default function CropsPage() {
 
           {/* Filter Panel */}
           {showFilters && (
-            <div className="border-t border-slate-100 py-5">
+            <div id="crop-filter-panel" className="hidden border-t border-slate-100 py-5 md:block">
               <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-4">
                 {/* Season */}
                 <FilterGroup title="मौसम">
@@ -612,6 +616,7 @@ export default function CropsPage() {
                       <FilterButton
                         key={season.id}
                         active={selectedSeason === season.id}
+                        ariaPressed={selectedSeason === season.id}
                         onClick={() => setSelectedSeason(season.id)}
                       >
                         {season.label}
@@ -627,6 +632,7 @@ export default function CropsPage() {
                       <FilterButton
                         key={category.id}
                         active={selectedCategory === category.id}
+                        ariaPressed={selectedCategory === category.id}
                         onClick={() => setSelectedCategory(category.id)}
                       >
                         {category.icon} {category.label}
@@ -642,6 +648,7 @@ export default function CropsPage() {
                       <FilterButton
                         key={water.id}
                         active={selectedWater === water.id}
+                        ariaPressed={selectedWater === water.id}
                         onClick={() => setSelectedWater(water.id)}
                       >
                         {water.id !== 'all' && (
@@ -660,6 +667,7 @@ export default function CropsPage() {
                       <FilterButton
                         key={type.id}
                         active={selectedType === type.id}
+                        ariaPressed={selectedType === type.id}
                         onClick={() => setSelectedType(type.id)}
                       >
                         {type.label}
@@ -677,6 +685,7 @@ export default function CropsPage() {
                       <FilterButton
                         key={region.id}
                         active={selectedRegion === region.id}
+                        ariaPressed={selectedRegion === region.id}
                         onClick={() => setSelectedRegion(region.id)}
                       >
                         <MapPin className="mr-1 inline h-3.5 w-3.5" />
@@ -715,6 +724,149 @@ export default function CropsPage() {
           )}
         </div>
       </section>
+
+      {showFilters && (
+        <div className="md:hidden">
+          <button
+            type="button"
+            aria-label="फसल फिल्टर बंद करें"
+            onClick={() => setShowFilters(false)}
+            className="fixed inset-x-0 top-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-[60] bg-slate-950/45"
+          />
+          <section
+            id="crop-filter-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="crop-filter-title"
+            className="fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-[61] mx-auto flex max-h-[min(78dvh,42rem)] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-2xl"
+          >
+            <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-4 pb-3 pt-4">
+              <div>
+                <h2 id="crop-filter-title" className="text-lg font-black text-slate-900">
+                  फसलें छांटें
+                </h2>
+                <p className="mt-1 text-xs text-slate-500">
+                  {filteredCrops.length} फसलें मिलेंगी · विकल्प चुनते ही सूची अपडेट होगी
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowFilters(false)}
+                aria-label="फिल्टर बंद करें"
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-4">
+              <FilterGroup title="मौसम">
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {seasons.map((season) => (
+                    <FilterButton
+                      key={season.id}
+                      active={selectedSeason === season.id}
+                      onClick={() => setSelectedSeason(season.id)}
+                    >
+                      {season.label}
+                    </FilterButton>
+                  ))}
+                </div>
+              </FilterGroup>
+
+              <FilterGroup title="श्रेणी">
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {categories.map((category) => (
+                    <FilterButton
+                      key={category.id}
+                      active={selectedCategory === category.id}
+                      onClick={() => setSelectedCategory(category.id)}
+                    >
+                      {category.icon} {category.label}
+                    </FilterButton>
+                  ))}
+                </div>
+              </FilterGroup>
+
+              <FilterGroup title="पानी की आवश्यकता">
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {waterFilters.map((water) => (
+                    <FilterButton
+                      key={water.id}
+                      active={selectedWater === water.id}
+                      onClick={() => setSelectedWater(water.id)}
+                    >
+                      {water.label}
+                    </FilterButton>
+                  ))}
+                </div>
+              </FilterGroup>
+
+              <FilterGroup title="फसल का प्रकार">
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {cropTypes.map((type) => (
+                    <FilterButton
+                      key={type.id}
+                      active={selectedType === type.id}
+                      onClick={() => setSelectedType(type.id)}
+                    >
+                      {type.label}
+                    </FilterButton>
+                  ))}
+                </div>
+              </FilterGroup>
+
+              <FilterGroup title="क्षेत्र">
+                <div className="flex flex-wrap gap-2">
+                  {regions.map((region) => (
+                    <FilterButton
+                      key={region.id}
+                      active={selectedRegion === region.id}
+                      onClick={() => setSelectedRegion(region.id)}
+                    >
+                      <MapPin className="mr-1 inline h-3.5 w-3.5" />
+                      {region.label}
+                    </FilterButton>
+                  ))}
+                </div>
+              </FilterGroup>
+
+              <button
+                type="button"
+                aria-pressed={showFeaturedOnly}
+                onClick={() => setShowFeaturedOnly((current) => !current)}
+                className={`inline-flex min-h-11 items-center gap-2 rounded-xl border px-3 text-sm font-semibold ${
+                  showFeaturedOnly
+                    ? 'border-amber-300 bg-amber-50 text-amber-800'
+                    : 'border-slate-200 text-slate-700'
+                }`}
+              >
+                <Sparkles className="h-4 w-4" />
+                केवल लोकप्रिय फसलें
+              </button>
+            </div>
+
+            <div className="flex gap-2 border-t border-slate-100 bg-white px-4 py-3">
+              <button
+                type="button"
+                onClick={resetFilters}
+                disabled={activeFilterCount === 0}
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-bold text-slate-700 disabled:opacity-50"
+              >
+                <RotateCcw className="h-4 w-4" />
+                साफ करें
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowFilters(false)}
+                className="min-h-12 flex-1 rounded-xl bg-emerald-700 px-4 text-sm font-bold text-white"
+              >
+                {filteredCrops.length} फसलें देखें
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
 
       {/* ===================================================
           CONTENT
@@ -956,11 +1108,12 @@ function FilterGroup({ title, children }) {
    FILTER BUTTON
 ========================================================= */
 
-function FilterButton({ active, onClick, children }) {
+function FilterButton({ active, ariaPressed = active, onClick, children }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={ariaPressed}
       className={`rounded-xl border px-3 py-2 text-xs font-semibold transition ${
         active
           ? 'border-emerald-600 bg-emerald-700 text-white shadow-sm'

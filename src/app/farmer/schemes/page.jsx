@@ -139,7 +139,7 @@ export default function FarmerSchemesPage() {
           <p className="text-slate-400">सरकारी योजनाएं लोड हो रही हैं...</p>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="bg-slate-900 border border-dashed border-slate-700 rounded-2xl p-12 text-center">
+        <div className="bg-slate-900 border border-dashed border-slate-700 rounded-2xl p-6 sm:p-12 text-center">
           <Landmark className="w-10 h-10 text-slate-600 mx-auto mb-3" />
           <p className="text-slate-300 font-semibold">कोई योजना नहीं मिली</p>
           <p className="text-slate-500 text-sm mt-1">

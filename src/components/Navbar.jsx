@@ -1,6 +1,6 @@
 "use client";
 
-import { useState,useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import LogoSvg from "./LogoSvg";
@@ -84,11 +84,12 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [schemeOpen, setSchemeOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-const [farmerLoggedIn, setFarmerLoggedIn] = useState(false);
+  const [farmerLoggedIn, setFarmerLoggedIn] = useState(false);
   const [activeSchemes, setActiveSchemes] = useState([]);
   const [schemeError, setSchemeError] = useState("");
 
   const pathname = usePathname();
+  const headerRef = useRef(null);
 
   const featuredSchemes = activeSchemes.filter(
     (scheme) => scheme.featured || scheme.isFeatured
@@ -139,11 +140,39 @@ const [farmerLoggedIn, setFarmerLoggedIn] = useState(false);
     }
   }, [pathname]);
 
+  useEffect(() => {
+    const handlePointerDown = (event) => {
+      if (!headerRef.current || headerRef.current.contains(event.target)) {
+        return;
+      }
+
+      setIsOpen(false);
+      setSearchOpen(false);
+      setSchemeOpen(false);
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+    };
+  }, []);
+
+  useEffect(() => {
+    setIsOpen(false);
+    setSearchOpen(false);
+    setSchemeOpen(false);
+  }, [pathname]);
+
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-emerald-100 shadow-sm">
+    <header
+      ref={headerRef}
+      className="sticky top-0 z-50 border-b border-emerald-100 bg-white shadow-sm"
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
+    >
 
       {/* Top Announcement */}
-      <div className="bg-gradient-to-r from-emerald-800 via-green-700 to-emerald-800 text-white">
+      <div className="hidden bg-gradient-to-r from-emerald-800 via-green-700 to-emerald-800 text-white sm:block">
         <div className="max-w-7xl mx-auto px-4 py-1.5">
           <div className="flex items-center justify-center gap-2 text-[11px] sm:text-xs font-medium">
             <span className="animate-pulse">🌾</span>
@@ -162,7 +191,7 @@ const [farmerLoggedIn, setFarmerLoggedIn] = useState(false);
       {/* Main Header */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        <div className="flex items-center justify-between min-h-[68px] gap-4">
+        <div className="flex min-h-14 items-center justify-between gap-2 sm:min-h-[68px] sm:gap-4">
 
           {/* Logo */}
           <Link
@@ -173,22 +202,32 @@ const [farmerLoggedIn, setFarmerLoggedIn] = useState(false);
           </Link>
 
           {/* Desktop Search */}
-          <div className="hidden md:block flex-1 max-w-xl">
-            <div className="relative group">
+          <div className="hidden max-w-xl flex-1 md:block">
+            <form action="/search" method="get" role="search" className="group relative">
 
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-600" />
 
               <input
                 type="text"
+                name="q"
+                aria-label="साइट पर खोजें"
                 placeholder="फसल, मंडी भाव, सरकारी योजना खोजें..."
                 className="w-full pl-11 pr-24 py-2.5 bg-slate-50 border border-slate-200 rounded-full text-sm outline-none transition-all focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
               />
 
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 hidden lg:flex items-center gap-1 text-[9px] text-slate-400 bg-white border border-slate-200 px-2 py-1 rounded-md">
+              <button
+                type="submit"
+                aria-label="खोजें"
+                className="absolute right-2 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-emerald-700 transition hover:bg-emerald-50"
+              >
+                <Search className="h-4 w-4" />
+              </button>
+
+              <span className="absolute right-12 top-1/2 hidden -translate-y-1/2 items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[9px] text-slate-400 lg:flex">
                 Search
               </span>
 
-            </div>
+            </form>
           </div>
 
           {/* Quick Info */}
@@ -259,7 +298,9 @@ const [farmerLoggedIn, setFarmerLoggedIn] = useState(false);
               onClick={() =>
                 setSearchOpen(!searchOpen)
               }
-              className="p-2.5 rounded-xl text-emerald-800 hover:bg-emerald-50"
+              aria-label={searchOpen ? "खोज बंद करें" : "साइट पर खोजें"}
+              aria-expanded={searchOpen}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-emerald-800 hover:bg-emerald-50"
             >
               <Search className="w-5 h-5" />
             </button>
@@ -269,7 +310,9 @@ const [farmerLoggedIn, setFarmerLoggedIn] = useState(false);
               onClick={() =>
                 setIsOpen(!isOpen)
               }
-              className="p-2.5 rounded-xl text-emerald-800 hover:bg-emerald-50"
+              aria-label={isOpen ? "मेन्यू बंद करें" : "मेन्यू खोलें"}
+              aria-expanded={isOpen}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-emerald-800 hover:bg-emerald-50"
             >
               {isOpen ? (
                 <X className="w-6 h-6" />
@@ -284,20 +327,30 @@ const [farmerLoggedIn, setFarmerLoggedIn] = useState(false);
 
         {/* Mobile Search */}
         {searchOpen && (
-          <div className="md:hidden pb-4">
+          <div className="pb-3 md:hidden">
 
-            <div className="relative">
+            <form action="/search" method="get" role="search" className="relative">
 
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-600" />
 
               <input
                 autoFocus
                 type="text"
+                name="q"
+                aria-label="साइट पर खोजें"
                 placeholder="फसल, मंडी, योजना खोजें..."
-                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-emerald-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-100"
+                className="w-full rounded-xl border border-emerald-200 bg-slate-50 py-3 pl-10 pr-14 text-sm outline-none focus:ring-2 focus:ring-emerald-100"
               />
 
-            </div>
+              <button
+                type="submit"
+                aria-label="खोजें"
+                className="absolute right-1 top-1 inline-flex h-11 w-11 items-center justify-center rounded-lg text-emerald-700 hover:bg-emerald-50"
+              >
+                <Search className="h-5 w-5" />
+              </button>
+
+            </form>
 
           </div>
         )}
@@ -479,7 +532,7 @@ const [farmerLoggedIn, setFarmerLoggedIn] = useState(false);
 
       {/* Mobile Navigation */}
       {isOpen && (
-        <div className="md:hidden bg-emerald-950 text-white border-t border-emerald-800">
+        <div className="max-h-[calc(100dvh_-_3.5rem_-_env(safe-area-inset-top))] overflow-y-auto border-t border-emerald-800 bg-emerald-950 text-white md:hidden">
 
           <div className="p-4 space-y-1">
 
@@ -572,7 +625,7 @@ const [farmerLoggedIn, setFarmerLoggedIn] = useState(false);
                   onClick={() =>
                     setIsOpen(false)
                   }
-                  className={`block px-3 py-3 rounded-xl text-sm font-semibold ${
+                  className={`block min-h-11 px-3 py-3 rounded-xl text-sm font-semibold ${
                     active
                       ? "bg-emerald-800 text-amber-300"
                       : "hover:bg-emerald-900"

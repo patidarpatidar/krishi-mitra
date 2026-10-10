@@ -17,6 +17,7 @@ import {
   PlayCircle,
   Search,
   SlidersHorizontal,
+  RefreshCw,
   Sparkles,
   Tag,
   ThumbsUp,
@@ -224,7 +225,12 @@ export default function BlogListingPage() {
   };
 
   const hasActiveFilters =
-    searchTerm || selectedCategory !== 'all' || selectedTag;
+    searchTerm.trim() !== '' || selectedCategory !== 'all' || selectedTag;
+  const activeFilterCount = [
+    searchTerm.trim() !== '',
+    selectedCategory !== 'all',
+    Boolean(selectedTag),
+  ].filter(Boolean).length;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -289,9 +295,9 @@ export default function BlogListingPage() {
 
         {/* SEARCH */}
         <section className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-          <div className="flex flex-col lg:flex-row gap-3">
+          <div className="grid grid-cols-2 gap-2 lg:flex lg:flex-row lg:gap-3">
 
-            <div className="relative flex-1">
+            <div className="relative col-span-2 flex-1 lg:col-span-1">
               <Search className="absolute left-4 top-3.5 w-4 h-4 text-slate-400" />
 
               <input
@@ -300,13 +306,16 @@ export default function BlogListingPage() {
                   setSearchTerm(e.target.value);
                   setVisibleCount(6);
                 }}
+                aria-label="ब्लॉग खोजें"
                 placeholder="लहसुन, सोयाबीन, थ्रिप्स, मंडी, जैविक..."
                 className="w-full pl-11 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500"
               />
 
               {searchTerm && (
                 <button
+                  type="button"
                   onClick={() => setSearchTerm('')}
+                  aria-label="खोज मिटाएं"
                   className="absolute right-3 top-3 p-1 text-slate-400 hover:text-slate-800"
                 >
                   <X className="w-4 h-4" />
@@ -315,21 +324,30 @@ export default function BlogListingPage() {
             </div>
 
             <button
+              type="button"
               onClick={() => setShowFilters(!showFilters)}
-              className={`px-4 py-3 rounded-xl border text-sm font-bold flex items-center justify-center gap-2 ${
+              aria-expanded={showFilters}
+              aria-controls="blog-filter-panel"
+              className={`min-w-0 px-3 py-3 rounded-xl border text-sm font-bold flex items-center justify-center gap-2 ${
                 showFilters
                   ? 'bg-emerald-700 text-white border-emerald-700'
                   : 'bg-white text-slate-700 border-slate-200'
               }`}
             >
               <SlidersHorizontal className="w-4 h-4" />
-              Filter
+              फिल्टर
+              {activeFilterCount > 0 && (
+                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-300 px-1.5 text-[11px] font-black text-emerald-950">
+                  {activeFilterCount}
+                </span>
+              )}
             </button>
 
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm font-bold outline-none"
+              aria-label="लेख क्रमबद्ध करें"
+              className="min-w-0 w-full px-2 py-3 rounded-xl border border-slate-200 bg-white text-xs font-bold outline-none sm:px-4 sm:text-sm lg:w-auto"
             >
               {SORT_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -367,7 +385,7 @@ export default function BlogListingPage() {
 
           {/* FILTER PANEL */}
           {showFilters && (
-            <div className="mt-4 pt-4 border-t border-slate-100 space-y-5">
+            <div id="blog-filter-panel" className="hidden mt-4 pt-4 border-t border-slate-100 space-y-5 md:block">
 
               <div>
                 <div className="flex items-center gap-2 mb-3">
@@ -413,7 +431,10 @@ export default function BlogListingPage() {
                     <button
                       key={tag}
                       onClick={() =>
-                        setSelectedTag(selectedTag === tag ? '' : tag)
+                        {
+                          setSelectedTag(selectedTag === tag ? '' : tag);
+                          setVisibleCount(6);
+                        }
                       }
                       className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition ${
                         selectedTag === tag
@@ -438,6 +459,123 @@ export default function BlogListingPage() {
             </div>
           )}
         </section>
+
+        {showFilters && (
+          <div className="md:hidden">
+            <button
+              type="button"
+              aria-label="ब्लॉग फिल्टर बंद करें"
+              onClick={() => setShowFilters(false)}
+              className="fixed inset-x-0 top-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-[60] bg-slate-950/45"
+            />
+            <section
+              id="blog-filter-sheet"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="blog-filter-title"
+              className="fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-[61] mx-auto flex max-h-[min(78dvh,42rem)] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-2xl"
+            >
+              <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-4 pb-3 pt-4">
+                <div>
+                  <h2 id="blog-filter-title" className="text-lg font-black text-slate-900">
+                    लेख छांटें
+                  </h2>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {filteredBlogs.length} लेख · विषय और लोकप्रिय टैग चुनें
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowFilters(false)}
+                  aria-label="फिल्टर बंद करें"
+                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-4">
+                <div>
+                  <div className="mb-3 flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-emerald-700" />
+                    <h3 className="text-sm font-black">विषय के अनुसार</h3>
+                  </div>
+                  <div className="flex gap-2 overflow-x-auto pb-2">
+                    {categoryCounts.map((category) => (
+                      <button
+                        key={category._id}
+                        type="button"
+                        aria-pressed={selectedCategory === category._id}
+                        onClick={() => {
+                          setSelectedCategory(category._id);
+                          setVisibleCount(6);
+                        }}
+                        className={`min-h-11 shrink-0 rounded-xl border px-3 text-xs font-bold transition ${
+                          selectedCategory === category._id
+                            ? 'border-emerald-700 bg-emerald-700 text-white'
+                            : 'border-slate-200 bg-slate-50 text-slate-700'
+                        }`}
+                      >
+                        {category.icon || '📚'} {category.label}
+                        <span className="ml-1 opacity-70">({category.count})</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="mb-3 flex items-center gap-2">
+                    <Tag className="h-4 w-4 text-emerald-700" />
+                    <h3 className="text-sm font-black">लोकप्रिय टैग</h3>
+                  </div>
+                  {allTags.length ? (
+                    <div className="flex flex-wrap gap-2">
+                      {allTags.map((tag) => (
+                        <button
+                          key={tag}
+                          type="button"
+                          aria-pressed={selectedTag === tag}
+                          onClick={() => {
+                            setSelectedTag(selectedTag === tag ? '' : tag);
+                            setVisibleCount(6);
+                          }}
+                          className={`min-h-10 rounded-full px-3 text-xs font-bold transition ${
+                            selectedTag === tag
+                              ? 'bg-amber-300 text-amber-950'
+                              : 'bg-slate-100 text-slate-600'
+                          }`}
+                        >
+                          #{tag}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-500">अभी कोई टैग उपलब्ध नहीं है।</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-2 border-t border-slate-100 bg-white px-4 py-3">
+                <button
+                  type="button"
+                  onClick={resetFilters}
+                  disabled={!hasActiveFilters}
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-bold text-slate-700 disabled:opacity-50"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  साफ करें
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowFilters(false)}
+                  className="min-h-12 flex-1 rounded-xl bg-emerald-700 px-4 text-sm font-bold text-white"
+                >
+                  {filteredBlogs.length} लेख देखें
+                </button>
+              </div>
+            </section>
+          </div>
+        )}
 
         {/* ACTIVE FILTER INFO */}
         <div className="flex flex-wrap items-center justify-between gap-3">

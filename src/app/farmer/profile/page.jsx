@@ -104,7 +104,7 @@ export default function FarmerProfile() {
   }
 
   return (
-    <div className="max-w-4xl space-y-6">
+    <div className="w-full max-w-4xl space-y-6">
       <div>
         <p className="text-emerald-400 text-sm font-semibold">
           किसान प्रोफाइल
@@ -121,13 +121,13 @@ export default function FarmerProfile() {
         onSubmit={saveProfile}
         className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-7 shadow-xl"
       >
-        <div className="flex items-center gap-4 pb-6 border-b border-slate-800">
+        <div className="flex min-w-0 items-center gap-3 pb-6 border-b border-slate-800 sm:gap-4">
           <div className="w-16 h-16 rounded-2xl bg-emerald-500 text-slate-950 flex items-center justify-center text-2xl font-bold shadow-lg shadow-emerald-500/20">
             {form?.name?.charAt(0) || "क"}
           </div>
 
-          <div>
-            <h2 className="text-xl font-bold">{form?.name || "किसान"}</h2>
+          <div className="min-w-0">
+            <h2 className="break-words text-lg font-bold sm:text-xl">{form?.name || "किसान"}</h2>
 
             <p className="text-sm text-emerald-400 font-medium">
               पंजीकृत किसान सदस्य • {form?.village ? `${form.village}, ` : ""}{form?.district || "नीमच"}
@@ -195,7 +195,7 @@ export default function FarmerProfile() {
               कुल कृषि भूमि
             </label>
 
-            <div className="flex gap-2 mt-2">
+            <div className="flex flex-col gap-2 mt-2 min-[375px]:flex-row">
               <div className="relative flex-1">
                 <Sprout className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                 <input
@@ -211,7 +211,7 @@ export default function FarmerProfile() {
               <select
                 value={form?.landUnit || "Acre"}
                 onChange={(e) => update("landUnit", e.target.value)}
-                className="bg-slate-950 border border-slate-700 rounded-xl px-3 py-3 outline-none focus:border-emerald-500 text-sm text-slate-300"
+                className="max-w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-3 outline-none focus:border-emerald-500 text-sm text-slate-300"
               >
                 <option value="Acre">एकड़ (Acre)</option>
                 <option value="Bigha">बीघा (Bigha)</option>
@@ -260,7 +260,7 @@ export default function FarmerProfile() {
           <button
             type="submit"
             disabled={saving}
-            className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 text-slate-950 font-bold px-6 py-3 rounded-xl flex items-center gap-2 transition"
+            className="w-full justify-center bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 text-slate-950 font-bold px-6 py-3 rounded-xl flex items-center gap-2 transition sm:w-auto"
           >
             {saving ? (
               <>

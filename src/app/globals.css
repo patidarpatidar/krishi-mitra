@@ -1,3 +1,136 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.farmer-portal {
+  overflow-wrap: anywhere;
+}
+
+.website-shell {
+  min-height: 100vh;
+  min-height: 100svh;
+  overflow-wrap: anywhere;
+}
+
+.admin-portal {
+  min-height: 100vh;
+  min-height: 100svh;
+  min-width: 0;
+  overflow-x: clip;
+  overflow-wrap: anywhere;
+}
+
+.website-shell main,
+.website-shell main > *,
+.website-shell main section,
+.website-shell main article,
+.admin-portal main,
+.admin-portal main > *,
+.admin-portal main section,
+.admin-portal main article {
+  min-width: 0;
+}
+
+.website-shell img,
+.website-shell video,
+.website-shell iframe,
+.website-shell canvas,
+.website-shell svg,
+.admin-portal img,
+.admin-portal video,
+.admin-portal iframe,
+.admin-portal canvas,
+.admin-portal svg {
+  max-width: 100%;
+}
+
+.website-shell main img,
+.admin-portal main img {
+  height: auto;
+}
+
+.website-shell main table,
+.admin-portal main table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 767px) {
+  .website-shell main h1,
+  .admin-portal main h1 {
+    font-size: clamp(1.5rem, 7vw, 2.5rem);
+    line-height: 1.2;
+  }
+
+  .website-shell main h2,
+  .admin-portal main h2 {
+    line-height: 1.3;
+  }
+
+  .website-shell main input:not([type="checkbox"]):not([type="radio"]),
+  .website-shell main select,
+  .website-shell main textarea,
+  .website-shell main button,
+  .website-shell nav a,
+  .website-shell header button,
+  .admin-portal main input:not([type="checkbox"]):not([type="radio"]),
+  .admin-portal main select,
+  .admin-portal main textarea,
+  .admin-portal main button,
+  .admin-portal nav a,
+  .admin-portal header button {
+    min-height: 44px;
+  }
+
+  .website-shell main input:not([type="checkbox"]):not([type="radio"]),
+  .website-shell main select,
+  .website-shell main textarea,
+  .website-shell header input,
+  .admin-portal main input:not([type="checkbox"]):not([type="radio"]),
+  .admin-portal main select,
+  .admin-portal main textarea,
+  .admin-portal header input {
+    font-size: 16px;
+  }
+
+  .website-shell main [class*="grid-cols-"] > *,
+  .website-shell main [class*="flex"] > *,
+  .admin-portal main [class*="grid-cols-"] > *,
+  .admin-portal main [class*="flex"] > * {
+    min-width: 0;
+  }
+}
+
+.farmer-portal img {
+  max-width: 100%;
+  height: auto;
+}
+
+.farmer-portal main h1 {
+  font-size: clamp(1.5rem, 6vw, 1.875rem);
+  line-height: 1.25;
+}
+
+.farmer-portal input:not([type="checkbox"]):not([type="radio"]),
+.farmer-portal select,
+.farmer-portal button {
+  min-height: 44px;
+}
+
+.farmer-portal input:not([type="checkbox"]):not([type="radio"]),
+.farmer-portal select {
+  font-size: 16px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .farmer-portal *,
+  .farmer-portal *::before,
+  .farmer-portal *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
