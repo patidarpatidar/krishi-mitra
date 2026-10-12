@@ -79,7 +79,12 @@ export default function GovernmentSchemesPage() {
       .then(([schemeResult, categoryResult]) => {
         if (cancelled) return;
         setActiveSchemes(unwrapApiList(schemeResult));
-        setCategories(unwrapApiList(categoryResult));
+        const loadedCategories = unwrapApiList(categoryResult);
+        setCategories(loadedCategories);
+        const requestedCategory = new URLSearchParams(window.location.search).get("category");
+        if (requestedCategory && loadedCategories.some((item) => item.name === requestedCategory)) {
+          setCategory(requestedCategory);
+        }
       })
       .catch((loadError) => {
         if (!cancelled) setError(loadError.message || "योजनाएं लोड नहीं हो सकीं।");
@@ -450,7 +455,7 @@ export default function GovernmentSchemesPage() {
             <strong className="text-amber-700">
               महत्वपूर्ण:
             </strong>{" "}
-            कृषि मित्र एक व्यक्तिगत कृषि सूचना प्लेटफॉर्म है,
+            किसान मित्र एक व्यक्तिगत कृषि सूचना प्लेटफॉर्म है,
             सरकारी वेबसाइट या सरकारी कार्यालय नहीं है। योजना की
             पात्रता, राशि, आवेदन अवधि और नियम समय के साथ बदल
             सकते हैं। आवेदन करने से पहले संबंधित official

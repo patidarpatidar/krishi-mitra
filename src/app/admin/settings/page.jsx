@@ -18,7 +18,7 @@ export default function AdminSettingsPage() {
 
   const [settings, setSettings] =
     useState({
-      siteName: "कृषि मित्र",
+      siteName: "किसान मित्र",
       adminEmail:
         "admin@krishimitra.in",
       defaultDistrict:

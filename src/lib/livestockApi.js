@@ -62,6 +62,10 @@ async function request(path, options = {}) {
 }
 
 export const livestockApi = {
+  listCategories() {
+    return request("/livestock-categories?status=active");
+  },
+
   // Get admin articles with filters and pagination
   list(params = {}) {
     const query = new URLSearchParams();

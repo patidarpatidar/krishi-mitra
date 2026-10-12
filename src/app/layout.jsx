@@ -16,18 +16,41 @@ const googleAnalyticsId =
 
 export const metadata = {
   ...createMetadata({
-    title: "कृषि मित्र | मध्य प्रदेश के किसानों के लिए कृषि जानकारी",
+    title: "किसान मित्र | मध्य प्रदेश के किसानों के लिए कृषि जानकारी",
     description:
       "मध्य प्रदेश के किसानों के लिए फसल गाइड, मंडी भाव, मौसम, सरकारी योजनाएं, जैविक खेती और पशुपालन की जानकारी।",
     path: "/",
+    keywords: [
+      "किसान मित्र",
+      "मंडी भाव",
+      "मध्य प्रदेश मंडी भाव",
+      "फसल गाइड",
+      "खेती की जानकारी",
+      "किसान",
+      "सरकारी योजनाएं",
+      "पीएम किसान",
+      "जैविक खेती",
+      "पशुपालन",
+      "मौसम पूर्वानुमान",
+      "कृषि सलाह",
+      "नीमच मंडी",
+      "MP mandi bhav",
+      "kisan mitra",
+      "farming guide Hindi",
+    ],
   }),
   metadataBase: SITE_ORIGIN ? new URL(SITE_ORIGIN) : undefined,
   title: {
-    default: "कृषि मित्र | मध्य प्रदेश के किसानों के लिए कृषि जानकारी",
-    template: "%s | कृषि मित्र",
+    default: "किसान मित्र | मध्य प्रदेश के किसानों के लिए कृषि जानकारी",
+    template: "%s | किसान मित्र",
   },
-  applicationName: "कृषि मित्र",
+  applicationName: "किसान मित्र",
   category: "agriculture",
+  manifest: "/manifest.json",
+  other: {
+    "theme-color": "#059669",
+    "apple-mobile-web-app-title": "किसान मित्र",
+  },
   verification: {
     google: process.env.GOOGLE_SITE_VERIFICATION || undefined,
   },

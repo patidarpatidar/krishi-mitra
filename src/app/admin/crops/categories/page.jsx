@@ -177,7 +177,7 @@ export default function CropCategoriesPage() {
           </button>
 
           <Link
-            href="/admin/crops/categories/new"
+            href="/admin/categories?type=crop"
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700"
           >
             <Plus size={18} />
@@ -352,7 +352,7 @@ export default function CropCategoriesPage() {
 
           {categories.length === 0 && (
             <Link
-              href="/admin/crops/categories/new"
+              href="/admin/categories?type=crop"
               className="mt-5 inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700"
             >
               <Plus size={17} />
@@ -369,8 +369,8 @@ export default function CropCategoriesPage() {
             >
               {/* CARD HEADER */}
               <div className="flex items-start justify-between gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-                  <Sprout size={22} />
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-2xl">
+                  {item.icon || "🌱"}
                 </div>
 
                 <span
@@ -406,7 +406,7 @@ export default function CropCategoriesPage() {
                   View details
                 </Link>
                 <Link
-                  href={`/admin/crops/categories/${item._id}`}
+                  href="/admin/categories?type=crop"
                   className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-100"
                 >
                   <Edit size={16} />

@@ -87,6 +87,20 @@ export default function FarmerLayout({ children }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
+    function handleExpiredSession() {
+      clearFarmerSession();
+      setFarmer(null);
+      setLoading(false);
+      router.replace("/login");
+    }
+
+    window.addEventListener("krishi-mitra:farmer-session-expired", handleExpiredSession);
+    return () => {
+      window.removeEventListener("krishi-mitra:farmer-session-expired", handleExpiredSession);
+    };
+  }, [router]);
+
+  useEffect(() => {
     if (!mobileMenuOpen) return;
 
     function closeOnEscape(event) {

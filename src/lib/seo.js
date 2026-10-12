@@ -2,18 +2,25 @@ const API_BASE = (
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
 ).replace(/\/+$/, "");
 
+const vercelProductionHost = process.env.VERCEL_PROJECT_PRODUCTION_URL || "";
+const vercelProductionOrigin = vercelProductionHost
+  ? /^https?:\/\//i.test(vercelProductionHost)
+    ? vercelProductionHost
+    : `https://${vercelProductionHost}`
+  : "";
 const siteOriginValue =
   process.env.NEXT_PUBLIC_SITE_URL ||
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
+  vercelProductionOrigin ||
+  (process.env.NODE_ENV !== "production" ? "http://localhost:3000" : "");
 
-export const SITE_NAME = "कृषि मित्र";
+export const SITE_NAME = "किसान मित्र";
 export const SITE_ORIGIN = normalizeOrigin(siteOriginValue);
 
 const STATIC_PAGE_SEO = {
   "/about": {
-    title: "कृषि मित्र के बारे में",
+    title: "किसान मित्र के बारे में",
     description:
-      "कृषि मित्र के उद्देश्य, किसान-केंद्रित कृषि जानकारी और मंडी, फसल, मौसम व योजनाओं से जुड़ी सेवाओं के बारे में जानें।",
+      "किसान मित्र के उद्देश्य, किसान-केंद्रित कृषि जानकारी और मंडी, फसल, मौसम व योजनाओं से जुड़ी सेवाओं के बारे में जानें।",
     label: "हमारे बारे में",
   },
   "/blog": {
@@ -41,9 +48,9 @@ const STATIC_PAGE_SEO = {
     label: "पशुपालन",
   },
   "/contact": {
-    title: "कृषि मित्र से संपर्क करें",
+    title: "किसान मित्र से संपर्क करें",
     description:
-      "कृषि जानकारी, मंडी भाव, फसल और वेबसाइट से जुड़े प्रश्न या सुझाव कृषि मित्र तक भेजें।",
+      "कृषि जानकारी, मंडी भाव, फसल और वेबसाइट से जुड़े प्रश्न या सुझाव किसान मित्र तक भेजें।",
     label: "संपर्क करें",
   },
   "/livestock": {
@@ -85,24 +92,24 @@ const STATIC_PAGE_SEO = {
   "/privacy-policy": {
     title: "गोपनीयता नीति",
     description:
-      "कृषि मित्र वेबसाइट पर जानकारी के उपयोग और गोपनीयता से जुड़ी नीति पढ़ें।",
+      "किसान मित्र वेबसाइट पर जानकारी के उपयोग और गोपनीयता से जुड़ी नीति पढ़ें।",
     label: "गोपनीयता नीति",
   },
   "/terms": {
     title: "नियम और शर्तें",
     description:
-      "कृषि मित्र वेबसाइट की जानकारी और सेवाओं के उपयोग से जुड़े नियम पढ़ें।",
+      "किसान मित्र वेबसाइट की जानकारी और सेवाओं के उपयोग से जुड़े नियम पढ़ें।",
     label: "नियम और शर्तें",
   },
   "/login": {
     title: "किसान लॉगिन",
-    description: "कृषि मित्र किसान पोर्टल में सुरक्षित रूप से लॉगिन करें।",
+    description: "किसान मित्र किसान पोर्टल में सुरक्षित रूप से लॉगिन करें।",
     label: "किसान लॉगिन",
     noindex: true,
   },
   "/register": {
     title: "किसान पंजीकरण",
-    description: "कृषि मित्र किसान पोर्टल के लिए किसान प्रोफाइल बनाएं।",
+    description: "किसान मित्र किसान पोर्टल के लिए किसान प्रोफाइल बनाएं।",
     label: "किसान पंजीकरण",
     noindex: true,
   },
@@ -166,7 +173,8 @@ export function createMetadata({
   const openGraphTitle = ogTitle || title;
   const openGraphDescription = ogDescription || description;
   const twitterImageUrl = twitterImage ? safeImageUrl(twitterImage) : imageUrl;
-  const robots = noindex
+  const shouldNoindex = noindex || process.env.VERCEL_ENV === "preview";
+  const robots = shouldNoindex
     ? { index: false, follow: false, googleBot: { index: false, follow: false } }
     : {
         index: true,
@@ -391,7 +399,7 @@ export function getOrganizationJsonLd() {
     "@id": absoluteUrl("/#organization"),
     name: SITE_NAME,
     url,
-    logo: absoluteUrl("/logo.png"),
+    logo: absoluteUrl("/kisan-mitra-logo.svg"),
     areaServed: { "@type": "AdministrativeArea", name: "Madhya Pradesh, India" },
     knowsLanguage: ["hi-IN", "en-IN"],
   };

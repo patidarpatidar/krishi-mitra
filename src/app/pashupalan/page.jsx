@@ -36,36 +36,36 @@ import {
   unwrapApiList,
 } from "@/lib/publicApi";
 
-const livestockCategories = [
+const fallbackLivestockCategories = [
   {
     id: "all",
     label: "सभी जानकारी",
-    icon: Sprout,
+    icon: "🌾",
   },
   {
     id: "dairy",
     label: "गाय-भैंस पालन",
-    icon: Beef,
+    icon: "🐄",
   },
   {
     id: "goat",
     label: "बकरी पालन",
-    icon: Beef,
+    icon: "🐐",
   },
   {
     id: "poultry",
     label: "मुर्गी पालन",
-    icon: Bird,
+    icon: "🐓",
   },
   {
     id: "fodder",
     label: "चारा प्रबंधन",
-    icon: Wheat,
+    icon: "🌾",
   },
   {
     id: "health",
     label: "पशु स्वास्थ्य",
-    icon: HeartPulse,
+    icon: "🩺",
   },
 ];
 
@@ -163,6 +163,7 @@ export default function PashupalanPage() {
   const [likePendingId, setLikePendingId] = useState(null);
   const [engagementError, setEngagementError] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
+  const [categoryOptions, setCategoryOptions] = useState(fallbackLivestockCategories);
   const [search, setSearch] = useState("");
   const [faqOpen, setFaqOpen] = useState(0);
 
@@ -175,6 +176,37 @@ export default function PashupalanPage() {
 
   useEffect(() => {
     setVisitorId(getOrCreateVisitorId());
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    publicApiRequest("/livestock-categories?status=active")
+      .then((result) => {
+        if (cancelled) return;
+        const categories = unwrapApiList(result).map((category) => ({
+          id: category.slug || category._id || category.id,
+          label: category.name || category.label || "",
+          icon: category.icon || "🐄",
+          description: category.description || "",
+        }));
+        const nextOptions = categories.length
+          ? [{ id: "all", label: "सभी जानकारी", icon: "🌾" }, ...categories]
+          : fallbackLivestockCategories;
+        setCategoryOptions(nextOptions);
+
+        const requestedCategory = new URLSearchParams(window.location.search).get("category");
+        if (requestedCategory && nextOptions.some((category) => category.id === requestedCategory)) {
+          setActiveCategory(requestedCategory);
+        }
+      })
+      .catch((error) => {
+        console.warn("Could not load livestock categories:", error);
+        if (!cancelled) setCategoryOptions(fallbackLivestockCategories);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -464,8 +496,7 @@ export default function PashupalanPage() {
         )}
 
         <div className="mb-7 flex gap-2 overflow-x-auto pb-2">
-          {livestockCategories.map((category) => {
-            const Icon = category.icon;
+          {categoryOptions.map((category) => {
             const active = activeCategory === category.id;
 
             return (
@@ -479,7 +510,7 @@ export default function PashupalanPage() {
                     : "border-slate-200 bg-white text-slate-700 hover:border-green-300 hover:bg-green-50"
                 }`}
               >
-                <Icon size={17} />
+                <span aria-hidden="true" className="text-base">{category.icon}</span>
                 {category.label}
               </button>
             );

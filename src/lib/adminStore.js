@@ -1,6 +1,8 @@
 
 "use client";
 
+import { expireAdminSession } from "@/lib/adminAuth";
+
 const STORAGE_PREFIX = "krishi_mitra_admin_";
 
 const API_URL = (
@@ -110,7 +112,7 @@ const DEFAULT_DATA = {
       status: "published",
       summary: "जैविक खेती शुरू करने के लिए मिट्टी, खाद और फसल प्रबंधन की मूल जानकारी।",
       content: "जैविक खेती में रासायनिक इनपुट को कम करते हुए जैविक खाद, कंपोस्ट और उचित फसल प्रबंधन पर ध्यान दिया जाता है।",
-      author: "कृषि मित्र",
+      author: "किसान मित्र",
     },
     {
       id: "organic-2",
@@ -119,7 +121,7 @@ const DEFAULT_DATA = {
       status: "draft",
       summary: "किसान अपने खेत पर वर्मी कम्पोस्ट तैयार करने की मूल प्रक्रिया जानें।",
       content: "वर्मी कम्पोस्ट बनाने के लिए उचित जैविक सामग्री, नमी और केंचुओं की आवश्यकता होती है।",
-      author: "कृषि मित्र",
+      author: "किसान मित्र",
     },
   ],
 
@@ -131,7 +133,7 @@ const DEFAULT_DATA = {
       status: "published",
       description: "दूध देने वाले पशुओं के संतुलित आहार और पोषण से जुड़ी जानकारी।",
       content: "पशुओं के आहार में हरा चारा, सूखा चारा, दाना, खनिज मिश्रण और स्वच्छ पानी महत्वपूर्ण हैं।",
-      author: "कृषि मित्र",
+      author: "किसान मित्र",
     },
     {
       id: "livestock-2",
@@ -140,7 +142,7 @@ const DEFAULT_DATA = {
       status: "draft",
       description: "छोटे स्तर पर बकरी पालन शुरू करने से पहले जरूरी जानकारी।",
       content: "बकरी पालन में नस्ल, आवास, आहार, स्वास्थ्य और बाजार की योजना महत्वपूर्ण होती है।",
-      author: "कृषि मित्र",
+      author: "किसान मित्र",
     },
   ],
 
@@ -172,7 +174,7 @@ const DEFAULT_DATA = {
       title: "सोयाबीन की खेती में किसान किन बातों का ध्यान रखें?",
       slug: "soybean-farming-guide",
       category: "फसल जानकारी",
-      author: "कृषि मित्र",
+      author: "किसान मित्र",
       status: "published",
       featured: true,
       summary: "सोयाबीन की बेहतर खेती के लिए जरूरी प्रबंधन जानकारी।",
@@ -183,7 +185,7 @@ const DEFAULT_DATA = {
       title: "मंडी भाव देखते समय किन बातों का ध्यान रखें?",
       slug: "mandi-bhav-guide",
       category: "मंडी भाव",
-      author: "कृषि मित्र",
+      author: "किसान मित्र",
       status: "draft",
       featured: false,
       summary: "मंडी भाव को समझने और तुलना करने की उपयोगी जानकारी।",
@@ -207,12 +209,6 @@ function makeId(prefix = "item") {
 function getToken() {
   if (typeof window === "undefined") return null;
   return localStorage.getItem("krishi_mitra_admin_token");
-}
-
-function clearSession() {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem("krishi_mitra_admin_token");
-  localStorage.removeItem("krishi_mitra_admin");
 }
 
 function unwrapList(result) {
@@ -316,7 +312,7 @@ async function apiRequest(path, options = {}) {
 
   if (!response.ok || result.success === false) {
     if (response.status === 401 && token) {
-      clearSession();
+      expireAdminSession();
     }
 
     throw new Error(

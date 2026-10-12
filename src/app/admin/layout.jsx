@@ -22,9 +22,17 @@ import {
   Users,
 } from "lucide-react";
 
-const TOKEN_KEY = "krishi_mitra_admin_token";
-const ADMIN_KEY = "krishi_mitra_admin";
-const LOGIN_PATH = "/admin/login";
+import {
+  ADMIN_LOGIN_PATH,
+  ADMIN_SESSION_EXPIRED_EVENT,
+  ADMIN_TOKEN_KEY,
+  ADMIN_USER_KEY,
+  clearAdminSession,
+} from "@/lib/adminAuth";
+
+const API_URL = (
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
+).replace(/\/+$/, "");
 
 const menu = [
   {
@@ -33,14 +41,14 @@ const menu = [
     icon: LayoutDashboard,
   },
   {
+    title: "सभी श्रेणियाँ",
+    href: "/admin/categories",
+    icon: FolderTree,
+  },
+  {
     title: "पंजीकृत किसान",
     href: "/admin/farmers",
     icon: Users,
-  },
-  {
-    title: "Crop Categories",
-    href: "/admin/crops/categories",
-    icon: FolderTree,
   },
   {
     title: "फसलें",
@@ -61,11 +69,6 @@ const menu = [
     title: "पशुपालन",
     href: "/admin/livestock",
     icon: PawPrint,
-  },
-  {
-    title: "Blog Categories",
-    href: "/admin/blog-categories",
-    icon: FolderTree,
   },
   {
     title: "Blog",
@@ -104,7 +107,21 @@ export default function AdminLayout({ children }) {
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
 
-  const isLoginPage = pathname === LOGIN_PATH;
+  const isLoginPage = pathname === ADMIN_LOGIN_PATH;
+
+  useEffect(() => {
+    function handleExpiredSession() {
+      clearAdminSession();
+      setAdmin(null);
+      setCheckingAuth(false);
+      router.replace(ADMIN_LOGIN_PATH);
+    }
+
+    window.addEventListener(ADMIN_SESSION_EXPIRED_EVENT, handleExpiredSession);
+    return () => {
+      window.removeEventListener(ADMIN_SESSION_EXPIRED_EVENT, handleExpiredSession);
+    };
+  }, [router]);
 
   useEffect(() => {
     // Login page par admin layout ka auth check nahi chahiye.
@@ -120,40 +137,58 @@ export default function AdminLayout({ children }) {
       setCheckingAuth(true);
 
       try {
-        const token = localStorage.getItem(TOKEN_KEY);
-        const storedAdmin = localStorage.getItem(ADMIN_KEY);
+        const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+        const storedAdmin = localStorage.getItem(ADMIN_USER_KEY);
 
         if (!token || !storedAdmin) {
-          localStorage.removeItem(TOKEN_KEY);
-          localStorage.removeItem(ADMIN_KEY);
+          clearAdminSession();
 
-          router.replace(LOGIN_PATH);
+          router.replace(ADMIN_LOGIN_PATH);
           return;
         }
 
         const parsedAdmin = JSON.parse(storedAdmin);
 
         if (!parsedAdmin || parsedAdmin.role !== "admin") {
-          localStorage.removeItem(TOKEN_KEY);
-          localStorage.removeItem(ADMIN_KEY);
+          clearAdminSession();
 
-          router.replace(LOGIN_PATH);
+          router.replace(ADMIN_LOGIN_PATH);
           return;
         }
 
         if (isMounted) {
           setAdmin(parsedAdmin);
+        }
+
+        const response = await fetch(`${API_URL}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+          credentials: "include",
+          cache: "no-store",
+        });
+        const result = await response.json().catch(() => ({}));
+        const verifiedAdmin = result.data?.user;
+
+        if (!response.ok || !result.success || verifiedAdmin?.role !== "admin") {
+          clearAdminSession();
+          if (isMounted) {
+            setAdmin(null);
+            router.replace(ADMIN_LOGIN_PATH);
+          }
+          return;
+        }
+
+        if (isMounted) {
+          setAdmin(verifiedAdmin);
           setCheckingAuth(false);
         }
       } catch (error) {
         console.error("Admin session verification error:", error);
 
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(ADMIN_KEY);
+        clearAdminSession();
 
         if (isMounted) {
           setAdmin(null);
-          router.replace(LOGIN_PATH);
+          router.replace(ADMIN_LOGIN_PATH);
         }
       }
     }
@@ -170,13 +205,12 @@ export default function AdminLayout({ children }) {
 
     setLoggingOut(true);
 
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(ADMIN_KEY);
+    clearAdminSession();
 
     setAdmin(null);
     setMobileOpen(false);
 
-    router.replace(LOGIN_PATH);
+    router.replace(ADMIN_LOGIN_PATH);
     router.refresh();
   }
 
@@ -210,7 +244,7 @@ export default function AdminLayout({ children }) {
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
         <Link href="/admin" className="font-bold text-white">
-          🌱 कृषि मित्र
+          🌱 किसान मित्र
         </Link>
 
         <button
@@ -255,7 +289,7 @@ export default function AdminLayout({ children }) {
             <span className="text-2xl">🌱</span>
 
             <div>
-              <div className="text-lg font-bold">कृषि मित्र</div>
+              <div className="text-lg font-bold">किसान मित्र</div>
               <div className="text-xs text-slate-400">Admin Panel</div>
             </div>
           </Link>
@@ -354,7 +388,7 @@ export default function AdminLayout({ children }) {
         <header className="sticky top-0 z-30 hidden h-16 items-center justify-between border-b bg-white px-6 lg:flex">
           <div>
             <h1 className="text-lg font-bold text-slate-900">
-              Krishi Mitra Admin Panel
+              Kisan Mitra Admin Panel
             </h1>
 
             <p className="text-xs text-slate-500">

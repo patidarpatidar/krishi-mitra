@@ -1,0 +1,18 @@
+{
+  "name": "किसान मित्र - Kisan Mitra",
+  "short_name": "किसान मित्र",
+  "description": "मध्य प्रदेश के किसानों के लिए फसल गाइड, मंडी भाव, मौसम, सरकारी योजनाएं और पशुपालन की जानकारी।",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#059669",
+  "lang": "hi",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ],
+  "categories": ["agriculture", "education", "weather"]
+}

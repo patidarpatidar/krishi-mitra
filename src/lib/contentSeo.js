@@ -61,7 +61,7 @@ export function getRecordSeo(record, kind, pathname) {
 
   const metadata = createMetadata({
     title: title || "कृषि जानकारी",
-    description: description || "कृषि मित्र पर किसान उपयोगी जानकारी पढ़ें।",
+    description: description || "किसान मित्र पर किसान उपयोगी जानकारी पढ़ें।",
     path: pathname,
     canonicalUrl: seo.canonicalUrl,
     image,

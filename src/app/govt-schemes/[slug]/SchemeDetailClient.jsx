@@ -624,7 +624,7 @@ export default function GovernmentSchemeDetails({
             <strong className="text-amber-700">
               महत्वपूर्ण:
             </strong>{" "}
-            कृषि मित्र एक व्यक्तिगत कृषि सूचना और ब्लॉग
+            किसान मित्र एक व्यक्तिगत कृषि सूचना और ब्लॉग
             प्लेटफॉर्म है। यह सरकारी वेबसाइट, सरकारी कार्यालय
             या official government service centre नहीं है।
             योजनाओं की पात्रता, लाभ, राशि, आवेदन अवधि और नियम

@@ -4,16 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { livestockApi } from "@/lib/livestockApi";
 
-const categories = [
-  ["all", "All categories"],
-  ["dairy", "Dairy"],
-  ["goat", "Goat farming"],
-  ["poultry", "Poultry"],
-  ["fodder", "Fodder"],
-  ["health", "Animal health"],
-  ["schemes", "Schemes"],
-];
-
 export default function LivestockAdminPage() {
   const [articles, setArticles] = useState([]);
   const [pagination, setPagination] = useState({
@@ -22,6 +12,15 @@ export default function LivestockAdminPage() {
     totalPages: 1,
   });
   const [stats, setStats] = useState([]);
+  const [categories, setCategories] = useState([
+    ["all", "All categories"],
+    ["dairy", "Dairy"],
+    ["goat", "Goat farming"],
+    ["poultry", "Poultry"],
+    ["fodder", "Fodder"],
+    ["health", "Animal health"],
+    ["schemes", "Schemes"],
+  ]);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
   const [status, setStatus] = useState("");
@@ -58,6 +57,23 @@ export default function LivestockAdminPage() {
   useEffect(() => {
     loadArticles();
   }, [loadArticles]);
+
+  useEffect(() => {
+    let cancelled = false;
+    livestockApi.listCategories()
+      .then((result) => {
+        const options = (result.data || []).map((item) => [item.slug, item.name]);
+        if (!cancelled && options.length) {
+          setCategories([["all", "All categories"], ...options]);
+        }
+      })
+      .catch((categoryError) => {
+        console.warn("Could not load livestock category options:", categoryError);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handleDelete(article) {
     const confirmed = window.confirm(
@@ -98,7 +114,7 @@ export default function LivestockAdminPage() {
         <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>
             <p className="text-sm font-semibold uppercase tracking-wide text-green-700">
-              Krishi Mitra Admin
+              Kisan Mitra Admin
             </p>
             <h1 className="mt-2 text-3xl font-bold text-slate-900">
               Livestock Articles

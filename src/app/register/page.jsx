@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 import { farmerApi } from "@/lib/farmerApi";
+import { fetchAgmarknetFilters } from "@/services/mandiApi";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -39,6 +40,39 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+  const [locationOptions, setLocationOptions] = useState({ states: [], districts: [] });
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchAgmarknetFilters()
+      .then((source) => {
+        if (cancelled) return;
+        setLocationOptions({
+          states: (source.state_data || [])
+            .filter((item) => Number(item.state_id) > 0 && Number(item.state_id) !== 100000)
+            .map((item) => ({ label: item.state_name, value: String(item.state_id) })),
+          districts: (source.district_data || [])
+            .filter((item) => Number(item.id) > 0 && item.state_id)
+            .map((item) => ({
+              label: item.district_name,
+              value: String(item.id),
+              stateId: String(item.state_id),
+            })),
+        });
+      })
+      .catch((err) => console.warn("Could not load registration location options:", err));
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const selectedState = locationOptions.states.find(
+    (option) => option.label === form.state
+  );
+  const visibleDistricts = locationOptions.districts.filter(
+    (option) => option.stateId === selectedState?.value
+  );
 
   function update(field, value) {
     setForm((prev) => ({
@@ -194,13 +228,43 @@ export default function RegisterPage() {
               required
             />
 
-            <Input
-              label="जिला"
-              icon={<MapPin className="w-5 h-5" />}
-              value={form.district}
-              onChange={(v) => update("district", v)}
-              placeholder="जैसे Neemuch"
-            />
+            {locationOptions.states.length ? (
+              <LocationSelect
+                label="राज्य *"
+                value={form.state}
+                options={locationOptions.states}
+                onChange={(value) => {
+                  update("state", value);
+                  update("district", "");
+                }}
+              />
+            ) : (
+              <Input
+                label="राज्य"
+                icon={<MapPin className="w-5 h-5" />}
+                value={form.state}
+                onChange={(value) => update("state", value)}
+                placeholder="जैसे Madhya Pradesh"
+              />
+            )}
+
+            {locationOptions.states.length ? (
+              <LocationSelect
+                label="जिला *"
+                value={form.district}
+                options={visibleDistricts}
+                disabled={!selectedState}
+                onChange={(value) => update("district", value)}
+              />
+            ) : (
+              <Input
+                label="जिला"
+                icon={<MapPin className="w-5 h-5" />}
+                value={form.district}
+                onChange={(value) => update("district", value)}
+                placeholder="जैसे Neemuch"
+              />
+            )}
 
             <Input
               label="पिनकोड"
@@ -299,7 +363,7 @@ export default function RegisterPage() {
 
         <div className="mt-6 flex items-center justify-center gap-2 text-xs text-slate-500">
           <ShieldCheck className="w-4 h-4 text-emerald-500" />
-          <span>कृषि मित्र सुरक्षित डेटा गोपनीयता नीति के साथ सुरक्षित</span>
+          <span>किसान मित्र सुरक्षित डेटा गोपनीयता नीति के साथ सुरक्षित</span>
         </div>
       </div>
     </main>
@@ -335,6 +399,26 @@ function Input({
           className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-11 pr-4 py-3.5 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 transition text-sm"
         />
       </div>
+    </div>
+  );
+}
+
+function LocationSelect({ label, value, options, onChange, disabled = false }) {
+  return (
+    <div>
+      <label className="mb-2 block text-sm text-slate-300">{label}</label>
+      <select
+        value={options.some((option) => option.label === value) ? value : ""}
+        onChange={(event) => onChange(event.target.value)}
+        disabled={disabled}
+        required
+        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3.5 text-sm text-white outline-none focus:border-emerald-500 disabled:opacity-50"
+      >
+        <option value="">{label.replace(" *", "")} चुनें</option>
+        {options.map((option) => (
+          <option key={option.value} value={option.label}>{option.label}</option>
+        ))}
+      </select>
     </div>
   );
 }

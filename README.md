@@ -1,4 +1,4 @@
-Krishi Mitra is a web-based frontend application designed to empower farmers and agricultural enthusiasts by providing access to farming information, crop recommendations, weather insights, and market trends.
+Kisan Mitra is a web-based frontend application designed to empower farmers and agricultural enthusiasts by providing access to farming information, crop recommendations, weather insights, and market trends.
 
 🚀 Features
 Interactive User Interface: Responsive, clean, and accessible UI tailored for farmers and agricultural workers.
@@ -61,6 +61,16 @@ To create an optimized production build, run:
 Bash
 npm run build
 The output files will be saved in the dist/ or build/ directory, ready for deployment.
+
+## Search Engine Setup
+
+Before production deployment, configure these environment variables:
+
+- `NEXT_PUBLIC_SITE_URL`: the stable public website origin (for example, your verified HTTPS domain). Do not use a Vercel preview URL.
+- `GOOGLE_SITE_VERIFICATION`: the HTML-tag verification value from Google Search Console.
+- `NEXT_PUBLIC_API_URL`: the deployed backend API origin.
+
+The app generates `/sitemap.xml`, canonical URLs, and `robots.txt` from the stable site origin. Vercel preview deployments are marked `noindex` so preview copies do not compete with production in search results.
 
 🤝 Contributing
 Contributions are welcome! Follow these steps to contribute:

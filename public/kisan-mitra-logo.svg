@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Kisan Mitra">
+  <path d="M50 8C25 10 10 28 10 65c20 0 36-15 40-40V8Z" fill="#16a34a"/>
+  <path d="M50 8c25 2 40 20 40 57-20 0-36-15-40-40V8Z" fill="#eab308"/>
+  <path d="M50 12v76M22 88c13-8 43-8 56 0" fill="none" stroke="#166534" stroke-linecap="round" stroke-width="5"/>
+</svg>

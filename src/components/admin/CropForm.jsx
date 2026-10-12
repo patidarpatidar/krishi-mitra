@@ -47,7 +47,7 @@ const initialForm = {
 
   overview: "",
 
-  author: "कृषि मित्र टीम",
+  author: "किसान मित्र टीम",
   publishedAt: "",
   updatedAtContent: "",
   readTime: "",

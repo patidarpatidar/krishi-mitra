@@ -58,6 +58,201 @@ import {
 } from '@/lib/publicApi';
 import { normalizeCropRecord } from '@/lib/contentSeo';
 
+
+function getMandiRecords(response) {
+  if (Array.isArray(response)) return response;
+
+  const candidates = [
+    response?.data?.data?.records,
+    response?.data?.records,
+    response?.records,
+    response?.data?.data?.data?.records,
+  ];
+
+  return candidates.find(Array.isArray) || [];
+}
+
+function normalizeCommodityName(value = '') {
+  const name = String(value)
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]/g, '');
+
+  // AGMARKNET may use either spelling.
+  if (name === 'soyabean') return 'soybean';
+
+  return name;
+}
+
+function findMandiRecord(response, crop) {
+  const records = getMandiRecords(response);
+
+  const names = [
+    crop?.apiName,
+    crop?.englishName,
+    crop?.name,
+    crop?.slug,
+  ]
+    .filter(Boolean)
+    .map(normalizeCommodityName);
+
+  // Prefer an exact commodity match. Do not silently use records[0].
+  return (
+    records.find((record) => {
+      const source = record?.raw || record;
+      const apiName = normalizeCommodityName(
+        source?.cmdt_name ||
+        source?.cropEnglish ||
+        source?.crop ||
+        source?.commodity
+      );
+
+      return names.some(
+        (name) => name && (name === apiName || name.includes(apiName) || apiName.includes(name))
+      );
+    }) || null
+  );
+}
+
+function parseMandiPrice(value) {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
+  const number = Number(
+    String(value).replace(/[₹,\s]/g, '')
+  );
+
+  return Number.isFinite(number) && number > 0
+    ? number
+    : null;
+}
+
+function formatMandiDate(dateString) {
+  const match = String(dateString || '').match(
+    /^(\d{2})-(\d{2})-(\d{4})$/
+  );
+
+  if (!match) return dateString || '';
+
+  const [, day, month, year] = match;
+  const date = new Date(
+    Number(year),
+    Number(month) - 1,
+    Number(day)
+  );
+
+  return date.toLocaleDateString('hi-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+function mapDashboardMandiRecord(record) {
+  if (!record) return null;
+
+  const current = parseMandiPrice(record.as_on_price);
+  const oneDayAgo = parseMandiPrice(record.one_day_ago_price);
+  const twoDaysAgo = parseMandiPrice(record.two_day_ago_price);
+
+  const dateMatch = String(record.reported_date || '').match(
+    /^(\d{2})-(\d{2})-(\d{4})$/
+  );
+
+  let baseDate = null;
+
+  if (dateMatch) {
+    const [, day, month, year] = dateMatch;
+    baseDate = new Date(
+      Number(year),
+      Number(month) - 1,
+      Number(day)
+    );
+  }
+
+  const rawHistory = [
+    { price: twoDaysAgo, offset: -2 },
+    { price: oneDayAgo, offset: -1 },
+    { price: current, offset: 0 },
+  ];
+
+  const priceHistory = rawHistory
+    .filter((item) => item.price !== null)
+    .map((item) => {
+      const date = baseDate
+        ? new Date(
+            baseDate.getFullYear(),
+            baseDate.getMonth(),
+            baseDate.getDate() + item.offset
+          )
+        : null;
+
+      return {
+        date: date
+          ? date.toLocaleDateString('en-IN', {
+              day: '2-digit',
+              month: 'short',
+            })
+          : 'तारीख उपलब्ध नहीं',
+        fullDate: date
+          ? date.toLocaleDateString('hi-IN', {
+              day: '2-digit',
+              month: 'long',
+              year: 'numeric',
+            })
+          : '',
+        price: item.price,
+      };
+    });
+
+  const availablePrices = priceHistory.map((item) => item.price);
+  const latestPrice = current ?? oneDayAgo ?? twoDaysAgo;
+  const previousPrice =
+    priceHistory.length > 1
+      ? priceHistory[priceHistory.length - 2].price
+      : 0;
+  const latestPriceOffset =
+    current !== null ? 0 : oneDayAgo !== null ? -1 : -2;
+  const latestPriceDate = baseDate
+    ? new Date(
+        baseDate.getFullYear(),
+        baseDate.getMonth(),
+        baseDate.getDate() + latestPriceOffset
+      )
+    : null;
+
+  return {
+    min: availablePrices.length
+      ? Math.min(...availablePrices)
+      : 0,
+
+    max: availablePrices.length
+      ? Math.max(...availablePrices)
+      : 0,
+
+    modal: latestPrice ?? 0,
+    previousModal: previousPrice,
+
+    unit: 'क्विंटल',
+    mandiName: 'AGMARKNET Dashboard',
+    priceDate: latestPriceDate
+      ? latestPriceDate.toLocaleDateString('hi-IN', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        })
+      : record.reported_date || '',
+    priceHistory: priceHistory.map((item) => ({
+      ...item,
+      modal: item.price,
+      min: item.price,
+      max: item.price,
+    })),
+    mspPrice: parseMandiPrice(record.msp_price),
+  };
+}
+
 /* =========================================================
    CROP DATABASE
 ========================================================= */
@@ -86,8 +281,16 @@ const emptyCrop = {
   harvestingTime: '',
   topDemandMandi: '',
   diseases: [],
-  mandiPrice: { min: 0, max: 0, modal: 0, previousModal: 0, unit: 'क्विंटल', mandiName: '' },
-  priceHistory: [],
+  mandiPrice: {
+  min: 0,
+  max: 0,
+  modal: 0,
+  previousModal: 0,
+  unit: 'क्विंटल',
+  mandiName: '',
+  priceDate: '',
+  mspPrice: null,
+},  priceHistory: [],
 };
 
 const articleSections = [
@@ -225,23 +428,18 @@ export default function CropDetailPage({ params, initialRecord }) {
       getDynamicMandiRates({ crop: normalizedCrop.slug })
         .then((rates) => {
           if (cancelled) return;
-          const matchedRate =
-            rates.find(
-              (rate) =>
-                rate.cropEnglish?.toLowerCase().includes(normalizedCrop.slug) ||
-                rate.crop?.toLowerCase().includes(normalizedCrop.slug),
-            ) || rates[0];
-          if (matchedRate) {
+          const matchedRate = findMandiRecord(rates, normalizedCrop);
+          const mandiPrice = mapDashboardMandiRecord(
+            matchedRate?.raw || matchedRate
+          );
+          if (mandiPrice) {
             setCrop((previous) => ({
               ...previous,
               mandiPrice: {
-                min: matchedRate.minPrice ?? 0,
-                max: matchedRate.maxPrice ?? 0,
-                modal: matchedRate.modalPrice ?? 0,
-                previousModal: previous.mandiPrice.modal,
-                unit: matchedRate.unit || previous.mandiPrice.unit,
-                mandiName: matchedRate.mandi || '',
+                ...previous.mandiPrice,
+                ...mandiPrice,
               },
+              priceHistory: mandiPrice.priceHistory,
             }));
           }
         })
@@ -285,24 +483,18 @@ export default function CropDetailPage({ params, initialRecord }) {
         try {
           const rates = await getDynamicMandiRates({ crop: apiCrop.slug });
           if (cancelled) return;
-          const matchedRate =
-            rates.find(
-              (rate) =>
-                rate.cropEnglish?.toLowerCase().includes(apiCrop.slug) ||
-                rate.crop?.toLowerCase().includes(apiCrop.slug),
-            ) || rates[0];
-
-          if (matchedRate) {
+          const matchedRate = findMandiRecord(rates, apiCrop);
+          const mandiPrice = mapDashboardMandiRecord(
+            matchedRate?.raw || matchedRate
+          );
+          if (mandiPrice) {
             setCrop((previous) => ({
               ...previous,
               mandiPrice: {
-                min: matchedRate.minPrice ?? 0,
-                max: matchedRate.maxPrice ?? 0,
-                modal: matchedRate.modalPrice ?? 0,
-                previousModal: previous.mandiPrice.modal,
-                unit: matchedRate.unit || previous.mandiPrice.unit,
-                mandiName: matchedRate.mandi || '',
+                ...previous.mandiPrice,
+                ...mandiPrice,
               },
+              priceHistory: mandiPrice.priceHistory,
             }));
           }
         } catch (error) {
@@ -623,7 +815,7 @@ export default function CropDetailPage({ params, initialRecord }) {
         : '';
 
     const shareData = {
-      title: `${crop.name} - कृषि मित्र`,
+      title: `${crop.name} - किसान मित्र`,
       text: `${crop.name} की खेती और मंडी भाव की जानकारी`,
       url,
     };
@@ -957,7 +1149,11 @@ export default function CropDetailPage({ params, initialRecord }) {
               <SectionHeading
                 icon={<TrendingUp className="h-5 w-5" />}
                 title="आज का मंडी भाव"
-                subtitle="उपलब्ध मंडी डेटा के आधार पर भाव"
+                subtitle={
+                  crop.mandiPrice.priceDate
+                    ? `अंतिम उपलब्ध भाव: ${crop.mandiPrice.priceDate}`
+                    : 'उपलब्ध मंडी डेटा के आधार पर भाव'
+                }
               />
 
               <div className="mt-5 grid gap-4 sm:grid-cols-3">
@@ -968,7 +1164,7 @@ export default function CropDetailPage({ params, initialRecord }) {
                 />
 
                 <MarketCard
-                  title="मॉडल भाव"
+                  title="मॉडल / नवीनतम उपलब्ध भाव"
                   value={crop.mandiPrice.modal}
                   color="emerald"
                   featured
@@ -980,6 +1176,10 @@ export default function CropDetailPage({ params, initialRecord }) {
                   color="amber"
                 />
               </div>
+
+              <p className="mt-2 text-xs text-slate-500">
+                न्यूनतम और अधिकतम, उपलब्ध पिछले तीन दैनिक भावों की सीमा है।
+              </p>
 
               <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1509,7 +1709,7 @@ export default function CropDetailPage({ params, initialRecord }) {
                         </p>
                         {item.answer && (
                           <div className="mt-3 rounded-xl border border-emerald-100 bg-emerald-50 p-3">
-                            <p className="text-xs font-bold text-emerald-800">कृषि मित्र का जवाब</p>
+                            <p className="text-xs font-bold text-emerald-800">किसान मित्र का जवाब</p>
                             <p className="mt-1 text-sm leading-6 text-emerald-900">{item.answer}</p>
                           </div>
                         )}
@@ -1583,7 +1783,7 @@ export default function CropDetailPage({ params, initialRecord }) {
               <SectionHeading
                 icon={<Leaf className="h-5 w-5" />}
                 title="संबंधित फसलें"
-                subtitle="कृषि मित्र पर और जानकारी पढ़ें"
+                subtitle="किसान मित्र पर और जानकारी पढ़ें"
               />
 
               {relatedCropsError && (
@@ -1871,7 +2071,7 @@ function SectionHeading({
         {icon}
 
         <span className="text-xs font-bold uppercase tracking-wider">
-          कृषि मित्र
+          किसान मित्र
         </span>
       </div>
 

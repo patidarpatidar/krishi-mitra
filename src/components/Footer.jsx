@@ -20,6 +20,12 @@ import {
   BookOpen,
   Target,
   Loader2,
+  Facebook,
+  Instagram,
+  Linkedin,
+  Send as Telegram,
+  Twitter,
+  Youtube,
 } from "lucide-react";
 
 const API_BASE = (
@@ -33,10 +39,10 @@ const API_BASE = (
 
 const FOOTER_CONFIG = {
   brand: {
-    name: "कृषि मित्र",
+    name: "किसान मित्र",
     tagline: "आपका डिजिटल कृषि साथी",
     description:
-      "कृषि मित्र एक व्यक्तिगत कृषि information platform है, जहाँ किसानों के लिए मंडी भाव, मौसम, फसल जानकारी, कृषि ब्लॉग और उपयोगी farming information सरल हिंदी में उपलब्ध कराई जाती है।",
+      "किसान मित्र एक व्यक्तिगत कृषि information platform है, जहाँ किसानों के लिए मंडी भाव, मौसम, फसल जानकारी, कृषि ब्लॉग और उपयोगी farming information सरल हिंदी में उपलब्ध कराई जाती है।",
   },
 
   contact: {
@@ -60,24 +66,45 @@ const FOOTER_CONFIG = {
     },
     {
       name: "YouTube",
-      icon: MessageCircle,
+      icon: Youtube,
       href: "https://youtube.com",
       className:
         "hover:bg-red-600 hover:text-white hover:border-red-600",
     },
     {
       name: "Facebook",
-      icon: MessageCircle,
+      icon: Facebook,
       href: "https://facebook.com",
       className:
         "hover:bg-blue-600 hover:text-white hover:border-blue-600",
     },
     {
       name: "Instagram",
-      icon: MessageCircle,
+      icon: Instagram,
       href: "https://instagram.com",
       className:
         "hover:bg-pink-600 hover:text-white hover:border-pink-600",
+    },
+    {
+      name: "X",
+      icon: Twitter,
+      href: "https://x.com",
+      className:
+        "hover:bg-slate-700 hover:text-white hover:border-slate-600",
+    },
+    {
+      name: "LinkedIn",
+      icon: Linkedin,
+      href: "https://linkedin.com",
+      className:
+        "hover:bg-blue-700 hover:text-white hover:border-blue-700",
+    },
+    {
+      name: "Telegram",
+      icon: Telegram,
+      href: "https://t.me",
+      className:
+        "hover:bg-sky-600 hover:text-white hover:border-sky-600",
     },
   ],
 };
@@ -169,7 +196,7 @@ const IMPORTANT_LINKS = [
 ========================================================= */
 
 const whatsappMessage = encodeURIComponent(
-  "नमस्ते कृषि मित्र, मुझे खेती और मंडी भाव के संबंध में जानकारी चाहिए।"
+  "नमस्ते किसान मित्र, मुझे खेती और मंडी भाव के संबंध में जानकारी चाहिए।"
 );
 
 const whatsappUrl = `https://wa.me/${FOOTER_CONFIG.whatsapp.number}?text=${whatsappMessage}`;
@@ -271,7 +298,7 @@ export default function Footer() {
               </div>
 
               <h3 className="text-2xl font-extrabold text-white sm:text-3xl">
-                कृषि मित्र से जुड़े रहें
+                किसान मित्र से जुड़े रहें
               </h3>
 
               <p className="mt-3 text-sm leading-7 text-emerald-100">
@@ -860,7 +887,7 @@ export default function Footer() {
                 </h3>
 
                 <p className="mt-2 text-xs leading-6 text-slate-500">
-                  कृषि मित्र एक व्यक्तिगत online agricultural information
+                  किसान मित्र एक व्यक्तिगत online agricultural information
                   platform है। यह सरकारी website या physical कृषि केंद्र
                   नहीं है। मंडी भाव, मौसम, खेती और कृषि संबंधी जानकारी को
                   महत्वपूर्ण निर्णय लेने से पहले संबंधित official source,
@@ -917,7 +944,7 @@ export default function Footer() {
 
           <p className="flex items-center gap-1 text-center text-xs text-slate-500 sm:text-left">
 
-            © {new Date().getFullYear()} कृषि मित्र।
+            © {new Date().getFullYear()} किसान मित्र।
 
             <span className="hidden sm:inline">
               सर्वाधिकार सुरक्षित।

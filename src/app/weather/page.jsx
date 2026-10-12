@@ -28,6 +28,7 @@ import {
   Clock3,
   X,
 } from 'lucide-react';
+import { farmerApi, isFarmerLoggedIn } from '@/lib/farmerApi';
 
 import {
   AreaChart,
@@ -175,6 +176,7 @@ const getWindDirection = (degree) => {
 
 export default function InteractiveWeatherPage() {
   const [cityName, setCityName] = useState('Neemuch');
+  const [registeredState, setRegisteredState] = useState('Madhya Pradesh');
   const [searchInput, setSearchInput] = useState('');
 
   const [locationInfo, setLocationInfo] = useState({
@@ -203,7 +205,7 @@ export default function InteractiveWeatherPage() {
   |--------------------------------------------------------------------------
   */
 
-  const findLocation = async (queryCity) => {
+  const findLocation = async (queryCity, stateHint = '') => {
     const cleanQuery = queryCity.trim();
 
     if (!cleanQuery) {
@@ -218,8 +220,9 @@ export default function InteractiveWeatherPage() {
 
     const preset = PRESET_CITIES.find(
       (city) =>
-        city.name.toLowerCase() === cleanQuery.toLowerCase() ||
-        city.hindiName === cleanQuery
+        (city.name.toLowerCase() === cleanQuery.toLowerCase() ||
+          city.hindiName === cleanQuery) &&
+        (!stateHint || city.state.toLowerCase() === stateHint.toLowerCase())
     );
 
     if (preset) {
@@ -265,6 +268,17 @@ export default function InteractiveWeatherPage() {
         item.country === 'India'
     );
 
+    const stateResult = stateHint
+      ? indiaResults.find(
+          (item) =>
+            item.admin1?.toLowerCase() === stateHint.toLowerCase()
+        )
+      : null;
+
+    const nameResult = indiaResults.find(
+      (item) => item.name?.toLowerCase() === cleanQuery.toLowerCase()
+    );
+
     const mpResult = indiaResults.find(
       (item) =>
         item.admin1?.toLowerCase().includes('madhya') ||
@@ -272,6 +286,8 @@ export default function InteractiveWeatherPage() {
     );
 
     const match =
+      stateResult ||
+      nameResult ||
       mpResult ||
       indiaResults[0] ||
       geoData.results[0];
@@ -280,7 +296,7 @@ export default function InteractiveWeatherPage() {
       name: match.name,
       hindiName: match.name,
       district: match.admin2 || '',
-      state: match.admin1 || '',
+      state: stateHint || match.admin1 || '',
       country: match.country || 'India',
       lat: match.latitude,
       lon: match.longitude,
@@ -696,13 +712,13 @@ export default function InteractiveWeatherPage() {
   */
 
   const fetchLiveWeather = useCallback(
-    async (queryCity) => {
+    async (queryCity, stateHint = '') => {
       setLoading(true);
       setError(null);
 
       try {
         const location =
-          await findLocation(queryCity);
+          await findLocation(queryCity, stateHint);
 
         setLocationInfo(location);
 
@@ -768,12 +784,35 @@ export default function InteractiveWeatherPage() {
 
   useEffect(() => {
     fetchLiveWeather(
-      cityName
+      cityName,
+      registeredState
     );
   }, [
     cityName,
+    registeredState,
     fetchLiveWeather,
   ]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!isFarmerLoggedIn()) return undefined;
+
+    farmerApi
+      .getProfile()
+      .then((result) => {
+        const profile = result.data?.user;
+        if (cancelled || !profile?.district || !profile?.state) return;
+        setRegisteredState(profile.state);
+        setCityName(profile.district);
+      })
+      .catch((profileError) => {
+        console.warn('Could not load farmer weather location:', profileError);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   /*
   |--------------------------------------------------------------------------
@@ -791,6 +830,7 @@ export default function InteractiveWeatherPage() {
 
     if (!value) return;
 
+    setRegisteredState('');
     setCityName(value);
     setSearchInput('');
   };
@@ -955,7 +995,7 @@ export default function InteractiveWeatherPage() {
 
                 <Sun className="w-4 h-4" />
 
-                कृषि मित्र • LIVE WEATHER
+                किसान मित्र • LIVE WEATHER
 
               </div>
 
@@ -1038,11 +1078,10 @@ export default function InteractiveWeatherPage() {
                 (city) => (
                   <button
                     key={city.name}
-                    onClick={() =>
-                      setCityName(
-                        city.name
-                      )
-                    }
+                    onClick={() => {
+                      setRegisteredState(city.state);
+                      setCityName(city.name);
+                    }}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition ${
                       cityName.toLowerCase() ===
                       city.name.toLowerCase()

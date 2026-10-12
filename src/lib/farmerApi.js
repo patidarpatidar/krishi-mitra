@@ -6,6 +6,7 @@ const API_BASE = (
 
 const FARMER_TOKEN_KEY = "krishi_mitra_farmer_token";
 const FARMER_USER_KEY = "krishi_mitra_farmer";
+export const FARMER_SESSION_EXPIRED_EVENT = "krishi-mitra:farmer-session-expired";
 
 export function getFarmerToken() {
   if (typeof window === "undefined") return null;
@@ -49,6 +50,15 @@ export function clearFarmerSession() {
   localStorage.removeItem(FARMER_USER_KEY);
 }
 
+function expireFarmerSession() {
+  if (typeof window === "undefined") return;
+  const hadSession = Boolean(getFarmerToken() || getFarmerUser());
+  clearFarmerSession();
+  if (hadSession) {
+    window.dispatchEvent(new Event(FARMER_SESSION_EXPIRED_EVENT));
+  }
+}
+
 export function isFarmerLoggedIn() {
   if (typeof window === "undefined") return false;
   const token = getFarmerToken();
@@ -81,7 +91,7 @@ export async function farmerRequest(path, options = {}) {
 
   if (!response.ok || result.success === false) {
     if (response.status === 401 && typeof window !== "undefined") {
-      clearFarmerSession();
+      expireFarmerSession();
     }
 
     const message =
@@ -227,6 +237,34 @@ export const farmerApi = {
     }
 
     return result;
+  },
+
+  async getCropExpenses(cropId) {
+    return farmerRequest(
+      `/farmer/crops/${encodeURIComponent(cropId)}/expenses`,
+      { method: "GET" }
+    );
+  },
+
+  async addCropExpense(cropId, expense) {
+    return farmerRequest(
+      `/farmer/crops/${encodeURIComponent(cropId)}/expenses`,
+      { method: "POST", body: JSON.stringify(expense) }
+    );
+  },
+
+  async updateCropExpense(cropId, expenseId, expense) {
+    return farmerRequest(
+      `/farmer/crops/${encodeURIComponent(cropId)}/expenses/${encodeURIComponent(expenseId)}`,
+      { method: "PATCH", body: JSON.stringify(expense) }
+    );
+  },
+
+  async deleteCropExpense(cropId, expenseId) {
+    return farmerRequest(
+      `/farmer/crops/${encodeURIComponent(cropId)}/expenses/${encodeURIComponent(expenseId)}`,
+      { method: "DELETE" }
+    );
   },
 
   // ------------------------------------

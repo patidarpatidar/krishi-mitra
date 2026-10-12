@@ -13,11 +13,13 @@ import {
   Bookmark,
   RefreshCw,
   ExternalLink,
+  IndianRupee,
+  Search,
 } from "lucide-react";
 
 import { farmerApi } from "@/lib/farmerApi";
-import { getNeemuchWeather } from "@/services/weatherApi";
-import { getDynamicMandiRates } from "@/services/mandiApi";
+import { getLocationWeather } from "@/services/weatherApi";
+import { getAgmarknetLocationIds, getAgmarknetRates } from "@/services/mandiApi";
 
 export default function FarmerDashboard() {
   const [farmer, setFarmer] = useState({});
@@ -26,9 +28,11 @@ export default function FarmerDashboard() {
     cropsCount: 0,
     savedCount: 0,
     watchlistCount: 0,
+    totalCropExpenses: 0,
   });
   const [weather, setWeather] = useState(null);
   const [mandiRates, setMandiRates] = useState([]);
+  const [mandiSearch, setMandiSearch] = useState("");
   const [advisories, setAdvisories] = useState([]);
   const [schemes, setSchemes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -37,16 +41,10 @@ export default function FarmerDashboard() {
 
   const loadData = useCallback(async () => {
     setLoadErrors([]);
-    const results = await Promise.allSettled([
-      farmerApi.getDashboard(),
-      getNeemuchWeather(),
-      getDynamicMandiRates({
-        state: "Madhya Pradesh",
-        district: "Neemuch",
-      }),
-    ]);
     const errors = [];
-    const [dashboardResult, weatherResult, mandiResult] = results;
+    const dashboardResult = await Promise.allSettled([farmerApi.getDashboard()]).then(
+      ([result]) => result
+    );
 
     if (dashboardResult.status === "fulfilled" && dashboardResult.value?.data) {
       const d = dashboardResult.value.data;
@@ -54,6 +52,46 @@ export default function FarmerDashboard() {
       if (d.stats) setStats(d.stats);
       setAdvisories(Array.isArray(d.advisories) ? d.advisories : []);
       setSchemes(Array.isArray(d.schemes) ? d.schemes : []);
+
+      const profile = d.farmer || {};
+      const [weatherResult, mandiResult] = await Promise.allSettled([
+        getLocationWeather(profile.district, profile.state),
+        getAgmarknetLocationIds(profile.state, profile.district).then((location) =>
+          getAgmarknetRates({
+            state: location.stateId,
+            district: location.districtId,
+            market: "",
+            commodity: "",
+          })
+        ),
+      ]);
+
+      if (weatherResult.status === "fulfilled") {
+        const weatherRes = weatherResult.value;
+        setWeather({
+          location: weatherRes.locationName,
+          temperature: weatherRes.temperature,
+          condition:
+            weatherRes.weatherCode <= 1
+              ? "साफ आसमान"
+              : weatherRes.weatherCode <= 3
+                ? "आंशिक बादल"
+                : "हल्की वर्षा की संभावना",
+          humidity: weatherRes.humidity,
+          wind: weatherRes.windSpeed,
+          rainChance: weatherRes.rainProb,
+        });
+      } else {
+        setWeather(null);
+        errors.push(weatherResult.reason?.message || "Weather API request failed.");
+      }
+
+      if (mandiResult.status === "fulfilled") {
+        setMandiRates(mandiResult.value.data || []);
+      } else {
+        setMandiRates([]);
+        errors.push(mandiResult.reason?.message || "Mandi API request failed.");
+      }
     } else {
       errors.push(
         dashboardResult.status === "rejected"
@@ -64,32 +102,8 @@ export default function FarmerDashboard() {
       setStats({ totalLand: "0 Acre", cropsCount: 0, savedCount: 0, watchlistCount: 0 });
       setAdvisories([]);
       setSchemes([]);
-    }
-
-    if (weatherResult.status === "fulfilled") {
-      const weatherRes = weatherResult.value;
-        setWeather({
-          location: "नीमच, मध्य प्रदेश",
-          temperature: weatherRes.temperature,
-          condition:
-            weatherRes.weatherCode <= 1
-              ? "साफ आसमान"
-              : weatherRes.weatherCode <= 3
-              ? "आंशिक बादल"
-              : "हल्की वर्षा की संभावना",
-          humidity: weatherRes.humidity,
-          wind: weatherRes.windSpeed,
-          rainChance: weatherRes.rainProb,
-        });
-    } else {
       setWeather(null);
-      errors.push(weatherResult.reason?.message || "Weather API request failed.");
-    }
-    if (mandiResult.status === "fulfilled") {
-      setMandiRates(mandiResult.value.slice(0, 4));
-    } else {
       setMandiRates([]);
-      errors.push(mandiResult.reason?.message || "Mandi API request failed.");
     }
 
     setLoadErrors(errors);
@@ -105,6 +119,14 @@ export default function FarmerDashboard() {
     setRefreshing(true);
     loadData();
   };
+
+  const visibleMandiRates = mandiRates
+    .filter((item) =>
+      `${item.crop || item.commodity || ""} ${item.market || item.mandi || ""}`
+        .toLocaleLowerCase("hi")
+        .includes(mandiSearch.trim().toLocaleLowerCase("hi"))
+    )
+    .slice(0, 4);
 
   return (
     <div className="space-y-6">
@@ -145,7 +167,7 @@ export default function FarmerDashboard() {
       )}
 
       {/* Quick Stats */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <section className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <StatCard
           title="कुल जमीन"
           value={`${farmer.landArea || 0} ${farmer.landUnit || "Acre"}`}
@@ -158,6 +180,14 @@ export default function FarmerDashboard() {
           value={stats.cropsCount || farmer.crops?.length || 0}
           subtitle="पंजीकृत फसलें"
           icon={Sprout}
+          link="/farmer/crops"
+        />
+
+        <StatCard
+          title="फसल का कुल खर्च"
+          value={`₹${Number(stats.totalCropExpenses || 0).toLocaleString("en-IN")}`}
+          subtitle="सभी फसलों का योग"
+          icon={IndianRupee}
           link="/farmer/crops"
         />
 
@@ -243,8 +273,20 @@ export default function FarmerDashboard() {
               </Link>
             </div>
 
+            <div className="relative mb-3">
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+              <input
+                type="search"
+                value={mandiSearch}
+                onChange={(event) => setMandiSearch(event.target.value)}
+                placeholder="फसल या मंडी खोजें"
+                aria-label="डैशबोर्ड मंडी भाव में खोजें"
+                className="w-full rounded-xl border border-slate-800 bg-slate-950 py-2.5 pl-10 pr-3 text-xs text-white outline-none focus:border-emerald-500"
+              />
+            </div>
+
             <div className="space-y-3">
-              {mandiRates.map((item, idx) => (
+              {visibleMandiRates.map((item, idx) => (
                 <div
                   key={item.id || idx}
                   className="flex items-center justify-between bg-slate-950 rounded-xl p-4 hover:border-slate-700 border border-transparent transition"
@@ -271,6 +313,11 @@ export default function FarmerDashboard() {
                   </div>
                 </div>
               ))}
+              {visibleMandiRates.length === 0 && (
+                <p className="rounded-xl bg-slate-950 p-4 text-xs text-slate-500">
+                  इस खोज के लिए मंडी भाव नहीं मिले।
+                </p>
+              )}
             </div>
           </div>
 

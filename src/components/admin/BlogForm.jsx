@@ -11,7 +11,7 @@ const EMPTY = {
   slug: "",
   categoryId: "",
   category: "",
-  author: "कृषि मित्र",
+  author: "किसान मित्र",
   authorRole: "",
   authorAvatar: "",
   status: "draft",
@@ -530,7 +530,7 @@ export default function BlogForm({ blogId }) {
                 ))}
               </select>
             </div>
-            <Link href="/admin/blog-categories/new" className="inline-flex items-center gap-2 text-sm font-bold text-emerald-700">
+            <Link href="/admin/categories?type=blog" className="inline-flex items-center gap-2 text-sm font-bold text-emerald-700">
               <Plus size={16} /> Add category
             </Link>
           </Panel>

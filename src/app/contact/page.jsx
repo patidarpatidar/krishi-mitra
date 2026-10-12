@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import {
@@ -80,7 +80,7 @@ const CONTACT_CONFIG = {
 ========================================================= */
 
 const whatsappMessage = encodeURIComponent(
-  "नमस्ते कृषि मित्र, मुझे मंडी भाव या खेती के संबंध में जानकारी चाहिए।"
+  "नमस्ते किसान मित्र, मुझे मंडी भाव या खेती के संबंध में जानकारी चाहिए।"
 );
 
 const whatsappUrl = `https://wa.me/${CONTACT_CONFIG.whatsapp.number}?text=${whatsappMessage}`;
@@ -91,9 +91,9 @@ const whatsappUrl = `https://wa.me/${CONTACT_CONFIG.whatsapp.number}?text=${what
 
 const FAQS = [
   {
-    question: "क्या कृषि मित्र का कोई physical office या कृषि केंद्र है?",
+    question: "क्या किसान मित्र का कोई physical office या कृषि केंद्र है?",
     answer:
-      "नहीं। वर्तमान में कृषि मित्र का कोई physical office, दुकान या कृषि केंद्र नहीं है। इसे मैं स्वयं online माध्यम से संचालित करता हूँ।",
+      "नहीं। वर्तमान में किसान मित्र का कोई physical office, दुकान या कृषि केंद्र नहीं है। इसे मैं स्वयं online माध्यम से संचालित करता हूँ।",
   },
   {
     question: "क्या Contact form से सीधे कृषि सलाह मिलती है?",
@@ -179,6 +179,10 @@ export default function ContactPage() {
   const [activeHelp, setActiveHelp] = useState("");
 
   const [openFaq, setOpenFaq] = useState(0);
+  const [routeDefaults, setRouteDefaults] = useState({
+    queryType: "Mandi Bhav",
+    message: "",
+  });
 
   const [formData, setFormData] = useState({
     name: "",
@@ -188,6 +192,30 @@ export default function ContactPage() {
     queryType: "Mandi Bhav",
     message: "",
   });
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const requestedType = params.get("type") || params.get("queryType") || params.get("category");
+    const typeAliases = {
+      crop: "Crop Advisory",
+      crops: "Crop Advisory",
+      advisory: "Crop Advisory",
+      feedback: "Blog Feedback",
+      suggestion: "Blog Feedback",
+      blog: "Blog Feedback",
+    };
+    const normalizedType = requestedType?.trim().toLowerCase();
+    const queryType = CONTACT_CONFIG.queryTypes.find(
+      (item) =>
+        item.value.toLowerCase() === normalizedType ||
+        item.label.toLowerCase() === normalizedType
+    )?.value || typeAliases[normalizedType] || "Mandi Bhav";
+    const message = params.get("message") || "";
+
+    setRouteDefaults({ queryType, message });
+    setFormData((previous) => ({ ...previous, queryType, message }));
+    setActiveHelp(queryType);
+  }, []);
 
   /* =======================================================
      INPUT HANDLER
@@ -236,8 +264,8 @@ export default function ContactPage() {
       phone: "",
       email: "",
       district: "",
-      queryType: "Mandi Bhav",
-      message: "",
+      queryType: routeDefaults.queryType,
+      message: routeDefaults.message,
     });
 
     setActiveHelp("");
@@ -296,7 +324,7 @@ export default function ContactPage() {
 
             <h1 className="text-4xl font-extrabold leading-tight sm:text-5xl">
 
-              कृषि मित्र से
+              किसान मित्र से
               <span className="text-emerald-300">
                 {" "}संपर्क करें
               </span>
@@ -306,7 +334,7 @@ export default function ContactPage() {
             <p className="mt-6 max-w-3xl text-base leading-8 text-emerald-50 sm:text-lg">
 
               मंडी भाव, खेती-किसानी, मौसम, सरकारी योजनाओं या
-              कृषि मित्र website से जुड़े किसी सवाल, सुझाव या feedback
+              किसान मित्र website से जुड़े किसी सवाल, सुझाव या feedback
               के लिए message भेजें।
 
             </p>
@@ -359,7 +387,7 @@ export default function ContactPage() {
               </h3>
 
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                कृषि मित्र को मैं स्वयं manage करता हूँ। Website,
+                किसान मित्र को मैं स्वयं manage करता हूँ। Website,
                 content और digital updates personally संभाले जाते हैं।
               </p>
 
@@ -376,7 +404,7 @@ export default function ContactPage() {
               </h3>
 
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                वर्तमान में कृषि मित्र का कोई physical office,
+                वर्तमान में किसान मित्र का कोई physical office,
                 दुकान या कृषि केंद्र नहीं है।
               </p>
 
@@ -393,7 +421,7 @@ export default function ContactPage() {
               </h3>
 
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                कृषि मित्र सरकारी website या सरकारी कृषि कार्यालय
+                किसान मित्र सरकारी website या सरकारी कृषि कार्यालय
                 नहीं है। जरूरी जानकारी official sources से verify करें।
               </p>
 
@@ -652,7 +680,7 @@ export default function ContactPage() {
                 </div>
 
                 <p className="mt-6 text-sm leading-7 text-slate-300">
-                  कृषि मित्र एक online agricultural information platform
+                  किसान मित्र एक online agricultural information platform
                   है। इसका मुख्य focus नीमच, मंदसौर, रतलाम और आसपास के
                   मालवांचल क्षेत्र की कृषि जानकारी पर है।
                 </p>
@@ -700,7 +728,7 @@ export default function ContactPage() {
                 </h3>
 
                 <p className="mt-3 text-sm leading-7 text-green-900/80">
-                  कृषि मित्र का अभी कोई physical office या कृषि केंद्र
+                  किसान मित्र का अभी कोई physical office या कृषि केंद्र
                   नहीं है। Contact form, email और available online
                   communication channels के माध्यम से संपर्क किया जा सकता है।
                 </p>
@@ -969,7 +997,13 @@ export default function ContactPage() {
                             e.target.value
                           )
                         }
-                        placeholder="उदाहरण: मुझे सोयाबीन के मंडी भाव और खेती से जुड़ी जानकारी चाहिए..."
+                        placeholder={
+                          formData.queryType === "Crop Advisory"
+                            ? "फसल, रोग, कीट या खेती से जुड़ा सवाल लिखें..."
+                            : formData.queryType === "Blog Feedback"
+                              ? "अपना सुझाव या feedback लिखें..."
+                              : "अपना सवाल या संदेश लिखें..."
+                        }
                         className="w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm leading-7 outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100"
                       />
 
@@ -1161,7 +1195,7 @@ export default function ContactPage() {
           </div>
 
           <h2 className="mt-5 text-3xl font-bold">
-            खेती की जानकारी के लिए कृषि मित्र explore करें
+            खेती की जानकारी के लिए किसान मित्र explore करें
           </h2>
 
           <p className="mx-auto mt-3 max-w-2xl text-green-50">

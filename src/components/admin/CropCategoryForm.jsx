@@ -67,6 +67,7 @@ export default function CropCategoryForm({ categoryId = null }) {
 
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
+  const [icon, setIcon] = useState("🌱");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState("active");
 
@@ -110,6 +111,7 @@ export default function CropCategoryForm({ categoryId = null }) {
 
         setName(category.name || "");
         setSlug(category.slug || "");
+        setIcon(category.icon || "🌱");
         setDescription(category.description || "");
         setStatus(category.status || "active");
       } catch (err) {
@@ -158,6 +160,7 @@ export default function CropCategoryForm({ categoryId = null }) {
       const payload = {
         name: name.trim(),
         slug: slug.trim().toLowerCase(),
+        icon: icon.trim() || "🌱",
         description: description.trim(),
         status,
       };
@@ -178,7 +181,7 @@ export default function CropCategoryForm({ categoryId = null }) {
 
       await parseApiResponse(response);
 
-      window.location.assign("/admin/crops/categories");
+      window.location.assign("/admin/categories?type=crop");
     } catch (err) {
       console.error("Save crop category error:", err);
       setError(err.message || "Failed to save category.");
@@ -221,12 +224,12 @@ export default function CropCategoryForm({ categoryId = null }) {
             <p className="mt-1 text-sm text-gray-500">
               {isEdit
                 ? "Update crop category details."
-                : "Create a new crop category for Krishi Mitra."}
+                : "Create a new crop category for Kisan Mitra."}
             </p>
           </div>
 
           <Link
-            href="/admin/crops/categories"
+            href="/admin/categories?type=crop"
             className="inline-flex w-fit items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
           >
             <ArrowLeft size={17} />
@@ -309,6 +312,30 @@ export default function CropCategoryForm({ categoryId = null }) {
 
             <div>
               <label
+                htmlFor="category-icon"
+                className="mb-2 block text-sm font-medium text-gray-700"
+              >
+                Icon / Emoji
+              </label>
+
+              <div className="flex items-center gap-3">
+                <input
+                  id="category-icon"
+                  type="text"
+                  value={icon}
+                  onChange={(event) => setIcon(event.target.value)}
+                  maxLength={16}
+                  placeholder="🌾"
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                />
+                <span className="flex h-11 w-12 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-gray-50 text-2xl">
+                  {icon || "🌱"}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <label
                 htmlFor="category-description"
                 className="mb-2 block text-sm font-medium text-gray-700"
               >
@@ -349,7 +376,7 @@ export default function CropCategoryForm({ categoryId = null }) {
 
           <div className="flex flex-col-reverse gap-3 border-t border-gray-200 bg-gray-50 p-5 sm:flex-row sm:justify-end">
             <Link
-              href="/admin/crops/categories"
+              href="/admin/categories?type=crop"
               className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
             >
               Cancel

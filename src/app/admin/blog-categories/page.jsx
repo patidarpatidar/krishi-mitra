@@ -99,7 +99,7 @@ export default function BlogCategoriesPage() {
           </div>
 
           <Link
-            href="/admin/blog-categories/new"
+            href="/admin/categories?type=blog"
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-green-700 px-4 py-3 text-sm font-semibold text-white hover:bg-green-800"
           >
             <Plus size={18} />
@@ -240,7 +240,7 @@ export default function BlogCategoriesPage() {
                               View
                             </Link>
                             <Link
-                              href={`/admin/blog-categories/${id}/edit`}
+                              href="/admin/categories?type=blog"
                               title="Edit category"
                               className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-green-50 hover:text-green-700"
                             >

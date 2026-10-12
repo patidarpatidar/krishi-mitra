@@ -10,9 +10,9 @@ import { unwrapApiItem } from "@/lib/publicApi";
 const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api").replace(/\/+$/, "");
 const MODULES = {
   crops: { label: "फसल", endpoint: (id) => `/crops/${id}`, back: "/admin/crops" },
-  "crop-categories": { label: "फसल श्रेणी", endpoint: (id) => `/crop-categories/${id}`, back: "/admin/crops/categories" },
+  "crop-categories": { label: "फसल श्रेणी", endpoint: (id) => `/crop-categories/${id}`, back: "/admin/categories?type=crop" },
   blogs: { label: "ब्लॉग", endpoint: (id) => `/blogs/admin/${id}`, back: "/admin/blog" },
-  "blog-categories": { label: "ब्लॉग श्रेणी", endpoint: (id) => `/blog-categories/${id}`, back: "/admin/blog-categories" },
+  "blog-categories": { label: "ब्लॉग श्रेणी", endpoint: (id) => `/blog-categories/${id}`, back: "/admin/categories?type=blog" },
   livestock: { label: "पशुपालन लेख", endpoint: (id) => `/livestock/admin/${id}`, back: "/admin/livestock" },
   organic: { label: "जैविक खेती लेख", endpoint: (id) => `/organic-recipes/admin/${id}`, back: "/admin/organic" },
   "organic-categories": { label: "जैविक श्रेणी", endpoint: (id) => `/organic-categories/${id}`, back: "/admin/organic" },

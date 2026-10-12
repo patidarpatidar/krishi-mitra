@@ -22,6 +22,7 @@ import {
   RefreshCw,
   ExternalLink,
 } from "lucide-react";
+import { expireAdminSession } from "@/lib/adminAuth";
 
 const API_URL = (
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
@@ -114,6 +115,7 @@ async function fetchCollection(endpoint, token) {
   });
 
   if (!response.ok) {
+    if (response.status === 401 && token) expireAdminSession();
     const body = await response.text().catch(() => "");
     throw new Error(
       `${response.status} ${response.statusText}${
@@ -179,6 +181,7 @@ async function fetchAnalytics(token) {
   });
 
   if (!response.ok) {
+    if (response.status === 401 && token) expireAdminSession();
     const body = await response.text().catch(() => "");
     throw new Error(
       `${response.status} ${response.statusText}${
@@ -387,7 +390,7 @@ export default function AdminDashboardPage() {
             Welcome back, Admin 👋
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Krishi Mitra platform का content और activity manage करें।
+            Kisan Mitra platform का content और activity manage करें।
           </p>
           {lastUpdated && (
             <p className="mt-2 text-xs text-slate-400">

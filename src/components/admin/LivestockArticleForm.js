@@ -30,10 +30,10 @@ const initialForm = {
   status: "draft",
   featured: false,
   sortOrder: 0,
-  author: "Krishi Mitra",
+  author: "Kisan Mitra",
 };
 
-const categoryOptions = [
+const legacyCategoryOptions = [
   ["dairy", "डेयरी / गाय-भैंस पालन"],
   ["goat", "बकरी पालन"],
   ["poultry", "मुर्गी पालन"],
@@ -74,6 +74,37 @@ export default function LivestockArticleForm({ articleId }) {
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [categoryOptions, setCategoryOptions] = useState(legacyCategoryOptions);
+
+  useEffect(() => {
+    let cancelled = false;
+    livestockApi.listCategories()
+      .then((result) => {
+        const categories = Array.isArray(result.data) ? result.data : [];
+        if (cancelled || !categories.length) return;
+
+        const options = categories.map((category) => [category.slug, category.name]);
+        setCategoryOptions(options);
+        if (!articleId) {
+          setForm((current) => {
+            const selected = options.find(([value]) => value === current.category);
+            if (selected) return current;
+            return {
+              ...current,
+              category: options[0][0],
+              categoryLabel: options[0][1],
+            };
+          });
+        }
+      })
+      .catch((categoryError) => {
+        console.warn("Could not load livestock categories:", categoryError);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [articleId]);
 
   useEffect(() => {
     if (!articleId) return;
@@ -312,6 +343,9 @@ export default function LivestockArticleForm({ articleId }) {
                     }));
                   }}
                 >
+                  {form.category && !categoryOptions.some(([value]) => value === form.category) && (
+                    <option value={form.category}>{form.categoryLabel || form.category}</option>
+                  )}
                   {categoryOptions.map(([value, label]) => (
                     <option key={value} value={value}>
                       {label}

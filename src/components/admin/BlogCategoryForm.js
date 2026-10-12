@@ -121,7 +121,7 @@ export default function BlogCategoryForm({ categoryId }) {
         await blogApi.createCategory(payload);
       }
 
-      router.push("/admin/blog-categories");
+      router.push("/admin/categories?type=blog");
       router.refresh();
     } catch (err) {
       setError(err.message || "Category save nahi hui.");
@@ -142,7 +142,7 @@ export default function BlogCategoryForm({ categoryId }) {
     <main className="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-3xl">
         <Link
-          href="/admin/blog-categories"
+            href="/admin/categories?type=blog"
           className="mb-5 inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-green-700"
         >
           <ArrowLeft size={17} />
@@ -238,7 +238,7 @@ export default function BlogCategoryForm({ categoryId }) {
 
             <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
               <Link
-                href="/admin/blog-categories"
+                href="/admin/categories?type=blog"
                 className="rounded-xl border border-slate-200 px-5 py-3 text-center text-sm font-semibold text-slate-700 hover:bg-slate-50"
               >
                 Cancel

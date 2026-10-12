@@ -15,26 +15,27 @@ import {
   CloudRain,
 } from "lucide-react";
 
-import { getFarmerUser } from "@/lib/farmerApi";
-import { getNeemuchWeather } from "@/services/weatherApi";
+import { farmerApi } from "@/lib/farmerApi";
+import { getLocationWeather } from "@/services/weatherApi";
 
 export default function FarmerWeatherPage() {
-  const [farmer] = useState(getFarmerUser() || {});
+  const [farmer, setFarmer] = useState({});
   const [weather, setWeather] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
 
-  const locationName = `${farmer.district || "नीमच"}, ${farmer.state || "मध्य प्रदेश"}`;
-
   const loadWeather = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
-      const res = await getNeemuchWeather();
+      const profileResult = await farmerApi.getProfile();
+      const profile = profileResult.data?.user || {};
+      setFarmer(profile);
+      const res = await getLocationWeather(profile.district, profile.state);
 
       setWeather({
-        location: locationName,
+        location: res.locationName,
         temperature: res.temperature,
         humidity: res.humidity,
         windSpeed: res.windSpeed,
@@ -59,7 +60,7 @@ export default function FarmerWeatherPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [locationName]);
+  }, []);
 
   useEffect(() => {
     loadWeather();

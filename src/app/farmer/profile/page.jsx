@@ -14,9 +14,11 @@ import {
 } from "lucide-react";
 
 import { farmerApi } from "@/lib/farmerApi";
+import { fetchAgmarknetFilters } from "@/services/mandiApi";
 
 export default function FarmerProfile() {
   const [form, setForm] = useState(null);
+  const [locationOptions, setLocationOptions] = useState({ states: [], districts: [] });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -29,6 +31,23 @@ export default function FarmerProfile() {
         const res = await farmerApi.getProfile();
         if (res.data?.user) {
           setForm(res.data.user);
+        }
+        try {
+          const source = await fetchAgmarknetFilters();
+          setLocationOptions({
+            states: (source.state_data || [])
+              .filter((item) => Number(item.state_id) > 0 && Number(item.state_id) !== 100000)
+              .map((item) => ({ label: item.state_name, value: String(item.state_id) })),
+            districts: (source.district_data || [])
+              .filter((item) => Number(item.id) > 0 && item.state_id)
+              .map((item) => ({
+                label: item.district_name,
+                value: String(item.id),
+                stateId: String(item.state_id),
+              })),
+          });
+        } catch (filterError) {
+          console.warn("Could not load profile location options:", filterError);
         }
       } catch (err) {
         console.error("Failed to load profile:", err);
@@ -48,6 +67,13 @@ export default function FarmerProfile() {
     }));
     setError("");
   }
+
+  const selectedState = locationOptions.states.find(
+    (option) => option.label === form?.state
+  );
+  const visibleDistricts = locationOptions.districts.filter(
+    (option) => option.stateId === selectedState?.value
+  );
 
   async function saveProfile(e) {
     e.preventDefault();
@@ -168,19 +194,31 @@ export default function FarmerProfile() {
             required
           />
 
-          <Field
-            label="जिला"
-            icon={MapPin}
-            value={form?.district}
-            onChange={(v) => update("district", v)}
-          />
+          {locationOptions.states.length ? (
+            <LocationSelect
+              label="राज्य"
+              value={form?.state || ""}
+              options={locationOptions.states}
+              onChange={(value) => {
+                update("state", value);
+                update("district", "");
+              }}
+            />
+          ) : (
+            <Field label="राज्य" icon={MapPin} value={form?.state} onChange={(value) => update("state", value)} />
+          )}
 
-          <Field
-            label="राज्य"
-            icon={MapPin}
-            value={form?.state}
-            onChange={(v) => update("state", v)}
-          />
+          {locationOptions.states.length ? (
+            <LocationSelect
+              label="जिला"
+              value={form?.district || ""}
+              options={visibleDistricts}
+              onChange={(value) => update("district", value)}
+              disabled={!selectedState}
+            />
+          ) : (
+            <Field label="जिला" icon={MapPin} value={form?.district} onChange={(value) => update("district", value)} />
+          )}
 
           <Field
             label="पिनकोड"
@@ -276,6 +314,25 @@ export default function FarmerProfile() {
           </button>
         </div>
       </form>
+    </div>
+  );
+}
+
+function LocationSelect({ label, value, options, onChange, disabled = false }) {
+  return (
+    <div>
+      <label className="text-sm text-slate-400">{label}</label>
+      <select
+        value={options.some((option) => option.label === value) ? value : ""}
+        onChange={(event) => onChange(event.target.value)}
+        disabled={disabled}
+        className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-slate-300 outline-none focus:border-emerald-500 disabled:opacity-50"
+      >
+        <option value="">{label} चुनें</option>
+        {options.map((option) => (
+          <option key={option.value} value={option.label}>{option.label}</option>
+        ))}
+      </select>
     </div>
   );
 }

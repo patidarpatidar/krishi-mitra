@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import {
   Target,
@@ -15,7 +16,6 @@ import {
   ChevronDown,
   Calculator,
   MessageSquare,
-  CheckCircle2,
   MapPin,
   TrendingUp,
   HelpCircle,
@@ -25,22 +25,22 @@ import {
 
 const ABOUT_CONTENT = {
   hero: {
-    eyebrow: "कृषि मित्र के बारे में",
+    eyebrow: "किसान मित्र के बारे में",
     title: "किसान तक सही जानकारी, आसान भाषा में",
     description:
-      "कृषि मित्र एक व्यक्तिगत कृषि ब्लॉग और डिजिटल सूचना प्लेटफॉर्म है, जिसका उद्देश्य किसानों और खेती से जुड़े लोगों तक उपयोगी कृषि जानकारी सरल हिंदी में पहुँचाना है।",
+      "किसान मित्र एक व्यक्तिगत कृषि ब्लॉग और डिजिटल सूचना प्लेटफॉर्म है, जिसका उद्देश्य किसानों और खेती से जुड़े लोगों तक उपयोगी कृषि जानकारी सरल हिंदी में पहुँचाना है।",
   },
 
   transparency: [
     {
       icon: UserCheck,
       title: "Self Managed",
-      text: "कृषि मित्र को मैं स्वयं manage करता हूँ। Content, website और digital updates को personally संभाला जाता है।",
+      text: "किसान मित्र को मैं स्वयं manage करता हूँ। Content, website और digital updates को personally संभाला जाता है।",
     },
     {
       icon: Sparkles,
       title: "100% Online",
-      text: "अभी कृषि मित्र का कोई physical office, दुकान या कृषि केंद्र नहीं है। यह online platform के रूप में संचालित है।",
+      text: "अभी किसान मित्र का कोई physical office, दुकान या कृषि केंद्र नहीं है। यह online platform के रूप में संचालित है।",
     },
     {
       icon: ShieldCheck,
@@ -72,42 +72,46 @@ const ABOUT_CONTENT = {
       icon: TrendingUp,
       title: "मंडी भाव",
       text: "फसलों और कृषि उपज से जुड़े मंडी भाव और बाजार की जानकारी।",
+      href: "/mandi-bhav",
     },
     {
       icon: Sprout,
       title: "फसल जानकारी",
       text: "बुवाई से लेकर कटाई और storage तक उपयोगी कृषि जानकारी।",
+      href: "/crops",
     },
     {
       icon: BookOpen,
       title: "कृषि ब्लॉग",
       text: "खेती, जैविक खेती, पशुपालन और ग्रामीण व्यवसाय से जुड़े articles।",
+      href: "/blog",
     },
     {
       icon: Award,
       title: "सरकारी योजनाएं",
       text: "किसानों के लिए उपलब्ध योजनाओं और सुविधाओं की जानकारी।",
+      href: "/govt-schemes",
     },
   ],
 
   faqs: [
     {
-      question: "क्या कृषि मित्र का कोई physical office है?",
+      question: "क्या किसान मित्र का कोई physical office है?",
       answer:
-        "नहीं। वर्तमान में कृषि मित्र का कोई physical office, दुकान या कृषि केंद्र नहीं है। इसे मैं स्वयं online माध्यम से संचालित करता हूँ।",
+        "नहीं। वर्तमान में किसान मित्र का कोई physical office, दुकान या कृषि केंद्र नहीं है। इसे मैं स्वयं online माध्यम से संचालित करता हूँ।",
     },
     {
-      question: "क्या कृषि मित्र सरकारी वेबसाइट है?",
+      question: "क्या किसान मित्र सरकारी वेबसाइट है?",
       answer:
-        "नहीं। कृषि मित्र एक independent agricultural information platform है। यह किसी सरकारी विभाग की official website नहीं है।",
+        "नहीं। किसान मित्र एक independent agricultural information platform है। यह किसी सरकारी विभाग की official website नहीं है।",
     },
     {
-      question: "क्या कृषि मित्र पर दी गई जानकारी अंतिम सलाह है?",
+      question: "क्या किसान मित्र पर दी गई जानकारी अंतिम सलाह है?",
       answer:
         "नहीं। कृषि संबंधी महत्वपूर्ण निर्णय लेने से पहले स्थानीय कृषि विशेषज्ञ, कृषि विभाग, KVK या संबंधित official source से जानकारी verify करें।",
     },
     {
-      question: "क्या किसान कृषि मित्र से संपर्क कर सकता है?",
+      question: "क्या किसान किसान मित्र से संपर्क कर सकता है?",
       answer:
         "हाँ। Website के Contact section के माध्यम से feedback, suggestion या सामान्य जानकारी के लिए संपर्क किया जा सकता है।",
     },
@@ -138,11 +142,11 @@ const cropData = {
 };
 
 export default function AboutPage() {
+  const router = useRouter();
   const [landAcres, setLandAcres] = useState(5);
   const [cropType, setCropType] = useState("wheat");
   const [openFaq, setOpenFaq] = useState(0);
   const [feedback, setFeedback] = useState("");
-  const [submitted, setSubmitted] = useState(false);
 
   const crop = cropData[cropType];
 
@@ -153,13 +157,9 @@ export default function AboutPage() {
     e.preventDefault();
 
     if (!feedback.trim()) return;
-
-    setSubmitted(true);
-    setFeedback("");
-
-    setTimeout(() => {
-      setSubmitted(false);
-    }, 3000);
+    router.push(
+      `/contact?type=Blog%20Feedback&message=${encodeURIComponent(feedback.trim())}`
+    );
   };
 
   return (
@@ -211,6 +211,22 @@ export default function AboutPage() {
         </div>
       </section>
 
+      <nav aria-label="इस पेज के अनुभाग" className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl gap-2 overflow-x-auto px-4 py-3 sm:px-6 lg:px-8">
+          {[
+            ["#mission", "उद्देश्य"],
+            ["#calculator", "लाभ कैलकुलेटर"],
+            ["#features", "मुख्य जानकारी"],
+            ["#faqs", "सामान्य सवाल"],
+            ["#feedback", "सुझाव भेजें"],
+          ].map(([href, label]) => (
+            <a key={href} href={href} className="shrink-0 rounded-full border border-slate-200 px-3.5 py-2 text-xs font-semibold text-slate-600 transition hover:border-green-300 hover:bg-green-50 hover:text-green-800">
+              {label}
+            </a>
+          ))}
+        </div>
+      </nav>
+
       {/* =====================================================
           TRANSPARENCY
       ====================================================== */}
@@ -223,7 +239,7 @@ export default function AboutPage() {
             </span>
 
             <h2 className="mt-2 text-3xl font-bold">
-              कृषि मित्र के बारे में स्पष्ट जानकारी
+              किसान मित्र के बारे में स्पष्ट जानकारी
             </h2>
 
             <p className="mt-3 max-w-3xl text-slate-600">
@@ -282,7 +298,7 @@ export default function AboutPage() {
 
               <div className="mt-6 space-y-4 leading-8 text-slate-600">
                 <p>
-                  कृषि मित्र को इस सोच के साथ बनाया गया है कि किसानों के लिए
+                  किसान मित्र को इस सोच के साथ बनाया गया है कि किसानों के लिए
                   उपयोगी कृषि जानकारी internet पर आसान हिंदी में उपलब्ध होनी
                   चाहिए।
                 </p>
@@ -309,7 +325,7 @@ export default function AboutPage() {
                     </h3>
 
                     <p className="mt-1 text-sm leading-6 text-green-800">
-                      कृषि मित्र पर उपलब्ध जानकारी सामान्य educational और
+                      किसान मित्र पर उपलब्ध जानकारी सामान्य educational और
                       informational purpose के लिए है। खेती में आर्थिक या
                       तकनीकी निर्णय लेने से पहले स्थानीय विशेषज्ञ और official
                       sources से जानकारी verify करें।
@@ -363,7 +379,7 @@ export default function AboutPage() {
       {/* =====================================================
           MISSION
       ====================================================== */}
-      <section className="bg-white">
+      <section id="mission" className="scroll-mt-20 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
 
           <div className="mx-auto max-w-3xl text-center">
@@ -377,7 +393,7 @@ export default function AboutPage() {
 
             <p className="mt-4 leading-7 text-slate-600">
               किसान को जरूरी information के लिए अलग-अलग जगहों पर भटकना न पड़े,
-              इसी दिशा में कृषि मित्र को बनाया गया है।
+              इसी दिशा में किसान मित्र को बनाया गया है।
             </p>
           </div>
 
@@ -420,7 +436,7 @@ export default function AboutPage() {
             </span>
 
             <h2 className="mt-2 text-3xl font-bold">
-              कृषि मित्र पर information कैसे तैयार होती है
+              किसान मित्र पर information कैसे तैयार होती है
             </h2>
           </div>
 
@@ -471,7 +487,7 @@ export default function AboutPage() {
       {/* =====================================================
           CALCULATOR
       ====================================================== */}
-      <section className="bg-white">
+      <section id="calculator" className="scroll-mt-20 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
 
           <div className="mb-10 text-center">
@@ -580,7 +596,7 @@ export default function AboutPage() {
       {/* =====================================================
           FEATURES
       ====================================================== */}
-      <section className="bg-slate-50">
+      <section id="features" className="scroll-mt-20 bg-slate-50">
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
 
           <div className="text-center">
@@ -589,7 +605,7 @@ export default function AboutPage() {
             </span>
 
             <h2 className="mt-2 text-3xl font-bold">
-              कृषि मित्र पर क्या मिलेगा?
+              किसान मित्र पर क्या मिलेगा?
             </h2>
           </div>
 
@@ -598,8 +614,9 @@ export default function AboutPage() {
               const Icon = item.icon;
 
               return (
-                <div
+                <Link
                   key={index}
+                  href={item.href}
                   className="group rounded-2xl border border-slate-200 bg-white p-6 transition hover:-translate-y-1 hover:shadow-xl"
                 >
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-100 text-green-700 transition group-hover:bg-green-700 group-hover:text-white">
@@ -613,7 +630,10 @@ export default function AboutPage() {
                   <p className="mt-2 text-sm leading-6 text-slate-600">
                     {item.text}
                   </p>
-                </div>
+                  <span className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-green-700">
+                    जानकारी देखें <ArrowRight size={14} />
+                  </span>
+                </Link>
               );
             })}
           </div>
@@ -642,7 +662,7 @@ export default function AboutPage() {
                   </h2>
 
                   <p className="mt-2 max-w-2xl leading-7 text-green-900/80">
-                    कृषि मित्र का कोई physical कृषि केंद्र या office नहीं है।
+                    किसान मित्र का कोई physical कृषि केंद्र या office नहीं है।
                     Platform को online माध्यम से manage किया जाता है और
                     जानकारी website के माध्यम से उपलब्ध कराई जाती है।
                   </p>
@@ -666,7 +686,7 @@ export default function AboutPage() {
       {/* =====================================================
           FAQ
       ====================================================== */}
-      <section className="bg-slate-50">
+      <section id="faqs" className="scroll-mt-20 bg-slate-50">
         <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
 
           <div className="text-center">
@@ -721,7 +741,7 @@ export default function AboutPage() {
       {/* =====================================================
           FEEDBACK
       ====================================================== */}
-      <section className="bg-white">
+      <section id="feedback" className="scroll-mt-20 bg-white">
         <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
 
           <div className="rounded-3xl bg-green-950 p-8 text-white sm:p-10">
@@ -734,7 +754,7 @@ export default function AboutPage() {
             </div>
 
             <p className="mt-3 text-green-100">
-              कृषि मित्र को बेहतर बनाने के लिए आपका feedback महत्वपूर्ण है।
+              किसान मित्र को बेहतर बनाने के लिए आपका feedback महत्वपूर्ण है।
             </p>
 
             <form onSubmit={submitFeedback} className="mt-6">
@@ -743,6 +763,7 @@ export default function AboutPage() {
                 value={feedback}
                 onChange={(e) => setFeedback(e.target.value)}
                 rows={4}
+                maxLength={500}
                 placeholder="अपना सुझाव लिखें..."
                 className="w-full rounded-2xl border border-white/20 bg-white/10 px-4 py-4 text-white placeholder:text-green-100/60 outline-none focus:border-white"
               />
@@ -757,12 +778,7 @@ export default function AboutPage() {
                   <Send size={18} />
                 </button>
 
-                {submitted && (
-                  <div className="flex items-center gap-2 text-green-200">
-                    <CheckCircle2 size={18} />
-                    धन्यवाद! आपका feedback दर्ज हो गया।
-                  </div>
-                )}
+                <span className="text-xs text-green-200">{feedback.length}/500 • संपर्क फॉर्म में आपका सुझाव पहले से भरा होगा।</span>
 
               </div>
             </form>

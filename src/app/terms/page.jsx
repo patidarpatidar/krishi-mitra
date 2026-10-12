@@ -24,14 +24,14 @@ const termsSections = [
     id: 'nature',
     number: '01',
     icon: Sprout,
-    title: 'कृषि मित्र की सेवा की प्रकृति',
+    title: 'किसान मित्र की सेवा की प्रकृति',
     color: 'text-emerald-400',
     bg: 'bg-emerald-500/10',
     border: 'border-emerald-500/20',
     content: (
       <>
         <p>
-          <strong className="text-white">कृषि मित्र (Krishi Mitra)</strong> एक
+          <strong className="text-white">किसान मित्र (Kisan Mitra)</strong> एक
           व्यक्तिगत online कृषि information platform है। इसका उद्देश्य किसानों
           और सामान्य users को कृषि से संबंधित उपयोगी जानकारी एक स्थान पर
           उपलब्ध कराना है।
@@ -65,7 +65,7 @@ const termsSections = [
 
         <div className="mt-5 rounded-xl border border-sky-500/20 bg-sky-500/5 p-4">
           <p className="text-sm text-slate-400">
-            <strong className="text-sky-400">महत्वपूर्ण:</strong> कृषि मित्र
+            <strong className="text-sky-400">महत्वपूर्ण:</strong> किसान मित्र
             कोई सरकारी वेबसाइट, सरकारी विभाग, सरकारी कृषि केंद्र या सरकारी
             संस्था नहीं है।
           </p>
@@ -131,7 +131,7 @@ const termsSections = [
       <>
         <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4">
           <h3 className="text-white font-bold">
-            कृषि मित्र की जानकारी को अंतिम कृषि सलाह न मानें।
+            किसान मित्र की जानकारी को अंतिम कृषि सलाह न मानें।
           </h3>
 
           <p className="text-sm text-slate-400 mt-2 leading-relaxed">
@@ -209,7 +209,7 @@ const termsSections = [
     content: (
       <>
         <p>
-          कृषि मित्र पर भविष्य में third-party services, external websites,
+          किसान मित्र पर भविष्य में third-party services, external websites,
           analytics tools, maps, advertising platforms या अन्य external
           services के links/features हो सकते हैं।
         </p>
@@ -217,7 +217,7 @@ const termsSections = [
         <div className="mt-5 rounded-xl bg-slate-950 border border-slate-800 p-4">
           <p className="text-sm text-slate-400 leading-relaxed">
             ऐसे third-party platforms की अपनी Terms & Conditions और Privacy
-            Policy हो सकती है। कृषि मित्र उन external platforms की policies,
+            Policy हो सकती है। किसान मित्र उन external platforms की policies,
             availability या practices के लिए जिम्मेदार नहीं है।
           </p>
         </div>
@@ -236,7 +236,7 @@ const termsSections = [
     content: (
       <>
         <p>
-          कृषि मित्र की website का original design, branding, logo, original
+          किसान मित्र की website का original design, branding, logo, original
           written content, code और अन्य original materials, जहां लागू हो,
           intellectual property rights के अंतर्गत आते हैं।
         </p>
@@ -305,7 +305,7 @@ const termsSections = [
     content: (
       <>
         <p>
-          कृषि मित्र पर उपलब्ध information के आधार पर लिए गए किसी कृषि,
+          किसान मित्र पर उपलब्ध information के आधार पर लिए गए किसी कृषि,
           व्यापारिक, financial या अन्य निर्णय की जिम्मेदारी user की स्वयं की
           होगी।
         </p>
@@ -349,7 +349,7 @@ const termsSections = [
     border: 'border-emerald-500/20',
     content: (
       <p>
-        कृषि मित्र आवश्यकता के अनुसार इन Terms & Conditions को समय-समय पर
+        किसान मित्र आवश्यकता के अनुसार इन Terms & Conditions को समय-समय पर
         update कर सकता है। Updated version इसी page पर प्रकाशित किया जाएगा।
         Website का उपयोग जारी रखने पर updated terms लागू हो सकती हैं।
       </p>
@@ -359,14 +359,14 @@ const termsSections = [
 
 const faqs = [
   {
-    question: 'क्या कृषि मित्र सरकारी वेबसाइट है?',
+    question: 'क्या किसान मित्र सरकारी वेबसाइट है?',
     answer:
-      'नहीं। कृषि मित्र एक व्यक्तिगत online agriculture information platform है। यह किसी सरकारी विभाग, सरकारी कार्यालय या सरकारी कृषि केंद्र की official website नहीं है।',
+      'नहीं। किसान मित्र एक व्यक्तिगत online agriculture information platform है। यह किसी सरकारी विभाग, सरकारी कार्यालय या सरकारी कृषि केंद्र की official website नहीं है।',
   },
   {
-    question: 'क्या कृषि मित्र का physical office है?',
+    question: 'क्या किसान मित्र का physical office है?',
     answer:
-      'वर्तमान में नहीं। कृषि मित्र का कोई physical office, दुकान या कृषि केंद्र नहीं है। Platform को online माध्यम से व्यक्तिगत रूप से संचालित किया जाता है।',
+      'वर्तमान में नहीं। किसान मित्र का कोई physical office, दुकान या कृषि केंद्र नहीं है। Platform को online माध्यम से व्यक्तिगत रूप से संचालित किया जाता है।',
   },
   {
     question: 'क्या मंडी भाव बिल्कुल सही और live होते हैं?',
@@ -374,12 +374,12 @@ const faqs = [
       'मंडी भाव की जानकारी available sources के आधार पर प्रस्तुत की जा सकती है। बाजार भाव लगातार बदलते हैं, इसलिए खरीद या बिक्री से पहले संबंधित मंडी या authorized source से अंतिम भाव verify करें।',
   },
   {
-    question: 'क्या कृषि मित्र कृषि नुकसान की जिम्मेदारी लेता है?',
+    question: 'क्या किसान मित्र कृषि नुकसान की जिम्मेदारी लेता है?',
     answer:
       'नहीं। Website की कृषि जानकारी सामान्य informational purpose के लिए है। वास्तविक निर्णय लेते समय स्थानीय परिस्थितियों और कृषि विशेषज्ञ की सलाह को ध्यान में रखें।',
   },
   {
-    question: 'क्या मैं कृषि मित्र की जानकारी अपने business में इस्तेमाल कर सकता हूँ?',
+    question: 'क्या मैं किसान मित्र की जानकारी अपने business में इस्तेमाल कर सकता हूँ?',
     answer:
       'Original website content, design, branding और code को बिना अनुमति commercial purpose के लिए copy या reproduce नहीं किया जाना चाहिए। Third-party content पर उनके respective rights लागू हो सकते हैं।',
   },
@@ -459,7 +459,7 @@ export default function TermsAndConditions() {
             </h1>
 
             <p className="mt-4 text-sm sm:text-base text-slate-400 leading-relaxed max-w-2xl">
-              कृषि मित्र वेबसाइट का उपयोग करने से पहले इन Terms & Conditions
+              किसान मित्र वेबसाइट का उपयोग करने से पहले इन Terms & Conditions
               को ध्यान से पढ़ें। Website का उपयोग करने पर आप इन शर्तों को
               स्वीकार करते हैं।
             </p>
@@ -494,11 +494,11 @@ export default function TermsAndConditions() {
 
             <div>
               <h2 className="text-white font-bold">
-                कृषि मित्र — Online Agriculture Platform
+                किसान मित्र — Online Agriculture Platform
               </h2>
 
               <p className="text-sm text-slate-400 mt-1 leading-relaxed">
-                कृषि मित्र एक व्यक्तिगत online platform है। वर्तमान में इसका
+                किसान मित्र एक व्यक्तिगत online platform है। वर्तमान में इसका
                 कोई physical office, दुकान या कृषि केंद्र नहीं है। Website,
                 content और digital information को online माध्यम से manage किया
                 जाता है।
@@ -619,7 +619,7 @@ export default function TermsAndConditions() {
               </h2>
 
               <p className="text-sm text-slate-400 mt-2 leading-relaxed">
-                कृषि मित्र वेबसाइट का उपयोग जारी रखने पर आप इन Terms &
+                किसान मित्र वेबसाइट का उपयोग जारी रखने पर आप इन Terms &
                 Conditions को पढ़ने और समझने की पुष्टि करते हैं। यदि आप इन
                 शर्तों से सहमत नहीं हैं, तो कृपया वेबसाइट का उपयोग न करें।
               </p>

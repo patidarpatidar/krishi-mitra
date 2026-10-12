@@ -429,8 +429,8 @@ export default function CropsPage() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `${crop.name} - कृषि मित्र`,
-          text: `${crop.name} की खेती की जानकारी कृषि मित्र पर देखें।`,
+          title: `${crop.name} - किसान मित्र`,
+          text: `${crop.name} की खेती की जानकारी किसान मित्र पर देखें।`,
           url: shareUrl,
         });
       } catch {
@@ -472,7 +472,7 @@ export default function CropsPage() {
           <div className="max-w-3xl">
             <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm font-medium backdrop-blur">
               <Sprout className="h-4 w-4" />
-              कृषि मित्र • फसल गाइड
+              किसान मित्र • फसल गाइड
             </div>
 
             <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl">

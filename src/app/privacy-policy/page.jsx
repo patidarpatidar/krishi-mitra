@@ -33,7 +33,7 @@ const privacySections = [
     content: (
       <>
         <p>
-          कृषि मित्र आपकी आवश्यकता के अनुसार सीमित जानकारी एकत्र कर सकता है।
+          किसान मित्र आपकी आवश्यकता के अनुसार सीमित जानकारी एकत्र कर सकता है।
           जानकारी इस बात पर निर्भर करती है कि आप वेबसाइट पर कौन-सी सुविधा का
           उपयोग करते हैं।
         </p>
@@ -119,7 +119,7 @@ const privacySections = [
     content: (
       <>
         <p>
-          कृषि मित्र आपकी व्यक्तिगत जानकारी को बेचने या किराए पर देने का
+          किसान मित्र आपकी व्यक्तिगत जानकारी को बेचने या किराए पर देने का
           उद्देश्य नहीं रखता।
         </p>
 
@@ -223,7 +223,7 @@ const privacySections = [
       <>
         <div className="bg-orange-500/5 border border-orange-500/20 rounded-xl p-4">
           <p className="text-slate-300">
-            कृषि मित्र पर उपलब्ध मंडी भाव, मौसम, खेती की सलाह, फसल संबंधी
+            किसान मित्र पर उपलब्ध मंडी भाव, मौसम, खेती की सलाह, फसल संबंधी
             जानकारी, calculators और अन्य सामग्री सामान्य informational purpose
             के लिए है।
           </p>
@@ -262,7 +262,7 @@ const privacySections = [
     border: 'border-pink-500/20',
     content: (
       <p>
-        कृषि मित्र आवश्यकता के अनुसार इस Privacy Policy को समय-समय पर update
+        किसान मित्र आवश्यकता के अनुसार इस Privacy Policy को समय-समय पर update
         कर सकता है। किसी महत्वपूर्ण बदलाव के बाद इस page पर updated policy
         प्रकाशित की जाएगी। इसलिए users को समय-समय पर इस page को देखने की
         सलाह दी जाती है।
@@ -273,14 +273,14 @@ const privacySections = [
 
 const faqs = [
   {
-    question: 'क्या कृषि मित्र मेरी personal information बेचता है?',
+    question: 'क्या किसान मित्र मेरी personal information बेचता है?',
     answer:
-      'नहीं। कृषि मित्र का उद्देश्य आपकी personal information को बेचने या किराए पर देने का नहीं है।',
+      'नहीं। किसान मित्र का उद्देश्य आपकी personal information को बेचने या किराए पर देने का नहीं है।',
   },
   {
-    question: 'क्या कृषि मित्र का कोई physical office या कृषि केंद्र है?',
+    question: 'क्या किसान मित्र का कोई physical office या कृषि केंद्र है?',
     answer:
-      'वर्तमान में कृषि मित्र एक online personal agriculture information platform है। इसका कोई physical office, दुकान या कृषि केंद्र नहीं है। इसे व्यक्तिगत रूप से online माध्यम से संचालित किया जाता है।',
+      'वर्तमान में किसान मित्र एक online personal agriculture information platform है। इसका कोई physical office, दुकान या कृषि केंद्र नहीं है। इसे व्यक्तिगत रूप से online माध्यम से संचालित किया जाता है।',
   },
   {
     question: 'क्या मेरी जानकारी हमेशा store की जाती है?',
@@ -377,7 +377,7 @@ export default function PrivacyPolicy() {
             </h1>
 
             <p className="mt-4 text-sm sm:text-base text-slate-400 leading-relaxed max-w-2xl">
-              कृषि मित्र आपकी privacy का सम्मान करता है। यहां बताया गया है कि
+              किसान मित्र आपकी privacy का सम्मान करता है। यहां बताया गया है कि
               website पर उपलब्ध सुविधाओं के दौरान information को किस प्रकार
               collect, use और protect किया जा सकता है।
             </p>
@@ -407,11 +407,11 @@ export default function PrivacyPolicy() {
 
             <div>
               <h2 className="text-white font-bold">
-                कृषि मित्र क्या है?
+                किसान मित्र क्या है?
               </h2>
 
               <p className="text-sm text-slate-400 mt-1 leading-relaxed">
-                कृषि मित्र एक व्यक्तिगत online कृषि information platform है।
+                किसान मित्र एक व्यक्तिगत online कृषि information platform है।
                 वर्तमान में इसका कोई physical office, दुकान या कृषि केंद्र नहीं
                 है। Website, content और digital services को online माध्यम से
                 व्यक्तिगत रूप से manage किया जाता है।

@@ -1,1785 +1,830 @@
-'use client';
-
-export const dynamic = 'force-dynamic';
-
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import nextDynamic from 'next/dynamic';
-import Link from 'next/link';
-
+"use client";
+import MandiDateTrendChart from "@/components/MandiDateTrendChart";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
-  Search,
-  MapPin,
-  RefreshCw,
   TrendingUp,
-  TrendingDown,
-  Download,
-  Filter,
-  IndianRupee,
-  LineChart as ChartIcon,
-  Globe,
-  ChevronRight,
-  Loader2,
-  AlertCircle,
-  CheckCircle2,
-  ExternalLink,
+  Calendar,
+  Search,
+  RefreshCw,
+  Wheat,
+  MapPin,
+  Clock,
+  ArrowUpRight,
+  ArrowDownRight,
+  Minus,
+  Sparkles,
+  Info,
   BarChart3,
-  X,
-} from 'lucide-react';
-
+  Layers,
+} from "lucide-react";
 import {
-  getDynamicMandiRates,
-  getMandiPriceHistory,
-  CROP_MAP,
-} from '@/services/mandiApi';
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  CartesianGrid,
+} from "recharts";
 
-/* =========================================================
-   RECHARTS
-========================================================= */
+import MandiFilters from "@/components/MandiFilters";
+import MandiYoutubeLink from "@/components/MandiYoutubeLink";
+import { farmerApi, isFarmerLoggedIn } from "@/lib/farmerApi";
+import {
+  getLocalDate,
+  getAgmarknetRates,
+  fetchAgmarknetFilters,
+  getAgmarknetLocationIds,
+  filterMandiRates,
+  formatMandiPrice,
+  formatMandiDateDisplay,
+  parseMandiDate,
+} from "@/services/mandiApi";
 
-const ResponsiveContainer = nextDynamic(
-  () => import('recharts').then((mod) => mod.ResponsiveContainer),
-  { ssr: false }
-);
-
-const AreaChart = nextDynamic(
-  () => import('recharts').then((mod) => mod.AreaChart),
-  { ssr: false }
-);
-
-const Area = nextDynamic(
-  () => import('recharts').then((mod) => mod.Area),
-  { ssr: false }
-);
-
-const XAxis = nextDynamic(
-  () => import('recharts').then((mod) => mod.XAxis),
-  { ssr: false }
-);
-
-const YAxis = nextDynamic(
-  () => import('recharts').then((mod) => mod.YAxis),
-  { ssr: false }
-);
-
-const Tooltip = nextDynamic(
-  () => import('recharts').then((mod) => mod.Tooltip),
-  { ssr: false }
-);
-
-const CartesianGrid = nextDynamic(
-  () => import('recharts').then((mod) => mod.CartesianGrid),
-  { ssr: false }
-);
-
-/* =========================================================
-   CONSTANTS
-========================================================= */
-
-const PRESET_STATES = [
-  'Madhya Pradesh',
-  'Rajasthan',
-  'Gujarat',
-  'Uttar Pradesh',
-  'Maharashtra',
-  'Punjab',
-  'Haryana',
-];
-
-const POPULAR_CROPS = [
-  'लहसुन',
-  'गेहूं',
-  'सोयाबीन',
-  'प्याज',
-  'सरसों',
-  'धनिया',
-];
-
-const CROP_EMOJI = {
-  लहसुन: '🧄',
-  गेहूं: '🌾',
-  सोयाबीन: '🌱',
-  प्याज: '🧅',
-  सरसों: '🌼',
-  धनिया: '🌿',
-};
-
-/* =========================================================
-   HELPERS
-========================================================= */
-
-function safeNumber(value) {
-  const number = Number(value);
-
-  return Number.isFinite(number) ? number : 0;
+function normalizeKey(value) {
+  return String(value || "")
+    .replace(/([a-z])([A-Z])/g, "$1_$2")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
 }
 
-function formatPrice(value) {
-  return `₹${safeNumber(value).toLocaleString('hi-IN')}`;
-}
+function findArray(source, aliases) {
+  if (!source || typeof source !== "object") return [];
+  const wanted = new Set(aliases.map(normalizeKey));
 
-/*
-  API में date अलग-अलग format में आ सकती है:
-  2026-10-07
-  2026-10-07T10:30:00
-  07/10/2026
-  07-10-2026
-*/
-
-function parseDate(value) {
-  if (!value) return null;
-
-  if (value instanceof Date) {
-    return Number.isNaN(value.getTime()) ? null : value;
+  for (const [key, value] of Object.entries(source)) {
+    if (wanted.has(normalizeKey(key)) && Array.isArray(value)) return value;
   }
 
-  const stringValue = String(value).trim();
-
-  // YYYY-MM-DD / ISO
-  if (/^\d{4}-\d{2}-\d{2}/.test(stringValue)) {
-    const date = new Date(stringValue);
-
-    return Number.isNaN(date.getTime()) ? null : date;
+  for (const value of Object.values(source)) {
+    if (value && typeof value === "object") {
+      const found = findArray(value, aliases);
+      if (found.length) return found;
+    }
   }
-
-  // DD/MM/YYYY
-  const slashMatch = stringValue.match(
-    /^(\d{1,2})\/(\d{1,2})\/(\d{4})/
-  );
-
-  if (slashMatch) {
-    const [, day, month, year] = slashMatch;
-
-    const date = new Date(
-      Number(year),
-      Number(month) - 1,
-      Number(day)
-    );
-
-    return Number.isNaN(date.getTime()) ? null : date;
-  }
-
-  // DD-MM-YYYY
-  const dashMatch = stringValue.match(
-    /^(\d{1,2})-(\d{1,2})-(\d{4})/
-  );
-
-  if (dashMatch) {
-    const [, day, month, year] = dashMatch;
-
-    const date = new Date(
-      Number(year),
-      Number(month) - 1,
-      Number(day)
-    );
-
-    return Number.isNaN(date.getTime()) ? null : date;
-  }
-
-  const date = new Date(stringValue);
-
-  return Number.isNaN(date.getTime()) ? null : date;
+  return [];
 }
 
-function formatDisplayDate(value) {
-  const date = parseDate(value);
-
-  if (!date) {
-    return 'तिथि उपलब्ध नहीं';
+function firstValue(item, keys) {
+  for (const key of keys) {
+    if (item?.[key] !== undefined && item?.[key] !== null) return item[key];
   }
-
-  return date.toLocaleDateString('hi-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
+  return undefined;
 }
 
-function getRecordDate(item) {
-  return (
-    item?.arrivalDate ||
-    item?.date ||
-    item?.arrival_date ||
-    item?.createdAt ||
-    item?.updatedAt ||
-    null
-  );
+function normalizeOptions(items, key) {
+  return items
+    .map((item) => {
+      if (typeof item === "string" || typeof item === "number") {
+        return { label: String(item), value: String(item), raw: item };
+      }
+      if (!item || typeof item !== "object") return null;
+
+      const idKeys = {
+        state: ["state_id", "stateId", "id", "value", "state_code"],
+        district: ["district_id", "districtId", "id", "value", "district_code"],
+        market: ["mkt_id", "market_id", "marketId", "apmc_id", "market_code", "id", "value"],
+        commodity: ["cmdt_id", "commodity_id", "commodityId", "id", "value"],
+      };
+
+      const labelKeys = {
+        state: ["state_name", "stateName", "name", "label", "state"],
+        district: ["district_name", "districtName", "name", "label", "district"],
+        market: ["mkt_name", "market_name", "marketName", "apmc_name", "name", "label", "market"],
+        commodity: ["cmdt_name", "commodity_name", "commodityName", "name", "label", "commodity"],
+      };
+
+      const value = firstValue(item, idKeys[key] || ["id", "value"]);
+      const label = firstValue(item, labelKeys[key] || ["name", "label"]);
+
+      if (value == null || label == null) return null;
+      return { value: String(value), label: String(label), raw: item };
+    })
+    .filter(Boolean);
 }
-
-function getLatestRecord(records) {
-  if (!records?.length) return null;
-
-  return [...records].sort((a, b) => {
-    const dateA = parseDate(getRecordDate(a));
-    const dateB = parseDate(getRecordDate(b));
-
-    if (!dateA && !dateB) return 0;
-    if (!dateA) return 1;
-    if (!dateB) return -1;
-
-    return dateB.getTime() - dateA.getTime();
-  })[0];
-}
-
-function getTrend(current, previous) {
-  const currentPrice = safeNumber(current);
-  const previousPrice = safeNumber(previous);
-
-  if (!previousPrice) {
-    return {
-      percentage: 0,
-      direction: 'neutral',
-    };
-  }
-
-  const percentage =
-    ((currentPrice - previousPrice) / previousPrice) * 100;
-
-  return {
-    percentage: Number(percentage.toFixed(2)),
-    direction:
-      percentage > 0
-        ? 'up'
-        : percentage < 0
-        ? 'down'
-        : 'neutral',
-  };
-}
-
-/* =========================================================
-   PAGE
-========================================================= */
 
 export default function MandiBhavPage() {
-  /* =======================================================
-     LOCATION
-  ======================================================= */
+  const [options, setOptions] = useState({});
+  const [filters, setFilters] = useState({
+    state: "19", // Madhya Pradesh default
+    district: "318", // Neemuch default
+    market: "182", // Neemuch APMC default
+    commodity: "100001",
+  });
+  const [date, setDate] = useState(() => getLocalDate());
+  const [search, setSearch] = useState("");
+  const [rates, setRates] = useState([]);
+  const [selectedChartCrop, setSelectedChartCrop] = useState("Soyabean");
+  const [loadingFilters, setLoadingFilters] = useState(true);
+  const [loadingRates, setLoadingRates] = useState(false);
+  const [filterError, setFilterError] = useState("");
+  const [rateError, setRateError] = useState("");
+  const [hasSearched, setHasSearched] = useState(false);
 
-  const [selectedState, setSelectedState] =
-    useState('Madhya Pradesh');
-
-  const [customState, setCustomState] = useState('');
-
-  const [selectedDistrict, setSelectedDistrict] =
-    useState('Neemuch');
-
-  const [customDistrict, setCustomDistrict] = useState('');
-
-  const [selectedMandi, setSelectedMandi] =
-    useState('Neemuch');
-
-  const [customMandi, setCustomMandi] = useState('');
-
-  /* =======================================================
-     SEARCH
-  ======================================================= */
-
-  const [selectedCrop, setSelectedCrop] =
-    useState('सोयाबीन');
-
-  const [searchTerm, setSearchTerm] =
-    useState('');
-
-  /* =======================================================
-     DATA
-  ======================================================= */
-
-  const [mandiRates, setMandiRates] =
-    useState([]);
-
-  const [chartData, setChartData] =
-    useState([]);
-
-  const [loading, setLoading] =
-    useState(false);
-
-  const [error, setError] =
-    useState('');
-
-  const [lastFetchedAt, setLastFetchedAt] =
-    useState(null);
-
-  /* =======================================================
-     ACTIVE LOCATION
-  ======================================================= */
-
-  const activeState =
-    customState.trim() || selectedState;
-
-  const activeDistrict =
-    customDistrict.trim() || selectedDistrict;
-
-  const activeMandi =
-    customMandi.trim() || selectedMandi;
-
-  /* =======================================================
-     FETCH
-  ======================================================= */
-
-  const fetchRatesAndHistory = useCallback(
-    async () => {
-      setLoading(true);
-      setError('');
-
-      try {
-        const [ratesResult, historyResult] =
-          await Promise.all([
-            getDynamicMandiRates({
-              state: activeState,
-              district: activeDistrict,
-              mandi: activeMandi,
-              crop: selectedCrop,
-
-              /*
-                अगर आपकी mandiApi service support करती है
-                तो यह cache bypass करने में मदद करेगा।
-              */
-              forceRefresh: true,
-            }),
-
-            getMandiPriceHistory({
-              state: activeState,
-              district: activeDistrict,
-              mandi: activeMandi,
-              crop: selectedCrop,
-
-              forceRefresh: true,
-            }),
-          ]);
-
-        const rates = Array.isArray(ratesResult)
-          ? ratesResult
-          : [];
-
-        const history = Array.isArray(historyResult)
-          ? historyResult
-          : [];
-
-        /*
-          IMPORTANT:
-          Latest date पहले
-        */
-
-        const sortedRates = [...rates].sort(
-          (a, b) => {
-            const dateA = parseDate(
-              getRecordDate(a)
-            );
-
-            const dateB = parseDate(
-              getRecordDate(b)
-            );
-
-            if (!dateA && !dateB) return 0;
-            if (!dateA) return 1;
-            if (!dateB) return -1;
-
-            return (
-              dateB.getTime() -
-              dateA.getTime()
-            );
-          }
-        );
-
-        setMandiRates(sortedRates);
-
-        /*
-          Chart भी date ascending
-        */
-
-        const sortedHistory = [...history].sort(
-          (a, b) => {
-            const dateA = parseDate(
-              a.date ||
-                a.arrivalDate
-            );
-
-            const dateB = parseDate(
-              b.date ||
-                b.arrivalDate
-            );
-
-            if (!dateA || !dateB) return 0;
-
-            return (
-              dateA.getTime() -
-              dateB.getTime()
-            );
-          }
-        );
-
-        setChartData(sortedHistory);
-
-        setLastFetchedAt(new Date());
-
-        if (!sortedRates.length) {
-          setError(
-            'इस स्थान के लिए कोई मंडी भाव उपलब्ध नहीं मिला।'
-          );
-        }
-      } catch (err) {
-        console.error(
-          'Mandi API Error:',
-          err
-        );
-
-        setError(
-          'मंडी भाव लोड नहीं हो पाए। कृपया कुछ समय बाद फिर प्रयास करें।'
-        );
-
-        setMandiRates([]);
-        setChartData([]);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [
-      activeState,
-      activeDistrict,
-      activeMandi,
-      selectedCrop,
-    ]
-  );
-
+  // Load filter lists from Agmarknet API
   useEffect(() => {
-    fetchRatesAndHistory();
-  }, [fetchRatesAndHistory]);
+    let cancelled = false;
+    async function loadFilterOptions() {
+      setLoadingFilters(true);
+      try {
+        const source = await fetchAgmarknetFilters();
+        if (cancelled) return;
 
-  /* =======================================================
-     SEARCH FILTER
-  ======================================================= */
+        const nextOptions = {};
+        const configs = [
+          { key: "state", aliases: ["state_data", "states", "state_list"] },
+          { key: "district", aliases: ["district_data", "districts", "district_list"] },
+          { key: "market", aliases: ["market_data", "markets", "apmcs"] },
+          { key: "commodity", aliases: ["cmdt_data", "commodities", "commodity_data"] },
+        ];
+
+        for (const config of configs) {
+          const rawItems = findArray(source, config.aliases);
+          nextOptions[config.key] = normalizeOptions(rawItems, config.key);
+        }
+
+        setOptions(nextOptions);
+
+        if (isFarmerLoggedIn()) {
+          try {
+            const profileResult = await farmerApi.getProfile();
+            const profile = profileResult.data?.user;
+            if (profile?.state && profile?.district) {
+              const location = await getAgmarknetLocationIds(
+                profile.state,
+                profile.district,
+                source
+              );
+              if (cancelled) return;
+              setFilters((previous) => ({
+                ...previous,
+                state: location.stateId,
+                district: location.districtId,
+                market: "",
+              }));
+            }
+          } catch (profileError) {
+            console.warn("Could not load farmer mandi location:", profileError);
+          }
+        }
+      } catch (error) {
+        if (!cancelled) setFilterError(error.message);
+      } finally {
+        if (!cancelled) setLoadingFilters(false);
+      }
+    }
+    loadFilterOptions();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const changeFilter = useCallback((key, value) => {
+    setFilters((prev) => {
+      const next = { ...prev, [key]: value };
+      if (key === "state") {
+        next.district = "";
+        next.market = "";
+      } else if (key === "district") {
+        next.market = "";
+      }
+      return next;
+    });
+  }, []);
+
+  // Filter cascades based on state / district selections
+  const visibleOptions = useMemo(() => {
+    const next = {
+      state: options.state || [],
+      district: options.district || [],
+      market: options.market || [],
+    };
+
+    if (filters.state) {
+      next.district = next.district.filter(
+        (opt) => String(opt.raw?.state_id || opt.raw?.stateId) === String(filters.state)
+      );
+    }
+    if (filters.district) {
+      next.market = next.market.filter(
+        (opt) =>
+          String(opt.raw?.district_id || opt.raw?.districtId) === String(filters.district)
+      );
+    }
+    return next;
+  }, [options, filters]);
+
+  // Load rates function with 250 limit
+  const loadRates = useCallback(async () => {
+    setLoadingRates(true);
+    setRateError("");
+    setHasSearched(true);
+
+    try {
+      const result = await getAgmarknetRates({
+        date,
+        state: filters.state || 19,
+        district: filters.district || 318,
+        market: filters.market || "",
+        commodity: filters.commodity || "",
+        limit: 250,
+      });
+
+      const rows = result.data || [];
+      setRates(rows);
+
+      if (!rows.length) {
+        setRateError("चयनित फ़िल्टर के लिए इस दिनांक पर कोई डेटा उपलब्ध नहीं है। कृपया दिनांक या मंडी बदलकर देखें।");
+      }
+    } catch (error) {
+      setRates([]);
+      setRateError(error.message || "मंडी भाव लोड नहीं हो सके।");
+    } finally {
+      setLoadingRates(false);
+    }
+  }, [date, filters]);
+
+  // Initial fetch on mount
+  useEffect(() => {
+    loadRates();
+  }, [loadRates]);
 
   const filteredRates = useMemo(() => {
-    const query =
-      searchTerm.trim().toLowerCase();
+    return filterMandiRates(rates, search, {});
+  }, [rates, search]);
 
-    const mappedEnglish =
-      CROP_MAP?.[searchTerm.trim()]
-        ?.toLowerCase() || '';
-
-    if (!query) {
-      return mandiRates;
-    }
-
-    return mandiRates.filter((item) => {
-      const cropHindi =
-        String(item.crop || '').toLowerCase();
-
-      const cropEnglish =
-        String(
-          item.cropEnglish || ''
-        ).toLowerCase();
-
-      return (
-        cropHindi.includes(query) ||
-        cropEnglish.includes(query) ||
-        (
-          mappedEnglish &&
-          cropEnglish.includes(mappedEnglish)
-        )
-      );
-    });
-  }, [
-    mandiRates,
-    searchTerm,
-  ]);
-
-  /* =======================================================
-     LATEST RECORD
-  ======================================================= */
-
-  const latestRecord = useMemo(() => {
-    return getLatestRecord(
-      filteredRates
-    );
-  }, [filteredRates]);
-
-  /* =======================================================
-     HIGHEST PRICE
-  ======================================================= */
-
-  const highestPriceCrop = useMemo(() => {
-    if (!filteredRates.length) {
-      return null;
-    }
-
-    return [...filteredRates].sort(
-      (a, b) =>
-        safeNumber(b.modalPrice) -
-        safeNumber(a.modalPrice)
-    )[0];
-  }, [filteredRates]);
-
-  /* =======================================================
-     AVERAGE MODAL PRICE
-  ======================================================= */
-
-  const averageModalPrice = useMemo(() => {
-    if (!filteredRates.length) {
-      return 0;
-    }
-
-    const total =
-      filteredRates.reduce(
-        (sum, item) =>
-          sum +
-          safeNumber(item.modalPrice),
-        0
-      );
-
-    return Math.round(
-      total / filteredRates.length
-    );
-  }, [filteredRates]);
-
-  /* =======================================================
-     LATEST AVAILABLE DATE
-  ======================================================= */
-
+  // Find latest available data date across records
   const latestAvailableDate = useMemo(() => {
-    if (!latestRecord) {
-      return null;
-    }
-
-    return getRecordDate(
-      latestRecord
-    );
-  }, [latestRecord]);
-
-  /* =======================================================
-     EXPORT
-  ======================================================= */
-
-  const exportCSV = () => {
-    if (!filteredRates.length) {
-      return;
-    }
-
-    const headers =
-      'Crop,State,District,Mandi,Min Price,Max Price,Modal Price,Available Date\n';
-
-    const rows =
-      filteredRates
-        .map((item) => {
-          return [
-            item.crop,
-            item.state,
-            item.district,
-            item.mandi,
-            safeNumber(
-              item.minPrice
-            ),
-            safeNumber(
-              item.maxPrice
-            ),
-            safeNumber(
-              item.modalPrice
-            ),
-            getRecordDate(item) || '',
-          ]
-            .map(
-              (value) =>
-                `"${String(value).replace(
-                  /"/g,
-                  '""'
-                )}"`
-            )
-            .join(',');
-        })
-        .join('\n');
-
-    const blob = new Blob(
-      [headers + rows],
-      {
-        type: 'text/csv;charset=utf-8;',
+    if (!rates.length) return null;
+    let latest = null;
+    for (const r of rates) {
+      const parsed = parseMandiDate(r.date);
+      if (parsed && (!latest || parsed > latest)) {
+        latest = parsed;
       }
-    );
+    }
+    return latest;
+  }, [rates]);
 
-    const url =
-      window.URL.createObjectURL(
-        blob
-      );
+  const latestAvailableDateText = latestAvailableDate
+    ? latestAvailableDate.toLocaleDateString("hi-IN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })
+    : null;
 
-    const anchor =
-      document.createElement('a');
+  // Selected names for banner context
+  const selectedStateName =
+    options.state?.find((s) => String(s.value) === String(filters.state))?.label ||
+    "मध्य प्रदेश";
+  const selectedDistrictName =
+    options.district?.find((d) => String(d.value) === String(filters.district))?.label ||
+    "नीमच";
+  const selectedMarketName =
+    options.market?.find((m) => String(m.value) === String(filters.market))?.label ||
+    "नीमच APMC";
 
-    anchor.href = url;
+  // List of unique crop names for chart selection
+  const availableCropsForChart = useMemo(() => {
+    const list = [...new Set(rates.map((r) => r.commodity).filter(Boolean))];
+    // Put Soyabean first if available
+    const soy = list.find((c) => c.toLowerCase().includes("soya"));
+    if (soy) {
+      return [soy, ...list.filter((c) => c !== soy)];
+    }
+    return list;
+  }, [rates]);
 
-    anchor.download =
-      `${activeMandi || 'Mandi'}_Latest_Rates.csv`;
+  // If selected crop is not in list, auto fallback to Soyabean or first
+  const activeChartCrop = useMemo(() => {
+    if (!availableCropsForChart.length) return "Soyabean";
+    if (availableCropsForChart.includes(selectedChartCrop)) {
+      return selectedChartCrop;
+    }
+    const soy = availableCropsForChart.find((c) => c.toLowerCase().includes("soya"));
+    return soy || availableCropsForChart[0];
+  }, [availableCropsForChart, selectedChartCrop]);
 
-    document.body.appendChild(anchor);
+  // Current crop record for chart
+  const activeCropData = useMemo(() => {
+    return rates.find((r) => r.commodity === activeChartCrop) || null;
+  }, [rates, activeChartCrop]);
 
-    anchor.click();
+  // Chart data: 3-day price comparison + MSP
+  const comparisonChartData = useMemo(() => {
+    if (!activeCropData) return [];
 
-    document.body.removeChild(anchor);
+    const result = [];
+    if (activeCropData.twoDaysAgoPrice) {
+      result.push({
+        label: "2 दिन पूर्व",
+        price: activeCropData.twoDaysAgoPrice,
+        msp: activeCropData.mspPrice || 0,
+        arrival: activeCropData.twoDaysAgoArrival || 0,
+      });
+    }
+    if (activeCropData.yesterdayPrice) {
+      result.push({
+        label: "1 दिन पूर्व",
+        price: activeCropData.yesterdayPrice,
+        msp: activeCropData.mspPrice || 0,
+        arrival: activeCropData.yesterdayArrival || 0,
+      });
+    }
+    if (activeCropData.modalPrice) {
+      result.push({
+        label: "वर्तमान भाव (As-on)",
+        price: activeCropData.modalPrice,
+        msp: activeCropData.mspPrice || 0,
+        arrival: activeCropData.arrival || 0,
+      });
+    }
 
-    window.URL.revokeObjectURL(url);
-  };
-
-  /* =======================================================
-     RESET
-  ======================================================= */
-
-  const handleResetFilters = () => {
-    setSelectedState(
-      'Madhya Pradesh'
-    );
-
-    setCustomState('');
-
-    setSelectedDistrict(
-      'Neemuch'
-    );
-
-    setCustomDistrict('');
-
-    setSelectedMandi(
-      'Neemuch'
-    );
-
-    setCustomMandi('');
-
-    setSelectedCrop(
-      'सोयाबीन'
-    );
-
-    setSearchTerm('');
-  };
-
-  /* =======================================================
-     QUICK CROP
-  ======================================================= */
-
-  const handleCropSelect = (crop) => {
-    setSelectedCrop(crop);
-    setSearchTerm(crop);
-  };
-
-  /* =======================================================
-     RENDER
-  ======================================================= */
+    return result;
+  }, [activeCropData]);
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
-
-        {/* =================================================
-            HERO
-        ================================================= */}
-
-        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-950 via-emerald-800 to-teal-700 text-white shadow-xl">
-
-          <div className="absolute -top-20 -right-20 w-72 h-72 bg-emerald-400/20 rounded-full blur-3xl" />
-
-          <div className="absolute -bottom-28 -left-20 w-80 h-80 bg-teal-300/10 rounded-full blur-3xl" />
-
-          <div className="relative z-10 p-6 sm:p-8 lg:p-10">
-
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
-
-              <div className="max-w-3xl">
-
-                <div className="inline-flex items-center gap-2 bg-amber-400 text-slate-950 px-3.5 py-1.5 rounded-full text-xs font-black mb-4">
-                  <TrendingUp className="w-4 h-4" />
-                  कृषि मित्र • मंडी भाव
-                </div>
-
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black leading-tight">
-                  {activeMandi
-                    ? `${activeMandi} मंडी भाव`
-                    : 'आज के मंडी भाव'}
-                </h1>
-
-                <p className="mt-3 text-emerald-100 text-sm sm:text-base">
-                  {activeDistrict
-                    ? `${activeDistrict}, `
-                    : ''}
-                  {activeState || 'सभी राज्य'}
-                </p>
-
-                <p className="mt-4 max-w-2xl text-emerald-100/90 text-xs sm:text-sm leading-6">
-                  किसान भाइयों के लिए उपलब्ध
-                  नवीनतम मंडी भाव। राज्य, जिला,
-                  मंडी और फसल के अनुसार भाव खोजें।
-                </p>
-
-              </div>
-
-              <div className="w-full lg:w-auto">
-
-                <button
-                  onClick={
-                    fetchRatesAndHistory
-                  }
-                  disabled={loading}
-                  className="w-full lg:w-auto flex items-center justify-center gap-2 bg-white text-emerald-900 hover:bg-emerald-50 px-5 py-3 rounded-2xl text-sm font-black shadow-lg transition disabled:opacity-60"
-                >
-                  <RefreshCw
-                    className={`w-4 h-4 ${
-                      loading
-                        ? 'animate-spin'
-                        : ''
-                    }`}
-                  />
-
-                  {loading
-                    ? 'भाव अपडेट हो रहे हैं...'
-                    : 'नवीनतम भाव देखें'}
-                </button>
-
-              </div>
-
+    <main className="mx-auto w-full max-w-7xl space-y-6 px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
+      {/* ================= HEADER WITH LATEST DATE BANNER ================= */}
+      <header className="rounded-3xl bg-gradient-to-br from-emerald-800 via-emerald-700 to-teal-800 p-5 text-white shadow-sm sm:p-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-3 py-1 text-[11px] font-bold tracking-wide text-emerald-200 border border-emerald-400/30">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                AGMARKNET भारत सरकार आधिकारिक डेटा
+              </span>
             </div>
-
-            {/* Latest information */}
-
-            <div className="mt-7 flex flex-wrap gap-3">
-
-              <div className="inline-flex items-center gap-2 bg-white/10 border border-white/10 px-3 py-2 rounded-xl text-xs">
-                <MapPin className="w-4 h-4 text-amber-300" />
-
-                {activeMandi || 'सभी मंडी'}
-              </div>
-
-              {latestAvailableDate && (
-                <div className="inline-flex items-center gap-2 bg-white/10 border border-white/10 px-3 py-2 rounded-xl text-xs">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-300" />
-
-                  नवीनतम उपलब्ध:
-                  {' '}
-                  {formatDisplayDate(
-                    latestAvailableDate
-                  )}
-                </div>
-              )}
-
-              {lastFetchedAt && (
-                <div className="inline-flex items-center gap-2 bg-white/10 border border-white/10 px-3 py-2 rounded-xl text-xs">
-                  <RefreshCw className="w-4 h-4 text-sky-300" />
-
-                  अभी डेटा चेक किया गया
-                </div>
-              )}
-
-            </div>
-
-          </div>
-        </section>
-
-        {/* =================================================
-            ERROR
-        ================================================= */}
-
-        {error && !loading && (
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-
-            <div className="flex items-start gap-3">
-
-              <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
-
-              <div>
-                <p className="font-bold text-amber-900 text-sm">
-                  डेटा उपलब्ध नहीं
-                </p>
-
-                <p className="text-xs text-amber-800 mt-1">
-                  {error}
-                </p>
-              </div>
-
-            </div>
-
-            <button
-              onClick={
-                fetchRatesAndHistory
-              }
-              className="bg-amber-500 hover:bg-amber-600 text-slate-950 px-4 py-2 rounded-xl text-xs font-black"
-            >
-              दोबारा प्रयास करें
-            </button>
-
-          </div>
-        )}
-
-        {/* =================================================
-            FILTERS
-        ================================================= */}
-
-        <section className="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden">
-
-          <div className="p-5 sm:p-6 border-b border-slate-100">
-
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-
-              <div className="flex items-center gap-2">
-
-                <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
-                  <Filter className="w-5 h-5 text-emerald-700" />
-                </div>
-
-                <div>
-                  <h2 className="font-black text-slate-900">
-                    मंडी खोजें
-                  </h2>
-
-                  <p className="text-xs text-slate-500">
-                    राज्य, जिला, मंडी और फसल चुनें
-                  </p>
-                </div>
-
-              </div>
-
-              <button
-                onClick={
-                  handleResetFilters
-                }
-                className="text-xs font-bold text-red-600 hover:underline flex items-center gap-1"
-              >
-                <X className="w-3.5 h-3.5" />
-                फ़िल्टर रीसेट
-              </button>
-
-            </div>
-
+            <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl lg:text-4xl">
+              दैनिक मंडी भाव (Mandi Rates)
+            </h1>
+            <p className="mt-1 text-xs sm:text-sm text-emerald-100/90 font-medium max-w-2xl">
+              {selectedDistrictName}, {selectedStateName} • {selectedMarketName} — फसलों के नवीनतम न्यूनतम, अधिकतम एवं मॉडल भाव
+            </p>
           </div>
 
-          <div className="p-5 sm:p-6 space-y-5">
-
-            {/* Location */}
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-              {/* State */}
-
-              <div>
-                <label className="block text-xs font-black text-slate-700 mb-2">
-                  राज्य
-                </label>
-
-                <select
-                  value={selectedState}
-                  onChange={(e) => {
-                    setSelectedState(
-                      e.target.value
-                    );
-
-                    setCustomState('');
-                  }}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold outline-none focus:ring-2 focus:ring-emerald-500"
-                >
-                  {PRESET_STATES.map(
-                    (state) => (
-                      <option
-                        key={state}
-                        value={state}
-                      >
-                        {state}
-                      </option>
-                    )
-                  )}
-                </select>
-
-                <input
-                  value={customState}
-                  onChange={(e) =>
-                    setCustomState(
-                      e.target.value
-                    )
-                  }
-                  placeholder="या राज्य लिखें..."
-                  className="mt-2 w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-
-              {/* District */}
-
-              <div>
-                <label className="block text-xs font-black text-slate-700 mb-2">
-                  जिला
-                </label>
-
-                <input
-                  value={
-                    customDistrict ||
-                    selectedDistrict
-                  }
-                  onChange={(e) => {
-                    setCustomDistrict(
-                      e.target.value
-                    );
-
-                    setSelectedDistrict('');
-                  }}
-                  placeholder="जैसे Neemuch, Mandsaur..."
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-
-              {/* Mandi */}
-
-              <div>
-                <label className="block text-xs font-black text-slate-700 mb-2">
-                  मंडी
-                </label>
-
-                <input
-                  value={
-                    customMandi ||
-                    selectedMandi
-                  }
-                  onChange={(e) => {
-                    setCustomMandi(
-                      e.target.value
-                    );
-
-                    setSelectedMandi('');
-                  }}
-                  placeholder="जैसे Neemuch, Mandsaur..."
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-
+          {/* LATEST AVAILABLE DATA DATE TOP BADGE */}
+          <div className="flex items-center gap-3 rounded-2xl bg-white/10 p-3 sm:p-4 backdrop-blur border border-white/20 shrink-0 self-start sm:self-auto">
+            <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-white/20 text-white shrink-0">
+              <Calendar className="h-5 w-5 sm:h-6 sm:w-6" />
             </div>
-
-            {/* Crop chips */}
-
             <div>
+              <p className="text-[10px] sm:text-xs font-semibold text-emerald-200 uppercase tracking-wide">
+                नवीनतम उपलब्ध डेटा दिनांक
+              </p>
+              <p className="text-sm sm:text-lg font-black text-white">
+                {latestAvailableDateText ? latestAvailableDateText : formatMandiDateDisplay(date)}
+              </p>
+              <span className="text-[9px] text-emerald-200/80">
+                (As-On Reported Date)
+              </span>
+            </div>
+          </div>
+        </div>
+      </header>
 
-              <div className="flex items-center justify-between mb-2">
+      <MandiYoutubeLink />
 
-                <label className="text-xs font-black text-slate-700">
-                  लोकप्रिय फसलें
-                </label>
+      {/* ================= FILTER MODULE ================= */}
+      <MandiFilters
+        filters={filters}
+        options={options}
+        visibleOptions={visibleOptions}
+        date={date}
+        onChangeFilter={changeFilter}
+        onChangeDate={setDate}
+        onSearch={loadRates}
+        onReset={() => {
+          setFilters({
+            state: "19",
+            district: "318",
+            market: "182",
+            commodity: "100001",
+          });
+          setDate(getLocalDate());
+        }}
+        loading={loadingRates || loadingFilters}
+      />
 
-                <span className="text-[10px] text-slate-400">
-                  फसल चुनकर भाव देखें
-                </span>
-
+      {/* ================= QUICK STATS CARDS ================= */}
+      {!loadingRates && filteredRates.length > 0 && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+          <div className="rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-4 shadow-sm">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 shrink-0">
+                <Wheat className="h-4 w-4" />
               </div>
+              <p className="text-[11px] font-bold text-slate-500">कुल फसलें</p>
+            </div>
+            <p className="mt-2 text-xl sm:text-2xl font-black text-slate-900">
+              {filteredRates.length}
+            </p>
+          </div>
 
-              <div className="flex flex-wrap gap-2">
-
-                {POPULAR_CROPS.map(
-                  (crop) => {
-                    const active =
-                      selectedCrop === crop;
-
-                    return (
-                      <button
-                        key={crop}
-                        onClick={() =>
-                          handleCropSelect(
-                            crop
-                          )
-                        }
-                        className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black border transition ${
-                          active
-                            ? 'bg-emerald-700 text-white border-emerald-700 shadow-md'
-                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-emerald-50 hover:border-emerald-200'
-                        }`}
-                      >
-                        <span>
-                          {CROP_EMOJI[crop] ||
-                            '🌱'}
-                        </span>
-
-                        {crop}
-                      </button>
-                    );
-                  }
-                )}
-
+          <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3.5 sm:p-4 shadow-sm">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-600 text-white shrink-0">
+                <Calendar className="h-4 w-4" />
               </div>
+              <p className="text-[11px] font-bold text-emerald-700">डेटा दिनांक</p>
+            </div>
+            <p className="mt-2 text-xs sm:text-base font-black text-emerald-900 truncate">
+              {latestAvailableDateText || formatMandiDateDisplay(date)}
+            </p>
+          </div>
 
+          <div className="rounded-2xl border border-amber-100 bg-amber-50/70 p-3.5 sm:p-4 shadow-sm">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-500 text-white shrink-0">
+                <TrendingUp className="h-4 w-4" />
+              </div>
+              <p className="text-[11px] font-bold text-amber-800">उच्चतम भाव</p>
+            </div>
+            <p className="mt-2 text-base sm:text-xl font-black text-amber-900 truncate">
+              {(() => {
+                const max = Math.max(...filteredRates.map((r) => r.modalPrice || 0));
+                return max > 0 ? formatMandiPrice(max) : "—";
+              })()}
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-blue-100 bg-blue-50/70 p-3.5 sm:p-4 shadow-sm">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-white shrink-0">
+                <MapPin className="h-4 w-4" />
+              </div>
+              <p className="text-[11px] font-bold text-blue-800">सक्रिय मंडी</p>
+            </div>
+            <p className="mt-2 text-xs sm:text-sm font-black text-blue-900 truncate">
+              {selectedMarketName || selectedDistrictName}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ================= INTERACTIVE CROP COMPARISON CHART (Default Soybean) ================= */}
+      {!loadingRates && rates.length > 0 && (
+        <section className="rounded-3xl border border-slate-200/90 bg-white p-4 sm:p-6 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 shrink-0">
+                <BarChart3 className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="text-base sm:text-lg font-black text-slate-900">
+                  फसल भाव तुलना चार्ट (3-Day Price Trend & MSP)
+                </h2>
+                <p className="text-[11px] text-slate-500">
+                  डिफ़ॉल्ट सोयाबीन भाव • फसल बदलकर अन्य फसलों का तुलनात्मक चार्ट देखें
+                </p>
+              </div>
             </div>
 
-            {/* Search */}
+            {/* Crop Selector Pills */}
+           
+{/* Searchable crop selector */}
+<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+  <label
+    htmlFor="chart-crop-search"
+    className="text-sm font-semibold text-slate-700"
+  >
+    फसल चुनें
+  </label>
 
-            <div className="flex flex-col sm:flex-row gap-3">
+  <input
+    id="chart-crop-search"
+    type="search"
+    list="chart-crop-options"
+    value={selectedChartCrop}
+    onChange={(event) => {
+      const value = event.target.value;
+      setSelectedChartCrop(value);
+    }}
+    placeholder="सोयाबीन, गेहूँ, लहसुन खोजें..."
+    className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 sm:max-w-sm"
+  />
 
-              <div className="relative flex-1">
+  <datalist id="chart-crop-options">
+    {availableCropsForChart.map((crop) => (
+      <option key={crop} value={crop} />
+    ))}
+  </datalist>
+</div>
 
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-
-                <input
-                  value={searchTerm}
-                  onChange={(e) =>
-                    setSearchTerm(
-                      e.target.value
-                    )
-                  }
-                  placeholder="फसल खोजें — लहसुन, गेहूं, Soyabean..."
-                  className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-
-                {searchTerm && (
-                  <button
-                    onClick={() =>
-                      setSearchTerm('')
-                    }
-                    className="absolute right-3 top-1/2 -translate-y-1/2"
-                  >
-                    <X className="w-4 h-4 text-slate-400" />
-                  </button>
-                )}
-
-              </div>
-
-              <button
-                onClick={
-                  fetchRatesAndHistory
-                }
-                disabled={loading}
-                className="flex items-center justify-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white px-6 py-3 rounded-xl text-sm font-black transition disabled:opacity-60"
-              >
-                <RefreshCw
-                  className={`w-4 h-4 ${
-                    loading
-                      ? 'animate-spin'
-                      : ''
-                  }`}
-                />
-
-                भाव अपडेट करें
-              </button>
-
-            </div>
+<p className="mt-2 text-xs text-slate-500">
+  उपलब्ध फसल: {availableCropsForChart.length}
+</p>
 
           </div>
 
-        </section>
-
-        {/* =================================================
-            SUMMARY CARDS
-        ================================================= */}
-
-        {filteredRates.length > 0 && (
-          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-
-            {/* Latest */}
-
-            <div className="bg-white border border-emerald-100 rounded-2xl p-5 shadow-sm">
-
-              <div className="flex items-center justify-between">
-
-                <div>
-                  <p className="text-xs font-bold text-slate-500">
-                    नवीनतम उपलब्ध रिकॉर्ड
-                  </p>
-
-                  <p className="text-lg font-black text-slate-900 mt-1">
-                    {latestAvailableDate
-                      ? formatDisplayDate(
-                          latestAvailableDate
-                        )
-                      : '—'}
-                  </p>
-                </div>
-
-                <div className="w-11 h-11 rounded-xl bg-emerald-100 flex items-center justify-center">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-700" />
-                </div>
-
+          {/* Active Crop Summary Bar */}
+          {activeCropData && (
+            <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2.5 rounded-2xl bg-emerald-50/60 p-3.5 border border-emerald-100 text-center">
+              <div>
+                <p className="text-[10px] font-bold text-emerald-800 uppercase">चयनित फसल</p>
+                <p className="text-sm font-black text-emerald-950 mt-0.5">{activeCropData.commodity}</p>
               </div>
-
-            </div>
-
-            {/* Highest */}
-
-            <div className="bg-white border border-amber-100 rounded-2xl p-5 shadow-sm">
-
-              <div className="flex items-center justify-between">
-
-                <div>
-
-                  <p className="text-xs font-bold text-slate-500">
-                    सबसे अधिक मॉडल भाव
-                  </p>
-
-                  <p className="text-lg font-black text-slate-900 mt-1">
-                    {highestPriceCrop?.crop ||
-                      '—'}
-                  </p>
-
-                  <p className="text-sm font-black text-amber-700 mt-1">
-                    {formatPrice(
-                      highestPriceCrop?.modalPrice
-                    )}
-                  </p>
-
-                </div>
-
-                <div className="w-11 h-11 rounded-xl bg-amber-100 flex items-center justify-center">
-                  <IndianRupee className="w-5 h-5 text-amber-700" />
-                </div>
-
+              <div>
+                <p className="text-[10px] font-bold text-emerald-800 uppercase">वर्तमान मॉडल भाव</p>
+                <p className="text-sm font-black text-emerald-800 mt-0.5">{formatMandiPrice(activeCropData.modalPrice)}</p>
               </div>
-
-            </div>
-
-            {/* Records */}
-
-            <div className="bg-white border border-sky-100 rounded-2xl p-5 shadow-sm">
-
-              <div className="flex items-center justify-between">
-
-                <div>
-
-                  <p className="text-xs font-bold text-slate-500">
-                    कुल रिकॉर्ड
-                  </p>
-
-                  <p className="text-2xl font-black text-slate-900 mt-1">
-                    {filteredRates.length}
-                  </p>
-
-                  <p className="text-xs text-slate-500 mt-1">
-                    उपलब्ध फसलें
-                  </p>
-
-                </div>
-
-                <div className="w-11 h-11 rounded-xl bg-sky-100 flex items-center justify-center">
-                  <BarChart3 className="w-5 h-5 text-sky-700" />
-                </div>
-
+              <div>
+                <p className="text-[10px] font-bold text-slate-600 uppercase">MSP समर्थन मूल्य</p>
+                <p className="text-sm font-black text-slate-800 mt-0.5">{formatMandiPrice(activeCropData.mspPrice)}</p>
               </div>
-
-            </div>
-
-            {/* Average */}
-
-            <div className="bg-white border border-violet-100 rounded-2xl p-5 shadow-sm">
-
-              <div className="flex items-center justify-between">
-
-                <div>
-
-                  <p className="text-xs font-bold text-slate-500">
-                    औसत मॉडल भाव
-                  </p>
-
-                  <p className="text-2xl font-black text-slate-900 mt-1">
-                    {formatPrice(
-                      averageModalPrice
-                    )}
-                  </p>
-
-                  <p className="text-xs text-slate-500 mt-1">
-                    उपलब्ध रिकॉर्ड का औसत
-                  </p>
-
-                </div>
-
-                <div className="w-11 h-11 rounded-xl bg-violet-100 flex items-center justify-center">
-                  <IndianRupee className="w-5 h-5 text-violet-700" />
-                </div>
-
-              </div>
-
-            </div>
-
-          </section>
-        )}
-
-        {/* =================================================
-            SELECTED CROP PRICE
-        ================================================= */}
-
-        {latestRecord && (
-          <section className="bg-gradient-to-r from-emerald-700 to-teal-700 text-white rounded-3xl p-5 sm:p-7 shadow-lg">
-
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-
-              <div className="flex items-start gap-4">
-
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-4xl">
-                  {CROP_EMOJI[
-                    latestRecord.crop
-                  ] || '🌾'}
-                </div>
-
-                <div>
-
-                  <p className="text-emerald-100 text-xs font-bold">
-                    नवीनतम उपलब्ध भाव
-                  </p>
-
-                  <h2 className="text-2xl sm:text-3xl font-black mt-1">
-                    {latestRecord.crop}
-                  </h2>
-
-                  <p className="text-emerald-100 text-xs mt-1">
-                    {latestRecord.mandi ||
-                      activeMandi ||
-                      'मंडी'}
-                    {' • '}
-                    {latestRecord.district ||
-                      activeDistrict}
-                  </p>
-
-                </div>
-
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-
-                <div className="bg-white/10 rounded-2xl p-4 min-w-[95px]">
-
-                  <p className="text-[10px] text-emerald-100">
-                    न्यूनतम
-                  </p>
-
-                  <p className="font-black text-lg mt-1">
-                    {formatPrice(
-                      latestRecord.minPrice
-                    )}
-                  </p>
-
-                </div>
-
-                <div className="bg-white/10 rounded-2xl p-4 min-w-[95px]">
-
-                  <p className="text-[10px] text-emerald-100">
-                    अधिकतम
-                  </p>
-
-                  <p className="font-black text-lg mt-1">
-                    {formatPrice(
-                      latestRecord.maxPrice
-                    )}
-                  </p>
-
-                </div>
-
-                <div className="bg-amber-400 text-slate-950 rounded-2xl p-4 min-w-[95px]">
-
-                  <p className="text-[10px] font-bold">
-                    मॉडल भाव
-                  </p>
-
-                  <p className="font-black text-lg mt-1">
-                    {formatPrice(
-                      latestRecord.modalPrice
-                    )}
-                  </p>
-
-                </div>
-
-              </div>
-
-            </div>
-
-            {latestAvailableDate && (
-              <div className="mt-5 pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-3">
-
-                <p className="text-xs text-emerald-100">
-                  उपलब्ध डेटा की तारीख:
-                  {' '}
-                  <strong className="text-white">
-                    {formatDisplayDate(
-                      latestAvailableDate
-                    )}
-                  </strong>
+              <div>
+                <p className="text-[10px] font-bold text-slate-600 uppercase">ताज़ा आवक</p>
+                <p className="text-sm font-black text-slate-800 mt-0.5">
+                  {activeCropData.arrival != null ? `${activeCropData.arrival} MT` : "—"}
                 </p>
+              </div>
+            </div>
+          )}
 
-                <span className="inline-flex items-center gap-1.5 text-xs font-bold bg-white/10 px-3 py-1.5 rounded-full">
-                  <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
-                  उपलब्ध नवीनतम रिकॉर्ड
-                </span>
-
+          {/* Recharts Bar Comparison Chart */}
+          <div className="mt-5 h-64 sm:h-72 w-full">
+            {comparisonChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={comparisonChartData}
+                  margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fontSize: 11, fontWeight: 600, fill: "#475569" }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 10, fill: "#64748b" }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(val) => `₹${val}`}
+                  />
+                  <Tooltip
+                    formatter={(val, name) => [
+                      `₹${Number(val).toLocaleString("en-IN")}`,
+                      name === "price" ? "मंडी मॉडल भाव" : "MSP मूल्य",
+                    ]}
+                    contentStyle={{
+                      backgroundColor: "#ffffff",
+                      borderRadius: "12px",
+                      border: "1px solid #cbd5e1",
+                      boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                      fontSize: "12px",
+                      fontWeight: "bold",
+                    }}
+                  />
+                  <Legend
+                    verticalAlign="top"
+                    align="right"
+                    wrapperStyle={{ paddingBottom: "10px", fontSize: "11px", fontWeight: "bold" }}
+                  />
+                  <Bar
+                    dataKey="price"
+                    name="मंडी मॉडल भाव (₹/क्विंटल)"
+                    fill="#059669"
+                    radius={[8, 8, 0, 0]}
+                    barSize={40}
+                  />
+                  <Bar
+                    dataKey="msp"
+                    name="MSP समर्थन भाव (₹/क्विंटल)"
+                    fill="#f59e0b"
+                    radius={[8, 8, 0, 0]}
+                    barSize={40}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-full items-center justify-center text-xs text-slate-400">
+                इस फसल के लिए तुलनात्मक ऐतिहासिक डेटा उपलब्ध नहीं है।
               </div>
             )}
+          </div>
+        </section>
+      )}
 
-          </section>
+      {/* ================= RESULTS SECTION ================= */}
+      <section className="w-full min-w-0 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-4">
+          <div>
+            <h2 className="text-base sm:text-lg font-black text-slate-900">
+              मंडी भाव परिणाम ({filteredRates.length})
+            </h2>
+            <p className="text-[11px] text-slate-500">
+              {latestAvailableDateText && (
+                <span className="font-bold text-emerald-700">
+                  नवीनतम उपलब्ध मंडी रिकॉर्ड: {latestAvailableDateText} •{" "}
+                </span>
+              )}
+              भाव प्रति क्विंटल में हैं
+            </p>
+          </div>
+
+          {/* Quick Search */}
+          <div className="relative w-full sm:w-72">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="फसल खोजें (जैसे: सोयाबीन, गेहूं)..."
+              className="w-full rounded-xl border border-slate-300 bg-white pl-9 pr-3 py-2 text-xs font-semibold text-slate-800 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 shadow-2xs"
+            />
+          </div>
+        </div>
+
+        {rateError && (
+          <div className="mt-4 flex items-start gap-2.5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs font-semibold text-amber-900">
+            <Info className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <p>{rateError}</p>
+              <button
+                type="button"
+                onClick={loadRates}
+                className="mt-2 inline-flex items-center gap-1 rounded-lg bg-amber-200/80 px-2.5 py-1 text-[11px] font-bold text-amber-900 hover:bg-amber-300 transition"
+              >
+                <RefreshCw className="h-3 w-3" /> दोबारा प्रयास करें
+              </button>
+            </div>
+          </div>
         )}
 
-        {/* =================================================
-            CHART
-        ================================================= */}
-
-        <section className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-sm">
-
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-
-            <div>
-
-              <div className="flex items-center gap-2">
-
-                <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center">
-                  <ChartIcon className="w-4 h-4 text-emerald-700" />
-                </div>
-
-                <div>
-
-                  <h2 className="font-black text-slate-900">
-                    भाव का रुझान
-                  </h2>
-
-                  <p className="text-xs text-slate-500">
-                    {selectedCrop}
-                    {' • '}
-                    {activeMandi}
-                  </p>
-
-                </div>
-
-              </div>
-
+        {/* LOADING STATE */}
+        {loadingRates && (
+          <div className="py-16 text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+              <RefreshCw className="h-6 w-6 animate-spin" />
             </div>
-
-            <select
-              value={selectedCrop}
-              onChange={(e) => {
-                setSelectedCrop(
-                  e.target.value
-                );
-
-                setSearchTerm(
-                  e.target.value
-                );
-              }}
-              className="border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-emerald-500"
-            >
-              {POPULAR_CROPS.map(
-                (crop) => (
-                  <option
-                    key={crop}
-                    value={crop}
-                  >
-                    {crop}
-                  </option>
-                )
-              )}
-            </select>
-
+            <p className="mt-3 text-sm font-bold text-slate-700">
+              मंडी भाव लोड हो रहे हैं…
+            </p>
+            <p className="text-xs text-slate-400">AGMARKNET सर्वर से ताज़ा डेटा प्राप्त किया जा रहा है</p>
           </div>
+        )}
 
-          {loading ? (
-            <div className="h-72 flex flex-col items-center justify-center gap-3">
-
-              <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
-
-              <p className="text-xs font-bold text-slate-500">
-                नवीनतम भाव और इतिहास लोड हो रहा है...
-              </p>
-
+        {/* EMPTY STATE */}
+        {!loadingRates && filteredRates.length === 0 && !rateError && (
+          <div className="py-14 text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+              <Wheat className="h-6 w-6" />
             </div>
-          ) : chartData.length > 0 ? (
+            <p className="mt-3 text-sm font-bold text-slate-700">
+              {hasSearched ? "कोई रिकॉर्ड नहीं मिला" : "फ़िल्टर चुनकर भाव देखें"}
+            </p>
+            <p className="mt-1 text-xs text-slate-400">
+              कृपया ऊपर फ़िल्टर बदलकर खोजें या रिसेट करें।
+            </p>
+          </div>
+        )}
 
-            <div className="h-72 w-full pt-5">
+        {/* ================= RESPONSIVE CARD LIST (Visible below lg) ================= */}
+        {!loadingRates && filteredRates.length > 0 && (
+          <div className="mt-4 space-y-3 lg:hidden">
+            {filteredRates.map((row) => {
+              const trendIcon =
+                row.trend === "up" ? (
+                  <ArrowUpRight className="h-3.5 w-3.5 text-emerald-600" />
+                ) : row.trend === "down" ? (
+                  <ArrowDownRight className="h-3.5 w-3.5 text-rose-600" />
+                ) : (
+                  <Minus className="h-3.5 w-3.5 text-slate-400" />
+                );
 
-              <ResponsiveContainer
-                width="100%"
-                height="100%"
-              >
-
-                <AreaChart
-                  data={chartData}
-                  margin={{
-                    top: 10,
-                    right: 10,
-                    left: -15,
-                    bottom: 0,
-                  }}
+              return (
+                <div
+                  key={row.id}
+                  className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs transition hover:border-emerald-300"
                 >
+                  {/* Top Bar: Crop + Trend + Modal Price */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                        <h3 className="text-base font-black text-slate-900">
+                          {row.commodity}
+                        </h3>
+                        {trendIcon}
+                      </div>
+                      <p className="text-[10px] font-semibold text-slate-500">
+                        {row.group || "Cereals"} • {row.variety || "सामान्य"}
+                      </p>
+                    </div>
 
-                  <defs>
+                    <div className="text-right">
+                      <span className="text-[9px] font-bold text-slate-400 block uppercase">
+                        मॉडल भाव
+                      </span>
+                      <span className="inline-block rounded-xl bg-emerald-50 px-2.5 py-1 text-sm font-black text-emerald-800 border border-emerald-100">
+                        {formatMandiPrice(row.modalPrice)}
+                      </span>
+                    </div>
+                  </div>
 
-                    <linearGradient
-                      id="priceGradient"
-                      x1="0"
-                      y1="0"
-                      x2="0"
-                      y2="1"
-                    >
-                      <stop
-                        offset="5%"
-                        stopColor="#059669"
-                        stopOpacity={0.45}
-                      />
+                  {/* Price Comparison Grid */}
+                  <div className="mt-3 grid grid-cols-3 gap-2 border-t border-slate-100 pt-3 text-center">
+                    <div className="rounded-xl bg-slate-50 p-2">
+                      <p className="text-[9px] font-bold text-slate-500">MSP</p>
+                      <p className="text-xs font-black text-slate-800 mt-0.5">
+                        {formatMandiPrice(row.mspPrice)}
+                      </p>
+                    </div>
 
-                      <stop
-                        offset="95%"
-                        stopColor="#059669"
-                        stopOpacity={0}
-                      />
-                    </linearGradient>
+                    <div className="rounded-xl bg-slate-50 p-2">
+                      <p className="text-[9px] font-bold text-slate-500">1 दिन पूर्व</p>
+                      <p className="text-xs font-black text-slate-800 mt-0.5">
+                        {formatMandiPrice(row.yesterdayPrice)}
+                      </p>
+                    </div>
 
-                  </defs>
+                    <div className="rounded-xl bg-slate-50 p-2">
+                      <p className="text-[9px] font-bold text-slate-500">आवक (MT)</p>
+                      <p className="text-xs font-black text-emerald-700 mt-0.5">
+                        {row.arrival != null ? `${row.arrival} MT` : "—"}
+                      </p>
+                    </div>
+                  </div>
 
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    vertical={false}
-                    stroke="#e2e8f0"
-                  />
-
-                  <XAxis
-                    dataKey="date"
-                    tick={{
-                      fontSize: 10,
-                      fill: '#64748b',
-                    }}
-                  />
-
-                  <YAxis
-                    tick={{
-                      fontSize: 10,
-                      fill: '#64748b',
-                    }}
-                  />
-
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor:
-                        '#0f172a',
-                      color: '#fff',
-                      borderRadius:
-                        '12px',
-                      border: 'none',
-                      fontSize: '12px',
-                    }}
-                    formatter={(value) => [
-                      formatPrice(value),
-                      'मॉडल भाव',
-                    ]}
-                  />
-
-                  <Area
-                    type="monotone"
-                    dataKey="modalPrice"
-                    stroke="#047857"
-                    strokeWidth={3}
-                    fill="url(#priceGradient)"
-                    fillOpacity={1}
-                  />
-
-                </AreaChart>
-
-              </ResponsiveContainer>
-
-            </div>
-
-          ) : (
-
-            <div className="h-64 flex flex-col items-center justify-center text-center">
-
-              <ChartIcon className="w-10 h-10 text-slate-300" />
-
-              <p className="text-sm font-bold text-slate-500 mt-3">
-                ऐतिहासिक भाव उपलब्ध नहीं है
-              </p>
-
-              <p className="text-xs text-slate-400 mt-1">
-                इस फसल और मंडी के लिए अभी chart data नहीं मिला।
-              </p>
-
-            </div>
-
-          )}
-
-        </section>
-
-        {/* =================================================
-            TABLE
-        ================================================= */}
-
-        <section className="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden">
-
-          <div className="p-5 sm:p-6 border-b border-slate-100">
-
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-
-              <div>
-
-                <h2 className="text-xl font-black text-slate-900">
-                  नवीनतम मंडी भाव
-                </h2>
-
-                <p className="text-xs text-slate-500 mt-1">
-                  {activeMandi || 'मंडी'}
-                  {' • '}
-                  {activeDistrict}
-                  {' • '}
-                  {activeState}
-                </p>
-
-              </div>
-
-              <button
-                onClick={exportCSV}
-                disabled={!filteredRates.length}
-                className="inline-flex items-center justify-center gap-2 bg-amber-400 hover:bg-amber-500 disabled:opacity-50 text-slate-950 px-4 py-2.5 rounded-xl text-xs font-black transition"
-              >
-                <Download className="w-4 h-4" />
-                CSV डाउनलोड
-              </button>
-
-            </div>
-
+                  {/* Footer Meta: Date */}
+                  <div className="mt-2.5 flex items-center justify-between text-[10px] text-slate-400">
+                    <span className="flex items-center gap-1 font-semibold text-emerald-700">
+                      <Calendar className="h-3 w-3" /> {formatMandiDateDisplay(row.date)}
+                    </span>
+                    <span>प्रति क्विंटल दर</span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
+        )}
 
-          {loading ? (
-
-            <div className="p-12 text-center">
-
-              <Loader2 className="w-8 h-8 text-emerald-600 animate-spin mx-auto" />
-
-              <p className="text-sm font-bold text-slate-600 mt-3">
-                नवीनतम मंडी भाव खोजे जा रहे हैं...
-              </p>
-
-            </div>
-
-          ) : filteredRates.length === 0 ? (
-
-            <div className="p-12 text-center">
-
-              <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto">
-                <Search className="w-6 h-6 text-slate-400" />
-              </div>
-
-              <h3 className="font-black text-slate-800 mt-4">
-                कोई भाव नहीं मिला
-              </h3>
-
-              <p className="text-xs text-slate-500 mt-1">
-                राज्य, जिला, मंडी या फसल बदलकर दोबारा खोजें।
-              </p>
-
-              <button
-                onClick={
-                  handleResetFilters
-                }
-                className="mt-4 bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold"
-              >
-                फ़िल्टर रीसेट करें
-              </button>
-
-            </div>
-
-          ) : (
-
-            <div className="overflow-x-auto">
-
-              <table className="w-full min-w-[720px]">
-
-                <thead className="bg-emerald-900 text-white">
-
-                  <tr>
-                    <th className="p-4">दिनांक (Date)</th>
-
-                    <th className="p-4 text-left text-xs font-black">
-                      फसल
-                    </th>
-
-                    <th className="p-4 text-left text-xs font-black">
-                      न्यूनतम भाव
-                    </th>
-
-                    <th className="p-4 text-left text-xs font-black">
-                      अधिकतम भाव
-                    </th>
-
-                    <th className="p-4 text-left text-xs font-black">
-                      मॉडल भाव
-                    </th>
-
-                    <th className="p-4 text-center text-xs font-black">
-                      ट्रेंड
-                    </th>
-
-                    <th className="p-4 text-center text-xs font-black">
-                      विवरण
-                    </th>
-
-                  </tr>
-
-                </thead>
-
-                <tbody className="divide-y divide-slate-100">
-
-                  {filteredRates.map(
-                    (item, index) => {
-
-                      const previous =
-                        filteredRates[
-                          index + 1
-                        ];
-
-                      const trend =
-                        getTrend(
-                          item.modalPrice,
-                          previous?.modalPrice
-                        );
-
-                      return (
-                        <tr
-                          key={
-                            item.id ||
-                            `${item.crop}-${index}`
-                          }
-                          className="hover:bg-emerald-50/40 transition"
-                        >
-<td className="p-4 text-slate-600 font-semibold whitespace-nowrap">
-                      {item.arrivalDate}
+        {/* ================= DESKTOP TABLE VIEW (Visible on >= lg) ================= */}
+        {!loadingRates && filteredRates.length > 0 && (
+          <div className="mt-4 hidden w-full min-w-0 overflow-x-auto rounded-2xl border border-slate-200 lg:block">
+            <table className="w-full table-fixed border-collapse text-left text-xs">
+              <thead>
+                <tr className="bg-emerald-900/90 text-white border-b border-emerald-800 text-[11px] uppercase tracking-wider font-bold">
+                  <th className="w-[11%] px-2.5 py-3.5">दिनांक (Date)</th>
+                  <th className="w-[18%] px-2.5 py-3.5">फसल (Commodity)</th>
+                  <th className="w-[12%] px-2.5 py-3.5">ग्रुप</th>
+                  <th className="w-[11%] px-2.5 py-3.5">MSP भाव</th>
+                  <th className="w-[16%] px-2.5 py-3.5">वर्तमान मॉडल भाव</th>
+                  <th className="w-[14%] px-2.5 py-3.5">1 दिन पूर्व भाव</th>
+                  <th className="w-[10%] px-2.5 py-3.5">आवक (MT)</th>
+                  <th className="w-[8%] px-2.5 py-3.5 text-center">ट्रेंड</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 bg-white">
+                {filteredRates.map((row) => (
+                  <tr key={row.id} className="hover:bg-emerald-50/50 transition">
+                    <td className="whitespace-nowrap px-2.5 py-3.5 font-semibold text-slate-600">
+                      {formatMandiDateDisplay(row.date)}
                     </td>
-                          <td className="p-4">
-
-                            <div className="flex items-center gap-3">
-
-                              <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-xl">
-                                {CROP_EMOJI[
-                                  item.crop
-                                ] || '🌾'}
-                              </div>
-
-                              <div>
-
-                                <p className="font-black text-slate-900">
-                                  {item.crop}
-                                </p>
-
-                                {item.cropEnglish && (
-                                  <p className="text-[10px] text-slate-400">
-                                    {
-                                      item.cropEnglish
-                                    }
-                                  </p>
-                                )}
-
-                              </div>
-
-                            </div>
-
-                          </td>
-
-                          <td className="p-4">
-
-                            <span className="font-bold text-slate-700">
-                              {formatPrice(
-                                item.minPrice
-                              )}
-                            </span>
-
-                          </td>
-
-                          <td className="p-4">
-
-                            <span className="font-bold text-slate-700">
-                              {formatPrice(
-                                item.maxPrice
-                              )}
-                            </span>
-
-                          </td>
-
-                          <td className="p-4">
-
-                            <span className="inline-flex items-center bg-emerald-100 text-emerald-800 px-3 py-1.5 rounded-xl font-black">
-                              {formatPrice(
-                                item.modalPrice
-                              )}
-                            </span>
-
-                          </td>
-
-                          <td className="p-4 text-center">
-
-                            {trend.direction ===
-                            'up' ? (
-
-                              <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 px-2.5 py-1.5 rounded-full text-[11px] font-black">
-                                <TrendingUp className="w-3.5 h-3.5" />
-                                +{trend.percentage}%
-                              </span>
-
-                            ) : trend.direction ===
-                              'down' ? (
-
-                              <span className="inline-flex items-center gap-1 bg-red-100 text-red-700 px-2.5 py-1.5 rounded-full text-[11px] font-black">
-                                <TrendingDown className="w-3.5 h-3.5" />
-                                {trend.percentage}%
-                              </span>
-
-                            ) : (
-
-                              <span className="text-xs text-slate-400 font-bold">
-                                —
-                              </span>
-
-                            )}
-
-                          </td>
-
-                          <td className="p-4 text-center">
-
-                            <Link
-                              href={`/crops/${String(
-                                item.cropEnglish ||
-                                  item.crop ||
-                                  ''
-                              )
-                                .toLowerCase()
-                                .replace(
-                                  /\s+/g,
-                                  '-'
-                                )}`}
-                              className="inline-flex items-center gap-1 text-emerald-700 hover:text-emerald-900 text-xs font-black"
-                            >
-                              देखें
-                              <ChevronRight className="w-4 h-4" />
-                            </Link>
-
-                          </td>
-
-                        </tr>
-                      );
-                    }
-                  )}
-
-                </tbody>
-
-              </table>
-
-            </div>
-
-          )}
-
-        </section>
-
-        {/* =================================================
-            FOOT NOTE
-        ================================================= */}
-
-        <section className="bg-slate-100 border border-slate-200 rounded-2xl p-4 sm:p-5">
-
-          <div className="flex items-start gap-3">
-
-            <AlertCircle className="w-5 h-5 text-slate-500 mt-0.5 shrink-0" />
-
-            <div>
-
-              <h3 className="text-xs font-black text-slate-800">
-                मंडी भाव के बारे में
-              </h3>
-
-              <p className="text-[11px] sm:text-xs text-slate-500 leading-5 mt-1">
-                यहां केवल API/source से उपलब्ध नवीनतम
-                रिकॉर्ड को दिखाया जाता है। यदि सरकारी या
-                source data में आज का नया रिकॉर्ड उपलब्ध
-                नहीं है, तो पिछली उपलब्ध तारीख का भाव
-                दिखाई दे सकता है। इसलिए ऊपर वास्तविक
-                उपलब्ध रिकॉर्ड की तारीख अलग से दिखाई जाती है।
-              </p>
-
-            </div>
-
+                    <td className="break-words px-2.5 py-3.5">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
+                        <div>
+                          <p className="font-black text-slate-900 text-sm">{row.commodity}</p>
+                          <p className="text-[10px] text-slate-400">{row.variety || "सामान्य"}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="break-words px-2.5 py-3.5 text-slate-600 font-medium">{row.group}</td>
+                    <td className="whitespace-nowrap px-2.5 py-3.5 font-bold text-slate-700">{formatMandiPrice(row.mspPrice)}</td>
+                    <td className="whitespace-nowrap px-2.5 py-3.5 font-black text-emerald-800 text-sm">
+                      <span className="rounded-xl bg-emerald-50 px-2.5 py-1 border border-emerald-200">
+                        {formatMandiPrice(row.modalPrice)}
+                      </span>
+                    </td>
+                    <td className="whitespace-nowrap px-2.5 py-3.5 font-semibold text-slate-600">{formatMandiPrice(row.yesterdayPrice)}</td>
+                    <td className="whitespace-nowrap px-2.5 py-3.5 font-bold text-slate-800">{row.arrival != null ? `${row.arrival} MT` : "—"}</td>
+                    <td className="px-2.5 py-3.5 text-center">
+                      {row.trend === "up" ? (
+                        <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-bold text-emerald-800">
+                          <ArrowUpRight className="h-3.5 w-3.5" /> वृद्धि
+                        </span>
+                      ) : row.trend === "down" ? (
+                        <span className="inline-flex items-center gap-0.5 rounded-full bg-rose-100 px-2.5 py-1 text-[10px] font-bold text-rose-800">
+                          <ArrowDownRight className="h-3.5 w-3.5" /> गिरावट
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-0.5 rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-600">
+                          <Minus className="h-3.5 w-3.5" /> स्थिर
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-
-        </section>
-
-      </div>
+        )}
+      </section>
     </main>
   );
 }

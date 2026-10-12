@@ -889,7 +889,7 @@ export default function PashupalanArticlePage({ params, initialRecord }) {
         <div className="flex flex-col gap-5 rounded-3xl border border-green-100 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-8">
           <div>
             <p className="text-sm font-bold text-green-700">
-              KRISHI MITRA
+              KISAN MITRA
             </p>
             <h2 className="mt-2 text-2xl font-black text-gray-950">
               अगला लेख भी पढ़ें
