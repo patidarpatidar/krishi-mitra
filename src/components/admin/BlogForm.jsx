@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Plus, Save, Trash2 } from "lucide-react";
 import { blogApi, unwrapItem, unwrapList } from "@/lib/blogApi";
+import { extractYouTubeVideoId } from "@/lib/youtubeVideo";
 
 const EMPTY = {
   title: "",
@@ -261,6 +262,12 @@ export default function BlogForm({ blogId }) {
       return;
     }
 
+    const youtubeVideoId = extractYouTubeVideoId(form.youtubeVideoId);
+    if (form.hasVideo && !youtubeVideoId) {
+      setError("वीडियो चालू करने के लिए सही YouTube URL या 11-अक्षर का Video ID दें।");
+      return;
+    }
+
     const payload = {
       title: form.title.trim(),
       slug: (form.slug.trim() || slugify(form.title)).toLowerCase(),
@@ -276,7 +283,7 @@ export default function BlogForm({ blogId }) {
       tags: form.tagsText.split(",").map((tag) => tag.trim()).filter(Boolean),
       hasVideo: Boolean(form.hasVideo),
       hasGallery: Boolean(form.hasGallery),
-      youtubeVideoId: form.youtubeVideoId.trim(),
+      youtubeVideoId,
       content: {
         introduction: form.introduction,
         sections: form.sections.map((section, index) => ({
@@ -440,7 +447,10 @@ export default function BlogForm({ blogId }) {
               <input type="checkbox" name="hasVideo" checked={form.hasVideo} onChange={change} />
               Enable YouTube video
             </label>
-            <Field label="YouTube Video ID" name="youtubeVideoId" value={form.youtubeVideoId} onChange={change} placeholder="YouTube video ID, not full URL" />
+            <Field label="YouTube URL या Video ID" name="youtubeVideoId" value={form.youtubeVideoId} onChange={change} placeholder="https://youtu.be/XXXXXXXXXXX" />
+            {form.hasVideo && !extractYouTubeVideoId(form.youtubeVideoId) && (
+              <p className="text-xs text-amber-700">वीडियो चालू करने के लिए valid YouTube link या 11-character ID जरूरी है।</p>
+            )}
           </Panel>
 
           <Panel title="Calculator / Recommendations">

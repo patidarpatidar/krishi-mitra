@@ -34,6 +34,7 @@ import {
   unwrapApiList,
 } from '@/lib/publicApi';
 import { normalizeBlogRecord } from '@/lib/contentSeo';
+import { extractYouTubeVideoId } from '@/lib/youtubeVideo';
 
 export default function BlogDetailPage({ params, initialRecord }) {
   const [blog, setBlog] = useState(
@@ -76,6 +77,7 @@ export default function BlogDetailPage({ params, initialRecord }) {
   const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [commentsError, setCommentsError] = useState('');
   const [commentNotice, setCommentNotice] = useState('');
+  const youtubeVideoId = extractYouTubeVideoId(blog?.youtubeVideoId);
 
   const [commentForm, setCommentForm] = useState({
     name: '',
@@ -690,7 +692,7 @@ export default function BlogDetailPage({ params, initialRecord }) {
           <article className="lg:col-span-8 space-y-7">
 
             {/* VIDEO */}
-            {blog.youtubeVideoId && (
+            {blog.hasVideo && youtubeVideoId ? (
               <section className="bg-slate-950 rounded-3xl overflow-hidden shadow-lg">
 
                 <div className="p-4 text-white flex items-center gap-2 text-sm font-bold">
@@ -701,14 +703,20 @@ export default function BlogDetailPage({ params, initialRecord }) {
                 <div className="aspect-video">
                   <iframe
                     className="w-full h-full"
-                    src={`https://www.youtube-nocookie.com/embed/${blog.youtubeVideoId}`}
+                    src={`https://www.youtube-nocookie.com/embed/${youtubeVideoId}`}
                     title={blog.title}
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    referrerPolicy="strict-origin-when-cross-origin"
                     allowFullScreen
+                    loading="lazy"
                   />
                 </div>
               </section>
-            )}
+            ) : blog.hasVideo ? (
+              <p className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                इस लेख का वीडियो अभी उपलब्ध नहीं है। कृपया बाद में फिर देखें।
+              </p>
+            ) : null}
 
             {/* TABS */}
             <div className="bg-white border border-slate-200 p-1.5 rounded-2xl flex gap-1 sticky top-3 z-30 shadow-sm">
