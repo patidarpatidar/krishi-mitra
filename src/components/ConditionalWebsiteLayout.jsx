@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CloudSun, Home, Sprout, TrendingUp, UserRound } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import AdSenseSlot from "@/components/AdSenseSlot";
 
 const mobileLinks = [
   { href: "/", label: "होम", icon: Home },
@@ -28,6 +29,7 @@ export default function ConditionalWebsiteLayout({ children }) {
     <div className="website-shell min-h-screen min-w-0 overflow-x-clip pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-0">
       <Navbar />
       <main className="min-w-0">{children}</main>
+      <AdSenseSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_GLOBAL || ""} />
       <Footer />
       <nav
         aria-label="मुख्य मोबाइल नेविगेशन"

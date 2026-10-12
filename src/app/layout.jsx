@@ -13,6 +13,11 @@ const googleAnalyticsId =
   /^G-[A-Z0-9]+$/.test(process.env.NEXT_PUBLIC_GA_ID || "")
     ? process.env.NEXT_PUBLIC_GA_ID
     : "";
+const adsenseClientId = /^ca-pub-\d{16}$/.test(
+  process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || "",
+)
+  ? process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID
+  : "";
 
 export const metadata = {
   ...createMetadata({
@@ -85,6 +90,14 @@ export default function RootLayout({ children }) {
               {`window.dataLayer = window.dataLayer || []; function gtag(){window.dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', ${JSON.stringify(googleAnalyticsId)}, { anonymize_ip: true });`}
             </Script>
           </>
+        )}
+        {adsenseClientId && process.env.NODE_ENV === "production" && (
+          <Script
+            async
+            strategy="afterInteractive"
+            crossOrigin="anonymous"
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClientId}`}
+          />
         )}
          <ConditionalWebsiteLayout>
           {children}

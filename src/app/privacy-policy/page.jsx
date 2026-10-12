@@ -295,7 +295,7 @@ const faqs = [
   {
     question: 'क्या वेबसाइट पर advertisements हो सकते हैं?',
     answer:
-      'भविष्य में वेबसाइट पर Google AdSense या अन्य advertising services का उपयोग किया जा सकता है। ऐसी services cookies या similar technologies का उपयोग कर सकती हैं और उनकी अपनी privacy policies लागू हो सकती हैं।',
+      'वेबसाइट पर Google AdSense विज्ञापन तभी दिखेंगे जब publisher account और ad units configure तथा approve हों। Google और उसके partners cookies या similar technologies का उपयोग कर सकते हैं; विज्ञापन personalization और consent के विकल्प Google की Privacy & Messaging settings तथा लागू क्षेत्रीय नियमों के अनुसार configure किए जाएंगे। अधिक जानकारी के लिए Google की advertising और privacy policies देखें।',
   },
 ];
 

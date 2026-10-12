@@ -69,8 +69,12 @@ Before production deployment, configure these environment variables:
 - `NEXT_PUBLIC_SITE_URL`: the stable public website origin (for example, your verified HTTPS domain). Do not use a Vercel preview URL.
 - `GOOGLE_SITE_VERIFICATION`: the HTML-tag verification value from Google Search Console.
 - `NEXT_PUBLIC_API_URL`: the deployed backend API origin.
+- `NEXT_PUBLIC_ADSENSE_CLIENT_ID`: the approved AdSense publisher ID in `ca-pub-0000000000000000` format.
+- `NEXT_PUBLIC_ADSENSE_SLOT_GLOBAL`: optional ad-unit slot ID for the site-wide placement. Leave empty to use only Auto ads configured in AdSense.
 
 The app generates `/sitemap.xml`, canonical URLs, and `robots.txt` from the stable site origin. Vercel preview deployments are marked `noindex` so preview copies do not compete with production in search results.
+
+AdSense only loads in production when a valid publisher ID is configured. `/ads.txt` is generated from that ID. Verify the production domain in AdSense, wait for site approval, configure Auto ads or a real ad-unit slot, and enable a Google-certified consent management platform for traffic subject to EEA/UK/Swiss consent requirements before serving personalized ads.
 
 🤝 Contributing
 Contributions are welcome! Follow these steps to contribute:
