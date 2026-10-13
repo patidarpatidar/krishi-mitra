@@ -21,12 +21,12 @@ const adsenseClientId = /^ca-pub-\d{16}$/.test(
 
 export const metadata = {
   ...createMetadata({
-    title: "किसान मित्र | मध्य प्रदेश के किसानों के लिए कृषि जानकारी",
+    title: "किसान ओजस | मध्य प्रदेश के किसानों के लिए कृषि जानकारी",
     description:
       "मध्य प्रदेश के किसानों के लिए फसल गाइड, मंडी भाव, मौसम, सरकारी योजनाएं, जैविक खेती और पशुपालन की जानकारी।",
     path: "/",
     keywords: [
-      "किसान मित्र",
+      "किसान ओजस",
       "मंडी भाव",
       "मध्य प्रदेश मंडी भाव",
       "फसल गाइड",
@@ -40,21 +40,21 @@ export const metadata = {
       "कृषि सलाह",
       "नीमच मंडी",
       "MP mandi bhav",
-      "kisan mitra",
+      "kisan ojas",
       "farming guide Hindi",
     ],
   }),
   metadataBase: SITE_ORIGIN ? new URL(SITE_ORIGIN) : undefined,
   title: {
-    default: "किसान मित्र | मध्य प्रदेश के किसानों के लिए कृषि जानकारी",
-    template: "%s | किसान मित्र",
+    default: "किसान ओजस | मध्य प्रदेश के किसानों के लिए कृषि जानकारी",
+    template: "%s | किसान ओजस",
   },
-  applicationName: "किसान मित्र",
+  applicationName: "किसान ओजस",
   category: "agriculture",
   manifest: "/manifest.json",
   other: {
     "theme-color": "#059669",
-    "apple-mobile-web-app-title": "किसान मित्र",
+    "apple-mobile-web-app-title": "किसान ओजस",
   },
   verification: {
     google: process.env.GOOGLE_SITE_VERIFICATION || undefined,

@@ -224,7 +224,7 @@ export default function CropCategoryForm({ categoryId = null }) {
             <p className="mt-1 text-sm text-gray-500">
               {isEdit
                 ? "Update crop category details."
-                : "Create a new crop category for Kisan Mitra."}
+                : "Create a new crop category for Kisan Ojas."}
             </p>
           </div>
 

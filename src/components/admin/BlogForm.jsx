@@ -12,7 +12,7 @@ const EMPTY = {
   slug: "",
   categoryId: "",
   category: "",
-  author: "किसान मित्र",
+  author: "किसान ओजस",
   authorRole: "",
   authorAvatar: "",
   status: "draft",

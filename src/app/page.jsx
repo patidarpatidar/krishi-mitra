@@ -55,7 +55,7 @@ function getHomePageJsonLd(blogs, crops) {
   return {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    name: "किसान मित्र — लोकप्रिय सामग्री",
+    name: "किसान ओजस — लोकप्रिय सामग्री",
     itemListElement: items,
   };
 }
@@ -83,10 +83,10 @@ export default async function HomePage() {
           This renders server-side so Google can read it
           even without executing JavaScript.
       =================================================== */}
-      <section className="sr-only" aria-label="किसान मित्र मुख्य जानकारी">
-        <h1>किसान मित्र — मध्य प्रदेश के किसानों के लिए कृषि जानकारी</h1>
+      <section className="sr-only" aria-label="किसान ओजस मुख्य जानकारी">
+        <h1>किसान ओजस — मध्य प्रदेश के किसानों के लिए कृषि जानकारी</h1>
         <p>
-          किसान मित्र मध्य प्रदेश के किसानों को फसल गाइड, ताज़ा मंडी भाव,
+          किसान ओजस मध्य प्रदेश के किसानों को फसल गाइड, ताज़ा मंडी भाव,
           मौसम पूर्वानुमान, सरकारी योजनाएं, जैविक खेती और पशुपालन की
           जानकारी एक ही जगह प्रदान करता है।
         </p>

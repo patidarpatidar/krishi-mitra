@@ -1454,7 +1454,7 @@ function CommentsSection({
             </p>
             {comment.answer && (
               <div className="mt-3 rounded-xl border border-emerald-100 bg-emerald-50 p-3">
-                <p className="text-xs font-bold text-emerald-800">किसान मित्र का जवाब</p>
+                <p className="text-xs font-bold text-emerald-800">किसान ओजस का जवाब</p>
                 <p className="mt-1 text-sm leading-6 text-emerald-900">{comment.answer}</p>
               </div>
             )}

@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "पेज नहीं मिला | किसान मित्र",
+  title: "पेज नहीं मिला | किसान ओजस",
   robots: { index: false, follow: true },
 };
 

@@ -74,7 +74,7 @@ export default function HomeCarousel({ slides = [] }) {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 min-h-[440px] sm:min-h-[500px] flex items-center">
+      <div className="relative z-10 min-h-[500px] sm:min-h-[500px] lg:min-h-[520px] flex items-center">
         <div className="max-w-7xl w-full mx-auto px-6 sm:px-10 lg:px-14 py-12">
 
           <div className="max-w-2xl text-white">
@@ -213,47 +213,55 @@ export default function HomeCarousel({ slides = [] }) {
       </button>}
 
       {/* Bottom Controls */}
-      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3">
+     
+{/* Bottom Controls */}
+<div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex max-w-[calc(100%-5rem)] items-center justify-center gap-2 sm:bottom-5 sm:gap-3">
 
-        {/* Dots */}
-        {slides.length > 1 && <div className="flex items-center gap-1.5 bg-black/20 backdrop-blur-md px-3 py-2 rounded-full">
-          {slides.map((slide, index) => (
-            <button
-              key={slide.id || index}
-              onClick={() => setActiveIndex(index)}
-              className={`
-                h-2 rounded-full transition-all
-                ${
-                  index === safeIndex
-                    ? "w-7 bg-amber-400"
-                    : "w-2 bg-white/60 hover:bg-white"
-                }
-              `}
-              aria-label={`Go to slide ${index + 1}`}
-            />
-          ))}
-        </div>}
+  {/* Dots */}
+  {slides.length > 1 && (
+    <div className="flex max-w-full items-center gap-1.5 rounded-full bg-black/30 px-3 py-2 backdrop-blur-md">
+      {slides.map((slide, index) => (
+        <button
+          key={slide.id || index}
+          type="button"
+          onClick={() => setActiveIndex(index)}
+          className={`h-2 rounded-full transition-all duration-300 ${
+            index === safeIndex
+              ? "w-6 sm:w-7 bg-amber-400"
+              : "w-2 bg-white/70 hover:bg-white"
+          }`}
+          aria-label={`Go to slide ${index + 1}`}
+          aria-current={index === safeIndex ? "true" : undefined}
+        />
+      ))}
+    </div>
+  )}
 
-        {/* Pause */}
-        {slides.length > 1 && <button
-          onClick={() => setPaused(!paused)}
-          className="
-            w-8 h-8
-            rounded-full
-            bg-black/20
-            backdrop-blur-md
-            border border-white/20
-            text-white
-            flex items-center justify-center
-          "
-        >
-          {paused ? (
-            <Play className="w-3.5 h-3.5" />
-          ) : (
-            <Pause className="w-3.5 h-3.5" />
-          )}
-        </button>}
-      </div>
+  {/* Play / Pause */}
+  {slides.length > 1 && (
+    <button
+      type="button"
+      onClick={() => setPaused((current) => !current)}
+      className="flex h-10 w-10 shrink-0 touch-manipulation items-center justify-center rounded-full border border-white/30 bg-black/40 text-white shadow-lg backdrop-blur-md transition hover:bg-black/60 sm:h-9 sm:w-9"
+      aria-label={paused ? "Play carousel" : "Pause carousel"}
+      title={paused ? "Play carousel" : "Pause carousel"}
+    >
+      {paused ? (
+        <Play className="h-4 w-4 fill-current" />
+      ) : (
+        <Pause className="h-4 w-4" />
+      )}
+    </button>
+  )}
+</div>
+
+{/* Slide counter */}
+<div className="absolute right-3 top-3 z-20 sm:bottom-5 sm:right-5 sm:top-auto">
+  <span className="rounded-full bg-black/40 px-3 py-1.5 text-xs font-bold text-white backdrop-blur-md">
+    {safeIndex + 1} / {slides.length}
+  </span>
+</div>
+
 
       {/* Slide counter */}
       <div className="absolute right-5 bottom-5 z-20 hidden sm:block">

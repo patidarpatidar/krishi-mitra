@@ -6,7 +6,7 @@ const API_BASE = (
 
 const FARMER_TOKEN_KEY = "krishi_mitra_farmer_token";
 const FARMER_USER_KEY = "krishi_mitra_farmer";
-export const FARMER_SESSION_EXPIRED_EVENT = "krishi-mitra:farmer-session-expired";
+export const FARMER_SESSION_EXPIRED_EVENT = "krishi-ojas:farmer-session-expired";
 
 export function getFarmerToken() {
   if (typeof window === "undefined") return null;

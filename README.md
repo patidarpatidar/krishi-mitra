@@ -1,4 +1,4 @@
-Kisan Mitra is a web-based frontend application designed to empower farmers and agricultural enthusiasts by providing access to farming information, crop recommendations, weather insights, and market trends.
+Kisan Ojas is a web-based frontend application designed to empower farmers and agricultural enthusiasts by providing access to farming information, crop recommendations, weather insights, and market trends.
 
 🚀 Features
 Interactive User Interface: Responsive, clean, and accessible UI tailored for farmers and agricultural workers.
@@ -18,7 +18,7 @@ Icons & Assets: FontAwesome / Lucide Icons
 
 📁 Project Structure
 Plaintext
-krishi-mitra/
+krishi-ojas/
 ├── public/          # Static assets (images, icons, favicon)
 ├── src/             # Core application source code
 │   ├── assets/      # CSS stylesheets, logos, and media files
@@ -40,8 +40,8 @@ Installation
 Clone the repository:
 
 Bash
-git clone https://github.com/your-username/krishi-mitra.git
-cd krishi-mitra
+git clone https://github.com/your-username/krishi-ojas.git
+cd krishi-ojas
 Install dependencies:
 
 Bash

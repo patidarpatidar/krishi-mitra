@@ -194,7 +194,7 @@ export default function AdminDiscussionsPage() {
               <p className="mt-4 whitespace-pre-wrap rounded-xl bg-slate-50 p-4 text-sm leading-6 text-slate-700">
                 {config.content(item)}
               </p>
-              <label className="mt-4 block text-sm font-bold text-slate-800">किसान मित्र का जवाब</label>
+              <label className="mt-4 block text-sm font-bold text-slate-800">किसान ओजस का जवाब</label>
               <textarea
                 maxLength={2000}
                 rows={3}

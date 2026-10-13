@@ -82,7 +82,7 @@ export default function LoginPage() {
           <h1 className="text-3xl font-bold">किसान लॉगिन</h1>
 
           <p className="text-slate-400 mt-2">
-            अपने किसान मित्र किसान डैशबोर्ड में प्रवेश करें
+            अपने किसान ओजस डैशबोर्ड में प्रवेश करें
           </p>
         </div>
 
@@ -205,7 +205,7 @@ export default function LoginPage() {
         {/* SECURITY INFO */}
         <div className="mt-6 flex items-center justify-center gap-2 text-xs text-slate-500">
           <ShieldCheck className="w-4 h-4 text-emerald-500" />
-          <span>सुरक्षित किसान मित्र किसान पोर्टल प्रमाणीकरण</span>
+          <span>सुरक्षित किसान ओजस पोर्टल प्रमाणीकरण</span>
         </div>
 
         <div className="text-center mt-4">

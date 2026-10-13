@@ -1,5 +1,6 @@
 'use client';
 
+import { extractYouTubeVideoId } from "@/lib/youtubeVideo";
 export const dynamic = 'force-dynamic';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -619,7 +620,7 @@ export default function BlogListingPage() {
                       ⭐ Featured
                     </span>
 
-                    {featuredPost.hasVideo && (
+                    {featuredPost.hasVideo && extractYouTubeVideoId(featuredPost.youtubeVideoId) && (
                       <span className="bg-red-600 text-white px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1">
                         <PlayCircle className="w-3 h-3" />
                         वीडियो
@@ -772,7 +773,7 @@ function BlogCard({ blog, onCategoryClick }) {
           {blog.category}
         </button>
 
-        {blog.hasVideo && (
+        {blog.hasVideo && extractYouTubeVideoId(blog.youtubeVideoId) && (
           <span className="absolute bottom-3 left-3 bg-red-600 text-white px-2 py-1 rounded-md text-[10px] font-bold flex items-center gap-1">
             <PlayCircle className="w-3 h-3" />
             वीडियो
@@ -871,7 +872,7 @@ function BlogListCard({ blog }) {
             {blog.category}
           </span>
 
-          {blog.hasVideo && (
+          {blog.hasVideo && extractYouTubeVideoId(blog.youtubeVideoId) && (
             <span className="bg-red-50 text-red-700 px-2.5 py-1 rounded-lg text-[10px] font-bold">
               वीडियो
             </span>

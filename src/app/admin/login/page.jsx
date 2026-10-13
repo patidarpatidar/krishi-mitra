@@ -100,7 +100,7 @@ export default function AdminLoginPage() {
           </div>
 
           <h1 className="text-3xl font-bold">
-            Kisan Mitra Admin
+            Kisan Ojas Admin
           </h1>
 
           <p className="text-slate-400 mt-2">

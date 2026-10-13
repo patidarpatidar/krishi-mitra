@@ -13,14 +13,14 @@ const siteOriginValue =
   vercelProductionOrigin ||
   (process.env.NODE_ENV !== "production" ? "http://localhost:3000" : "");
 
-export const SITE_NAME = "किसान मित्र";
+export const SITE_NAME = "किसान ओजस";
 export const SITE_ORIGIN = normalizeOrigin(siteOriginValue);
 
 const STATIC_PAGE_SEO = {
   "/about": {
-    title: "किसान मित्र के बारे में",
+    title: "किसान ओजस के बारे में",
     description:
-      "किसान मित्र के उद्देश्य, किसान-केंद्रित कृषि जानकारी और मंडी, फसल, मौसम व योजनाओं से जुड़ी सेवाओं के बारे में जानें।",
+      "किसान ओजस के उद्देश्य, किसान-केंद्रित कृषि जानकारी और मंडी, फसल, मौसम व योजनाओं से जुड़ी सेवाओं के बारे में जानें।",
     label: "हमारे बारे में",
   },
   "/blog": {
@@ -48,9 +48,9 @@ const STATIC_PAGE_SEO = {
     label: "पशुपालन",
   },
   "/contact": {
-    title: "किसान मित्र से संपर्क करें",
+    title: "किसान ओजस से संपर्क करें",
     description:
-      "कृषि जानकारी, मंडी भाव, फसल और वेबसाइट से जुड़े प्रश्न या सुझाव किसान मित्र तक भेजें।",
+      "कृषि जानकारी, मंडी भाव, फसल और वेबसाइट से जुड़े प्रश्न या सुझाव किसान ओजस तक भेजें।",
     label: "संपर्क करें",
   },
   "/livestock": {
@@ -92,24 +92,24 @@ const STATIC_PAGE_SEO = {
   "/privacy-policy": {
     title: "गोपनीयता नीति",
     description:
-      "किसान मित्र वेबसाइट पर जानकारी के उपयोग और गोपनीयता से जुड़ी नीति पढ़ें।",
+      "किसान ओजस वेबसाइट पर जानकारी के उपयोग और गोपनीयता से जुड़ी नीति पढ़ें।",
     label: "गोपनीयता नीति",
   },
   "/terms": {
     title: "नियम और शर्तें",
     description:
-      "किसान मित्र वेबसाइट की जानकारी और सेवाओं के उपयोग से जुड़े नियम पढ़ें।",
+      "किसान ओजस वेबसाइट की जानकारी और सेवाओं के उपयोग से जुड़े नियम पढ़ें।",
     label: "नियम और शर्तें",
   },
   "/login": {
     title: "किसान लॉगिन",
-    description: "किसान मित्र किसान पोर्टल में सुरक्षित रूप से लॉगिन करें।",
+    description: "किसान ओजस पोर्टल में सुरक्षित रूप से लॉगिन करें।",
     label: "किसान लॉगिन",
     noindex: true,
   },
   "/register": {
     title: "किसान पंजीकरण",
-    description: "किसान मित्र किसान पोर्टल के लिए किसान प्रोफाइल बनाएं।",
+    description: "किसान ओजस पोर्टल के लिए किसान प्रोफाइल बनाएं।",
     label: "किसान पंजीकरण",
     noindex: true,
   },
@@ -399,7 +399,7 @@ export function getOrganizationJsonLd() {
     "@id": absoluteUrl("/#organization"),
     name: SITE_NAME,
     url,
-    logo: absoluteUrl("/kisan-mitra-logo.svg"),
+    logo: absoluteUrl("/kisan-ojas-logo.svg"),
     areaServed: { "@type": "AdministrativeArea", name: "Madhya Pradesh, India" },
     knowsLanguage: ["hi-IN", "en-IN"],
   };

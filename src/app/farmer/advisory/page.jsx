@@ -287,7 +287,7 @@ export default function AdvisoryPage() {
       <div className="flex gap-3 bg-slate-900 border border-slate-800 rounded-2xl p-5">
         <ShieldCheck className="w-6 h-6 text-emerald-400 shrink-0 mt-0.5" />
         <p className="text-xs text-slate-400 leading-relaxed">
-          किसान मित्र की सलाह कृषि विश्वविद्यालयों और अनुसंधान संस्थानों के मार्गदर्शन पर आधारित है।
+          किसान ओजस की सलाह कृषि विश्वविद्यालयों और अनुसंधान संस्थानों के मार्गदर्शन पर आधारित है।
           किसी भी रासायनिक कीटनाशक, खरपतवारनाशक अथवा उर्वरक के प्रयोग से पूर्व उत्पाद के लेबल निर्देश अवश्य पढ़ें
           तथा स्थानीय कृषि विस्तार अधिकारी या KVK विशेषज्ञ से अपनी मिट्टी के अनुसार मात्रा सत्यापित करें।
         </p>

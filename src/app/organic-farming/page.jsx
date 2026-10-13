@@ -705,7 +705,7 @@ export default function OrganicFarmingPage() {
 
                   <Sparkles className="w-4 h-4" />
 
-                  किसान मित्र • जैविक खेती
+                  किसान ओजस • जैविक खेती
 
                 </span>
 
@@ -1644,7 +1644,7 @@ export default function OrganicFarmingPage() {
           <div className="border-b-2 border-black pb-4 mb-5">
 
             <h1 className="text-2xl font-black">
-              किसान मित्र — जैविक खेती गाइड
+              किसान ओजस — जैविक खेती गाइड
             </h1>
 
             <p className="text-sm mt-2">

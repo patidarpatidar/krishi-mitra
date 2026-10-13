@@ -33,17 +33,17 @@ const privacySections = [
     content: (
       <>
         <p>
-          किसान मित्र आपकी आवश्यकता के अनुसार सीमित जानकारी एकत्र कर सकता है।
+          किसान ओजस आपकी आवश्यकता के अनुसार सीमित जानकारी एकत्र कर सकता है।
           जानकारी इस बात पर निर्भर करती है कि आप वेबसाइट पर कौन-सी सुविधा का
           उपयोग करते हैं।
         </p>
 
         <div className="grid sm:grid-cols-2 gap-3 mt-4">
           <InfoCard
-            icon={UserCheck}
-            title="आपकी दी गई जानकारी"
-            text="नाम, मोबाइल नंबर, ईमेल या संपर्क फॉर्म में दी गई अन्य जानकारी।"
-          />
+  icon={UserCheck}
+  title="किसान अकाउंट की जानकारी"
+  text="यदि आप किसान अकाउंट बनाते हैं, तो सुविधा के अनुसार आपका नाम, ईमेल, मोबाइल नंबर, गाँव, खेत से संबंधित विवरण और authentication से जुड़ी जानकारी प्रोसेस की जा सकती है।"
+/>
 
           <InfoCard
             icon={Database}
@@ -66,10 +66,49 @@ const privacySections = [
       </>
     ),
   },
+{
+  id: 'farmer-account',
+  number: '02',
+  icon: UserCheck,
+  title: 'किसान अकाउंट और व्यक्तिगत जानकारी',
+  color: 'text-emerald-400',
+  bg: 'bg-emerald-500/10',
+  border: 'border-emerald-500/20',
+  content: (
+    <>
+      <p>
+        यदि आप किसान अकाउंट बनाते हैं, तो वेबसाइट द्वारा उपलब्ध
+        सुविधाओं के अनुसार आपका नाम, मोबाइल नंबर, ईमेल, गाँव,
+        क्षेत्र या आपके द्वारा दी गई कृषि संबंधी जानकारी एकत्र
+        और सुरक्षित की जा सकती है।
+      </p>
 
+      <ul className="space-y-3 mt-4">
+        <PrivacyPoint>
+          जानकारी का उपयोग अकाउंट चलाने और संबंधित सुविधाएँ उपलब्ध
+          कराने के लिए किया जाता है।
+        </PrivacyPoint>
+
+        <PrivacyPoint>
+          अपनी जानकारी केवल सही और आवश्यक विवरणों के साथ भरें।
+        </PrivacyPoint>
+
+        <PrivacyPoint>
+          अपने व्यक्तिगत डेटा को देखने, सुधारने या हटाने के अनुरोध
+          के लिए Contact page से संपर्क करें।
+        </PrivacyPoint>
+
+        <PrivacyPoint>
+          डेटा को लागू कानूनी आवश्यकताओं और संबंधित सुविधा के उद्देश्य
+          के अनुसार आवश्यक अवधि तक रखा जा सकता है।
+        </PrivacyPoint>
+      </ul>
+    </>
+  ),
+},
   {
     id: 'usage',
-    number: '02',
+    number: '03',
     icon: Lock,
     title: 'आपकी जानकारी का उपयोग कैसे किया जाता है?',
     color: 'text-amber-400',
@@ -110,7 +149,7 @@ const privacySections = [
 
   {
     id: 'sharing',
-    number: '03',
+    number: '04',
     icon: Bell,
     title: 'क्या आपकी जानकारी किसी के साथ साझा की जाती है?',
     color: 'text-sky-400',
@@ -119,7 +158,7 @@ const privacySections = [
     content: (
       <>
         <p>
-          किसान मित्र आपकी व्यक्तिगत जानकारी को बेचने या किराए पर देने का
+          किसान ओजस आपकी व्यक्तिगत जानकारी को बेचने या किराए पर देने का
           उद्देश्य नहीं रखता।
         </p>
 
@@ -145,7 +184,7 @@ const privacySections = [
 
   {
     id: 'cookies',
-    number: '04',
+    number: '05',
     icon: Cookie,
     title: 'Cookies और Analytics',
     color: 'text-purple-400',
@@ -159,11 +198,13 @@ const privacySections = [
         </p>
 
         <div className="grid sm:grid-cols-2 gap-3 mt-4">
-          <InfoCard
-            icon={Cookie}
-            title="Essential Cookies"
-            text="वेबसाइट की basic functionality के लिए आवश्यक cookies।"
-          />
+          <p>
+  वर्तमान में उपयोग की जा रही cookies और analytics technologies का विवरण
+  वेबसाइट पर सक्रिय services के अनुसार दिया जाएगा। यदि भविष्य में Google
+  AdSense या अन्य advertising services शुरू की जाती हैं, तो लागू होने वाली
+  cookies, advertising data processing और consent विकल्पों की जानकारी
+  इस नीति में अपडेट की जाएगी।
+</p>
 
           <InfoCard
             icon={Eye}
@@ -183,7 +224,7 @@ const privacySections = [
 
   {
     id: 'security',
-    number: '05',
+    number: '06',
     icon: ShieldCheck,
     title: 'डेटा सुरक्षा',
     color: 'text-emerald-400',
@@ -213,7 +254,7 @@ const privacySections = [
 
   {
     id: 'agriculture',
-    number: '06',
+    number: '07',
     icon: AlertTriangle,
     title: 'कृषि जानकारी के संबंध में महत्वपूर्ण सूचना',
     color: 'text-orange-400',
@@ -223,7 +264,7 @@ const privacySections = [
       <>
         <div className="bg-orange-500/5 border border-orange-500/20 rounded-xl p-4">
           <p className="text-slate-300">
-            किसान मित्र पर उपलब्ध मंडी भाव, मौसम, खेती की सलाह, फसल संबंधी
+            किसान ओजस पर उपलब्ध मंडी भाव, मौसम, खेती की सलाह, फसल संबंधी
             जानकारी, calculators और अन्य सामग्री सामान्य informational purpose
             के लिए है।
           </p>
@@ -254,7 +295,7 @@ const privacySections = [
 
   {
     id: 'changes',
-    number: '07',
+    number: '08',
     icon: RefreshCw,
     title: 'Privacy Policy में बदलाव',
     color: 'text-pink-400',
@@ -262,7 +303,7 @@ const privacySections = [
     border: 'border-pink-500/20',
     content: (
       <p>
-        किसान मित्र आवश्यकता के अनुसार इस Privacy Policy को समय-समय पर update
+        किसान ओजस आवश्यकता के अनुसार इस Privacy Policy को समय-समय पर update
         कर सकता है। किसी महत्वपूर्ण बदलाव के बाद इस page पर updated policy
         प्रकाशित की जाएगी। इसलिए users को समय-समय पर इस page को देखने की
         सलाह दी जाती है।
@@ -273,14 +314,14 @@ const privacySections = [
 
 const faqs = [
   {
-    question: 'क्या किसान मित्र मेरी personal information बेचता है?',
+    question: 'क्या किसान ओजस मेरी personal information बेचता है?',
     answer:
-      'नहीं। किसान मित्र का उद्देश्य आपकी personal information को बेचने या किराए पर देने का नहीं है।',
+      'नहीं। किसान ओजस का उद्देश्य आपकी personal information को बेचने या किराए पर देने का नहीं है।',
   },
   {
-    question: 'क्या किसान मित्र का कोई physical office या कृषि केंद्र है?',
+    question: 'क्या किसान ओजस का कोई physical office या कृषि केंद्र है?',
     answer:
-      'वर्तमान में किसान मित्र एक online personal agriculture information platform है। इसका कोई physical office, दुकान या कृषि केंद्र नहीं है। इसे व्यक्तिगत रूप से online माध्यम से संचालित किया जाता है।',
+      'वर्तमान में किसान ओजस एक online personal agriculture information platform है। इसका कोई physical office, दुकान या कृषि केंद्र नहीं है। इसे व्यक्तिगत रूप से online माध्यम से संचालित किया जाता है।',
   },
   {
     question: 'क्या मेरी जानकारी हमेशा store की जाती है?',
@@ -340,11 +381,7 @@ export default function PrivacyPolicy() {
   const [activeSection, setActiveSection] = useState('collection');
   const [openFaq, setOpenFaq] = useState(null);
 
-  const updatedDate = new Date().toLocaleDateString('hi-IN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  const updatedDate = '12 अक्टूबर 2026'
 
   const scrollToSection = (id) => {
     setActiveSection(id);
@@ -377,7 +414,7 @@ export default function PrivacyPolicy() {
             </h1>
 
             <p className="mt-4 text-sm sm:text-base text-slate-400 leading-relaxed max-w-2xl">
-              किसान मित्र आपकी privacy का सम्मान करता है। यहां बताया गया है कि
+              किसान ओजस आपकी privacy का सम्मान करता है। यहां बताया गया है कि
               website पर उपलब्ध सुविधाओं के दौरान information को किस प्रकार
               collect, use और protect किया जा सकता है।
             </p>
@@ -407,11 +444,11 @@ export default function PrivacyPolicy() {
 
             <div>
               <h2 className="text-white font-bold">
-                किसान मित्र क्या है?
+                किसान ओजस क्या है?
               </h2>
 
               <p className="text-sm text-slate-400 mt-1 leading-relaxed">
-                किसान मित्र एक व्यक्तिगत online कृषि information platform है।
+                किसान ओजस एक व्यक्तिगत online कृषि information platform है।
                 वर्तमान में इसका कोई physical office, दुकान या कृषि केंद्र नहीं
                 है। Website, content और digital services को online माध्यम से
                 व्यक्तिगत रूप से manage किया जाता है।
@@ -590,13 +627,13 @@ export default function PrivacyPolicy() {
               </Link>
 
               <a
-                href="mailto:privacy@krishimitra.in"
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 text-sm font-semibold hover:text-white hover:border-slate-600 transition-colors"
-              >
-                <Mail className="w-4 h-4" />
-                Email
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
+  href="mailto:rajmalpatidar2248@gmail.com?subject=Kisan%20Mitra%20MP%20Privacy%20Query"
+  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 text-sm font-semibold hover:text-white hover:border-slate-600 transition-colors"
+>
+  <Mail className="w-4 h-4" />
+  Email
+  <ExternalLink className="w-3.5 h-3.5" />
+</a>
             </div>
           </div>
         </div>

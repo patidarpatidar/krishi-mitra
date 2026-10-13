@@ -390,7 +390,7 @@ export default function AdminDashboardPage() {
             Welcome back, Admin 👋
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Kisan Mitra platform का content और activity manage करें।
+            Kisan Ojas platform का content और activity manage करें।
           </p>
           {lastUpdated && (
             <p className="mt-2 text-xs text-slate-400">

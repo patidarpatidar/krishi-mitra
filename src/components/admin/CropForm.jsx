@@ -47,7 +47,7 @@ const initialForm = {
 
   overview: "",
 
-  author: "किसान मित्र टीम",
+  author: "किसान ओजस टीम",
   publishedAt: "",
   updatedAtContent: "",
   readTime: "",

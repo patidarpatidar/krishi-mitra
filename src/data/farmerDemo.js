@@ -5,7 +5,7 @@ export const demoFarmer = {
 
   phone: "9340004380",
 
-  email: "farmer@krishimitra.in",
+  email: "farmer@kisanojas@gmail.com",
 
   password: "farmer123",
 

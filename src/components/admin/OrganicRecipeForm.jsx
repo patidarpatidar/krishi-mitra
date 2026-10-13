@@ -1252,7 +1252,7 @@ export default function OrganicRecipeForm({
                 value
               )
             }
-            placeholder="जीवामृत बनाने की विधि | Kisan Mitra"
+            placeholder="जीवामृत बनाने की विधि | Kisan Ojas"
           />
 
           <Input

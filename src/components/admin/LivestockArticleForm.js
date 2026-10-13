@@ -30,7 +30,7 @@ const initialForm = {
   status: "draft",
   featured: false,
   sortOrder: 0,
-  author: "Kisan Mitra",
+  author: "Kisan Ojas",
 };
 
 const legacyCategoryOptions = [

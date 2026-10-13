@@ -114,7 +114,7 @@ export default function LivestockAdminPage() {
         <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>
             <p className="text-sm font-semibold uppercase tracking-wide text-green-700">
-              Kisan Mitra Admin
+              Kisan Ojas Admin
             </p>
             <h1 className="mt-2 text-3xl font-bold text-slate-900">
               Livestock Articles

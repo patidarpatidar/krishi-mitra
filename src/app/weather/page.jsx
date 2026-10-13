@@ -995,7 +995,7 @@ export default function InteractiveWeatherPage() {
 
                 <Sun className="w-4 h-4" />
 
-                किसान मित्र • LIVE WEATHER
+                किसान ओजस • LIVE WEATHER
 
               </div>
 

@@ -520,7 +520,7 @@ export default function PashupalanSection() {
       yield: newListing.yield || 'उल्लेख नहीं',
       location: newListing.location || 'मध्य प्रदेश',
       price: Number(newListing.price),
-      seller: 'किसान मित्र सदस्य',
+      seller: 'किसान ओजस सदस्य',
       contact: newListing.contact,
       verified: false,
       vaccinated: false,
@@ -599,7 +599,7 @@ export default function PashupalanSection() {
               </div>
 
               <h1 className="text-2xl sm:text-4xl font-black text-white">
-                किसान मित्र{' '}
+                किसान ओजस{' '}
                 <span className="text-emerald-400">
                   डिजिटल पशुधन हब
                 </span>

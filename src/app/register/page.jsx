@@ -363,7 +363,7 @@ export default function RegisterPage() {
 
         <div className="mt-6 flex items-center justify-center gap-2 text-xs text-slate-500">
           <ShieldCheck className="w-4 h-4 text-emerald-500" />
-          <span>किसान मित्र सुरक्षित डेटा गोपनीयता नीति के साथ सुरक्षित</span>
+          <span>किसान ओजस सुरक्षित डेटा गोपनीयता नीति के साथ सुरक्षित</span>
         </div>
       </div>
     </main>

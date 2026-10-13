@@ -244,7 +244,7 @@ export default function AdminLayout({ children }) {
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
         <Link href="/admin" className="font-bold text-white">
-          🌱 किसान मित्र
+          🌱 किसान ओजस
         </Link>
 
         <button
@@ -289,7 +289,7 @@ export default function AdminLayout({ children }) {
             <span className="text-2xl">🌱</span>
 
             <div>
-              <div className="text-lg font-bold">किसान मित्र</div>
+              <div className="text-lg font-bold">किसान ओजस</div>
               <div className="text-xs text-slate-400">Admin Panel</div>
             </div>
           </Link>
@@ -388,7 +388,7 @@ export default function AdminLayout({ children }) {
         <header className="sticky top-0 z-30 hidden h-16 items-center justify-between border-b bg-white px-6 lg:flex">
           <div>
             <h1 className="text-lg font-bold text-slate-900">
-              Kisan Mitra Admin Panel
+              Kisan Ojas Admin Panel
             </h1>
 
             <p className="text-xs text-slate-500">

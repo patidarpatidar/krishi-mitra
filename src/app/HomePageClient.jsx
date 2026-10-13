@@ -984,7 +984,7 @@ export default function HomePageClient() {
                     font-black
                   ">
                     <Sparkles className="w-3 h-3" />
-                    किसान मित्र
+                    किसान ओजस
                   </span>
 
                   <h2 className="text-2xl font-black mt-4 leading-tight">

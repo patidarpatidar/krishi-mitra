@@ -94,9 +94,9 @@ export default function FarmerLayout({ children }) {
       router.replace("/login");
     }
 
-    window.addEventListener("krishi-mitra:farmer-session-expired", handleExpiredSession);
+    window.addEventListener("krishi-ojas:farmer-session-expired", handleExpiredSession);
     return () => {
-      window.removeEventListener("krishi-mitra:farmer-session-expired", handleExpiredSession);
+      window.removeEventListener("krishi-ojas:farmer-session-expired", handleExpiredSession);
     };
   }, [router]);
 

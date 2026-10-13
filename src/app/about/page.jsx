@@ -25,22 +25,22 @@ import {
 
 const ABOUT_CONTENT = {
   hero: {
-    eyebrow: "किसान मित्र के बारे में",
+    eyebrow: "किसान ओजस के बारे में",
     title: "किसान तक सही जानकारी, आसान भाषा में",
     description:
-      "किसान मित्र एक व्यक्तिगत कृषि ब्लॉग और डिजिटल सूचना प्लेटफॉर्म है, जिसका उद्देश्य किसानों और खेती से जुड़े लोगों तक उपयोगी कृषि जानकारी सरल हिंदी में पहुँचाना है।",
+      "किसान ओजस एक व्यक्तिगत कृषि ब्लॉग और डिजिटल सूचना प्लेटफॉर्म है, जिसका उद्देश्य किसानों और खेती से जुड़े लोगों तक उपयोगी कृषि जानकारी सरल हिंदी में पहुँचाना है।",
   },
 
   transparency: [
     {
       icon: UserCheck,
       title: "Self Managed",
-      text: "किसान मित्र को मैं स्वयं manage करता हूँ। Content, website और digital updates को personally संभाला जाता है।",
+      text: "किसान ओजस को मैं स्वयं manage करता हूँ। Content, website और digital updates को personally संभाला जाता है।",
     },
     {
       icon: Sparkles,
       title: "100% Online",
-      text: "अभी किसान मित्र का कोई physical office, दुकान या कृषि केंद्र नहीं है। यह online platform के रूप में संचालित है।",
+      text: "अभी किसान ओजस का कोई physical office, दुकान या कृषि केंद्र नहीं है। यह online platform के रूप में संचालित है।",
     },
     {
       icon: ShieldCheck,
@@ -96,22 +96,22 @@ const ABOUT_CONTENT = {
 
   faqs: [
     {
-      question: "क्या किसान मित्र का कोई physical office है?",
+      question: "क्या किसान ओजस का कोई physical office है?",
       answer:
-        "नहीं। वर्तमान में किसान मित्र का कोई physical office, दुकान या कृषि केंद्र नहीं है। इसे मैं स्वयं online माध्यम से संचालित करता हूँ।",
+        "नहीं। वर्तमान में किसान ओजस का कोई physical office, दुकान या कृषि केंद्र नहीं है। इसे मैं स्वयं online माध्यम से संचालित करता हूँ।",
     },
     {
-      question: "क्या किसान मित्र सरकारी वेबसाइट है?",
+      question: "क्या किसान ओजस सरकारी वेबसाइट है?",
       answer:
-        "नहीं। किसान मित्र एक independent agricultural information platform है। यह किसी सरकारी विभाग की official website नहीं है।",
+        "नहीं। किसान ओजस एक independent agricultural information platform है। यह किसी सरकारी विभाग की official website नहीं है।",
     },
     {
-      question: "क्या किसान मित्र पर दी गई जानकारी अंतिम सलाह है?",
+      question: "क्या किसान ओजस पर दी गई जानकारी अंतिम सलाह है?",
       answer:
         "नहीं। कृषि संबंधी महत्वपूर्ण निर्णय लेने से पहले स्थानीय कृषि विशेषज्ञ, कृषि विभाग, KVK या संबंधित official source से जानकारी verify करें।",
     },
     {
-      question: "क्या किसान किसान मित्र से संपर्क कर सकता है?",
+      question: "क्या किसान ओजस से संपर्क कर सकता है?",
       answer:
         "हाँ। Website के Contact section के माध्यम से feedback, suggestion या सामान्य जानकारी के लिए संपर्क किया जा सकता है।",
     },
@@ -239,7 +239,7 @@ export default function AboutPage() {
             </span>
 
             <h2 className="mt-2 text-3xl font-bold">
-              किसान मित्र के बारे में स्पष्ट जानकारी
+              किसान ओजस के बारे में स्पष्ट जानकारी
             </h2>
 
             <p className="mt-3 max-w-3xl text-slate-600">
@@ -298,7 +298,7 @@ export default function AboutPage() {
 
               <div className="mt-6 space-y-4 leading-8 text-slate-600">
                 <p>
-                  किसान मित्र को इस सोच के साथ बनाया गया है कि किसानों के लिए
+                  किसान ओजस को इस सोच के साथ बनाया गया है कि किसानों के लिए
                   उपयोगी कृषि जानकारी internet पर आसान हिंदी में उपलब्ध होनी
                   चाहिए।
                 </p>
@@ -325,7 +325,7 @@ export default function AboutPage() {
                     </h3>
 
                     <p className="mt-1 text-sm leading-6 text-green-800">
-                      किसान मित्र पर उपलब्ध जानकारी सामान्य educational और
+                      किसान ओजस पर उपलब्ध जानकारी सामान्य educational और
                       informational purpose के लिए है। खेती में आर्थिक या
                       तकनीकी निर्णय लेने से पहले स्थानीय विशेषज्ञ और official
                       sources से जानकारी verify करें।
@@ -393,7 +393,7 @@ export default function AboutPage() {
 
             <p className="mt-4 leading-7 text-slate-600">
               किसान को जरूरी information के लिए अलग-अलग जगहों पर भटकना न पड़े,
-              इसी दिशा में किसान मित्र को बनाया गया है।
+              इसी दिशा में किसान ओजस को बनाया गया है।
             </p>
           </div>
 
@@ -436,7 +436,7 @@ export default function AboutPage() {
             </span>
 
             <h2 className="mt-2 text-3xl font-bold">
-              किसान मित्र पर information कैसे तैयार होती है
+              किसान ओजस पर information कैसे तैयार होती है
             </h2>
           </div>
 
@@ -605,7 +605,7 @@ export default function AboutPage() {
             </span>
 
             <h2 className="mt-2 text-3xl font-bold">
-              किसान मित्र पर क्या मिलेगा?
+              किसान ओजस पर क्या मिलेगा?
             </h2>
           </div>
 
@@ -662,7 +662,7 @@ export default function AboutPage() {
                   </h2>
 
                   <p className="mt-2 max-w-2xl leading-7 text-green-900/80">
-                    किसान मित्र का कोई physical कृषि केंद्र या office नहीं है।
+                    किसान ओजस का कोई physical कृषि केंद्र या office नहीं है।
                     Platform को online माध्यम से manage किया जाता है और
                     जानकारी website के माध्यम से उपलब्ध कराई जाती है।
                   </p>
@@ -754,7 +754,7 @@ export default function AboutPage() {
             </div>
 
             <p className="mt-3 text-green-100">
-              किसान मित्र को बेहतर बनाने के लिए आपका feedback महत्वपूर्ण है।
+              किसान ओजस को बेहतर बनाने के लिए आपका feedback महत्वपूर्ण है।
             </p>
 
             <form onSubmit={submitFeedback} className="mt-6">

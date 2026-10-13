@@ -36,7 +36,7 @@ const CONTACT_CONFIG = {
     display: "+91 98260 XXXXX",
   },
 
-  email: "contact@krishimitra.in",
+  email: "kisanojascontact@gmail.com",
 
   location: "नीमच एवं मालवांचल क्षेत्र, मध्य प्रदेश",
 
@@ -80,7 +80,7 @@ const CONTACT_CONFIG = {
 ========================================================= */
 
 const whatsappMessage = encodeURIComponent(
-  "नमस्ते किसान मित्र, मुझे मंडी भाव या खेती के संबंध में जानकारी चाहिए।"
+  "नमस्ते किसान ओजस, मुझे मंडी भाव या खेती के संबंध में जानकारी चाहिए।"
 );
 
 const whatsappUrl = `https://wa.me/${CONTACT_CONFIG.whatsapp.number}?text=${whatsappMessage}`;
@@ -91,9 +91,9 @@ const whatsappUrl = `https://wa.me/${CONTACT_CONFIG.whatsapp.number}?text=${what
 
 const FAQS = [
   {
-    question: "क्या किसान मित्र का कोई physical office या कृषि केंद्र है?",
+    question: "क्या किसान ओजस का कोई physical office या कृषि केंद्र है?",
     answer:
-      "नहीं। वर्तमान में किसान मित्र का कोई physical office, दुकान या कृषि केंद्र नहीं है। इसे मैं स्वयं online माध्यम से संचालित करता हूँ।",
+      "नहीं। वर्तमान में किसान ओजस का कोई physical office, दुकान या कृषि केंद्र नहीं है। इसे मैं स्वयं online माध्यम से संचालित करता हूँ।",
   },
   {
     question: "क्या Contact form से सीधे कृषि सलाह मिलती है?",
@@ -324,7 +324,7 @@ export default function ContactPage() {
 
             <h1 className="text-4xl font-extrabold leading-tight sm:text-5xl">
 
-              किसान मित्र से
+              किसान ओजस से
               <span className="text-emerald-300">
                 {" "}संपर्क करें
               </span>
@@ -334,7 +334,7 @@ export default function ContactPage() {
             <p className="mt-6 max-w-3xl text-base leading-8 text-emerald-50 sm:text-lg">
 
               मंडी भाव, खेती-किसानी, मौसम, सरकारी योजनाओं या
-              किसान मित्र website से जुड़े किसी सवाल, सुझाव या feedback
+              किसान ओजस website से जुड़े किसी सवाल, सुझाव या feedback
               के लिए message भेजें।
 
             </p>
@@ -387,7 +387,7 @@ export default function ContactPage() {
               </h3>
 
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                किसान मित्र को मैं स्वयं manage करता हूँ। Website,
+                किसान ओजस को मैं स्वयं manage करता हूँ। Website,
                 content और digital updates personally संभाले जाते हैं।
               </p>
 
@@ -404,7 +404,7 @@ export default function ContactPage() {
               </h3>
 
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                वर्तमान में किसान मित्र का कोई physical office,
+                वर्तमान में किसान ओजस का कोई physical office,
                 दुकान या कृषि केंद्र नहीं है।
               </p>
 
@@ -421,7 +421,7 @@ export default function ContactPage() {
               </h3>
 
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                किसान मित्र सरकारी website या सरकारी कृषि कार्यालय
+                किसान ओजस सरकारी website या सरकारी कृषि कार्यालय
                 नहीं है। जरूरी जानकारी official sources से verify करें।
               </p>
 
@@ -680,7 +680,7 @@ export default function ContactPage() {
                 </div>
 
                 <p className="mt-6 text-sm leading-7 text-slate-300">
-                  किसान मित्र एक online agricultural information platform
+                  किसान ओजस एक online agricultural information platform
                   है। इसका मुख्य focus नीमच, मंदसौर, रतलाम और आसपास के
                   मालवांचल क्षेत्र की कृषि जानकारी पर है।
                 </p>
@@ -728,7 +728,7 @@ export default function ContactPage() {
                 </h3>
 
                 <p className="mt-3 text-sm leading-7 text-green-900/80">
-                  किसान मित्र का अभी कोई physical office या कृषि केंद्र
+                  किसान ओजस का अभी कोई physical office या कृषि केंद्र
                   नहीं है। Contact form, email और available online
                   communication channels के माध्यम से संपर्क किया जा सकता है।
                 </p>
@@ -1195,7 +1195,7 @@ export default function ContactPage() {
           </div>
 
           <h2 className="mt-5 text-3xl font-bold">
-            खेती की जानकारी के लिए किसान मित्र explore करें
+            खेती की जानकारी के लिए किसान ओजस explore करें
           </h2>
 
           <p className="mx-auto mt-3 max-w-2xl text-green-50">

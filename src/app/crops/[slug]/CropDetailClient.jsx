@@ -815,7 +815,7 @@ export default function CropDetailPage({ params, initialRecord }) {
         : '';
 
     const shareData = {
-      title: `${crop.name} - किसान मित्र`,
+      title: `${crop.name} - किसान ओजस`,
       text: `${crop.name} की खेती और मंडी भाव की जानकारी`,
       url,
     };
@@ -1709,7 +1709,7 @@ export default function CropDetailPage({ params, initialRecord }) {
                         </p>
                         {item.answer && (
                           <div className="mt-3 rounded-xl border border-emerald-100 bg-emerald-50 p-3">
-                            <p className="text-xs font-bold text-emerald-800">किसान मित्र का जवाब</p>
+                            <p className="text-xs font-bold text-emerald-800">किसान ओजस का जवाब</p>
                             <p className="mt-1 text-sm leading-6 text-emerald-900">{item.answer}</p>
                           </div>
                         )}
@@ -1783,7 +1783,7 @@ export default function CropDetailPage({ params, initialRecord }) {
               <SectionHeading
                 icon={<Leaf className="h-5 w-5" />}
                 title="संबंधित फसलें"
-                subtitle="किसान मित्र पर और जानकारी पढ़ें"
+                subtitle="किसान ओजस पर और जानकारी पढ़ें"
               />
 
               {relatedCropsError && (
@@ -2071,7 +2071,7 @@ function SectionHeading({
         {icon}
 
         <span className="text-xs font-bold uppercase tracking-wider">
-          किसान मित्र
+          किसान ओजस
         </span>
       </div>
 
