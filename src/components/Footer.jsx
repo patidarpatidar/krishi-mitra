@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import LogoSvg from "@/components/LogoSvg";
 import { fetchSeoAll } from "@/lib/seo";
+import { SITE_NAME, SUPPORT_EMAIL } from "@/lib/siteConfig";
 
 import {
   Send,
@@ -40,7 +41,7 @@ const API_BASE = (
 
 const FOOTER_CONFIG = {
   brand: {
-    name: "किसान ओजस",
+    name: SITE_NAME,
     tagline: "आपका डिजिटल कृषि साथी",
     description:
       "किसान ओजस एक व्यक्तिगत कृषि information platform है, जहाँ किसानों के लिए मंडी भाव, मौसम, फसल जानकारी, कृषि ब्लॉग और उपयोगी farming information सरल हिंदी में उपलब्ध कराई जाती है।",
@@ -49,7 +50,7 @@ const FOOTER_CONFIG = {
   contact: {
     region: "नीमच एवं मालवांचल क्षेत्र, मध्य प्रदेश",
     phone: "18001801551",
-    email: "kisanojascontact@gmail.com",
+    email: SUPPORT_EMAIL,
   },
 
   whatsapp: {

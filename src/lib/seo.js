@@ -1,3 +1,6 @@
+import { SITE_NAME, SUPPORT_EMAIL } from "@/lib/siteConfig";
+export { SITE_NAME } from "@/lib/siteConfig";
+
 const API_BASE = (
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
 ).replace(/\/+$/, "");
@@ -13,7 +16,6 @@ const siteOriginValue =
   vercelProductionOrigin ||
   (process.env.NODE_ENV !== "production" ? "http://localhost:3000" : "");
 
-export const SITE_NAME = "किसान ओजस";
 export const SITE_ORIGIN = normalizeOrigin(siteOriginValue);
 
 const STATIC_PAGE_SEO = {
@@ -398,6 +400,7 @@ export function getOrganizationJsonLd() {
     "@type": "Organization",
     "@id": absoluteUrl("/#organization"),
     name: SITE_NAME,
+    email: SUPPORT_EMAIL,
     url,
     logo: absoluteUrl("/kisan-ojas-logo.svg"),
     areaServed: { "@type": "AdministrativeArea", name: "Madhya Pradesh, India" },

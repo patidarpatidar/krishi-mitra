@@ -23,6 +23,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { inquiryApi } from "@/lib/inquiryApi";
+import { SUPPORT_EMAIL } from "@/lib/siteConfig";
 
 /* =========================================================
    CONTACT CONFIG
@@ -36,7 +37,7 @@ const CONTACT_CONFIG = {
     display: "+91 98260 XXXXX",
   },
 
-  email: "kisanojascontact@gmail.com",
+  email: SUPPORT_EMAIL,
 
   location: "नीमच एवं मालवांचल क्षेत्र, मध्य प्रदेश",
 

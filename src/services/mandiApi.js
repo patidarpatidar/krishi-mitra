@@ -74,6 +74,7 @@ export function normalizeMandiRow(row, index = 0) {
   const rawMin = getField(row, ["min_price", "minPrice", "minRate"]);
   const rawMax = getField(row, ["max_price", "maxPrice", "maxRate"]);
   const currentPrice = numberOrNull(rawModal);
+  const asOnPrice = numberOrNull(getField(row, ["as_on_price"]));
   const yesterdayPrice = numberOrNull(row.one_day_ago_price);
   const twoDaysAgoPrice = numberOrNull(row.two_day_ago_price);
   const availablePrices = [currentPrice, yesterdayPrice, twoDaysAgoPrice].filter(
@@ -110,6 +111,7 @@ export function normalizeMandiRow(row, index = 0) {
     cropEnglish: getField(row, ["cropEnglish", "cmdt_eng_name"]) || cropName,
     variety: getField(row, ["variety", "variety_name"]) ?? "—",
     mspPrice: numberOrNull(row.msp_price),
+    asOnPrice,
     modalPrice: latestPrice,
     yesterdayPrice,
     twoDaysAgoPrice,
@@ -214,11 +216,14 @@ export async function getAgmarknetLocationIds(stateName, districtName, filterSou
 
 export async function getAgmarknetRates(filters = {}) {
   const date = filters.date || getLocalDate();
+  const page = Math.max(1, Number(filters.page) || 1);
+  const limit = Math.max(1, Number(filters.limit) || 250);
 
   const payload = {
     dashboard: "marketwise_price_arrival",
     date,
-    limit: Number(filters.limit) || 250,
+    page,
+    limit,
     format: "json",
   };
 
@@ -292,14 +297,56 @@ export async function getAgmarknetRates(filters = {}) {
 
   const records = extractRows(result);
   const rows = records.map(normalizeMandiRow);
+  const responseColumns =
+    result?.data?.data?.columns ?? result?.data?.columns ?? result?.columns ?? [];
+  const rawPagination = [
+    result?.pagination,
+    result?.data?.pagination,
+    result?.data?.data?.pagination,
+    result?.raw?.pagination,
+    result?.raw?.data?.pagination,
+    result?.raw?.data?.data?.pagination,
+  ].find((value) => value && typeof value === "object" && !Array.isArray(value)) || {};
+  const currentPage =
+    numberOrNull(rawPagination.page ?? rawPagination.current_page ?? rawPagination.currentPage) ?? page;
+  const total = numberOrNull(
+    rawPagination.total ??
+      rawPagination.total_records ??
+      rawPagination.totalRecords ??
+      rawPagination.total_count
+  );
+  const totalPages =
+    numberOrNull(
+      rawPagination.total_pages ??
+        rawPagination.totalPages ??
+        rawPagination.last_page
+    ) ?? (total === null ? null : Math.ceil(total / limit));
+  const explicitHasNext =
+    rawPagination.has_next_page ??
+    rawPagination.hasNextPage ??
+    rawPagination.has_next;
+  const nextPage = rawPagination.next_page ?? rawPagination.nextPage;
 
   return {
     success: true,
     source: result.source ?? "AGMARKNET",
     date,
-    total: result.data?.records?.length ?? rows.length,
-    pagination: result.pagination ?? null,
-    columns: result.data?.columns ?? [],
+    total,
+    pagination: {
+      page: currentPage,
+      limit,
+      total,
+      totalPages,
+      hasNext:
+        typeof explicitHasNext === "boolean"
+          ? explicitHasNext
+          : nextPage !== undefined
+            ? Boolean(nextPage)
+            : totalPages !== null
+              ? currentPage < totalPages
+              : rows.length === limit,
+    },
+    columns: responseColumns,
     data: rows,
     raw: result,
   };

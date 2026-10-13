@@ -17,6 +17,8 @@ import {
   Info,
   BarChart3,
   Layers,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -42,6 +44,8 @@ import {
   formatMandiDateDisplay,
   parseMandiDate,
 } from "@/services/mandiApi";
+
+const PAGE_SIZE = 10;
 
 function normalizeKey(value) {
   return String(value || "")
@@ -116,6 +120,16 @@ export default function MandiBhavPage() {
   const [date, setDate] = useState(() => getLocalDate());
   const [search, setSearch] = useState("");
   const [rates, setRates] = useState([]);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
+  const [reportColumns, setReportColumns] = useState([]);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: PAGE_SIZE,
+    total: null,
+    totalPages: null,
+    hasNext: false,
+  });
   const [selectedChartCrop, setSelectedChartCrop] = useState("Soyabean");
   const [loadingFilters, setLoadingFilters] = useState(true);
   const [loadingRates, setLoadingRates] = useState(false);
@@ -182,6 +196,7 @@ export default function MandiBhavPage() {
   }, []);
 
   const changeFilter = useCallback((key, value) => {
+    setPage(1);
     setFilters((prev) => {
       const next = { ...prev, [key]: value };
       if (key === "state") {
@@ -216,8 +231,8 @@ export default function MandiBhavPage() {
     return next;
   }, [options, filters]);
 
-  // Load rates function with 250 limit
-  const loadRates = useCallback(async () => {
+  // Load one server-paginated page of rates.
+  const loadRates = useCallback(async (requestedPage = page) => {
     setLoadingRates(true);
     setRateError("");
     setHasSearched(true);
@@ -229,11 +244,20 @@ export default function MandiBhavPage() {
         district: filters.district || 318,
         market: filters.market || "",
         commodity: filters.commodity || "",
-        limit: 250,
+        page: requestedPage,
+        limit: pageSize,
       });
 
       const rows = result.data || [];
       setRates(rows);
+      setReportColumns(result.columns || []);
+      setPagination(result.pagination || {
+        page: requestedPage,
+        limit: pageSize,
+        total: null,
+        totalPages: null,
+        hasNext: rows.length === PAGE_SIZE,
+      });
 
       if (!rows.length) {
         setRateError("चयनित फ़िल्टर के लिए इस दिनांक पर कोई डेटा उपलब्ध नहीं है। कृपया दिनांक या मंडी बदलकर देखें।");
@@ -244,7 +268,7 @@ export default function MandiBhavPage() {
     } finally {
       setLoadingRates(false);
     }
-  }, [date, filters]);
+  }, [date, filters, page, pageSize]);
 
   // Initial fetch on mount
   useEffect(() => {
@@ -275,6 +299,28 @@ export default function MandiBhavPage() {
         year: "numeric",
       })
     : null;
+
+  const comparisonDateLabels = useMemo(() => {
+    const priceColumns = reportColumns.find(
+      (column) => column.key === "price_group"
+    )?.columns;
+    if (Array.isArray(priceColumns) && priceColumns.length) {
+      return priceColumns.map((column) => column.title);
+    }
+
+    const referenceDate = latestAvailableDate || parseMandiDate(date);
+    if (!referenceDate) return ["आज", "1 दिन पूर्व", "2 दिन पूर्व"];
+
+    return [0, 1, 2].map((daysAgo) => {
+      const labelDate = new Date(referenceDate);
+      labelDate.setDate(labelDate.getDate() - daysAgo);
+      return labelDate.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+    });
+  }, [reportColumns, latestAvailableDate, date]);
 
   // Selected names for banner context
   const selectedStateName =
@@ -395,9 +441,13 @@ export default function MandiBhavPage() {
         visibleOptions={visibleOptions}
         date={date}
         onChangeFilter={changeFilter}
-        onChangeDate={setDate}
-        onSearch={loadRates}
+        onChangeDate={(value) => {
+          setDate(value);
+          setPage(1);
+        }}
+        onSearch={() => loadRates(page)}
         onReset={() => {
+          setPage(1);
           setFilters({
             state: "19",
             district: "318",
@@ -420,7 +470,7 @@ export default function MandiBhavPage() {
               <p className="text-[11px] font-bold text-slate-500">कुल फसलें</p>
             </div>
             <p className="mt-2 text-xl sm:text-2xl font-black text-slate-900">
-              {filteredRates.length}
+              {pagination.total ?? filteredRates.length}
             </p>
           </div>
 
@@ -614,7 +664,7 @@ export default function MandiBhavPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-4">
           <div>
             <h2 className="text-base sm:text-lg font-black text-slate-900">
-              मंडी भाव परिणाम ({filteredRates.length})
+              मंडी भाव परिणाम ({pagination.total ?? filteredRates.length})
             </h2>
             <p className="text-[11px] text-slate-500">
               {latestAvailableDateText && (
@@ -646,7 +696,7 @@ export default function MandiBhavPage() {
               <p>{rateError}</p>
               <button
                 type="button"
-                onClick={loadRates}
+                onClick={() => loadRates(page)}
                 className="mt-2 inline-flex items-center gap-1 rounded-lg bg-amber-200/80 px-2.5 py-1 text-[11px] font-bold text-amber-900 hover:bg-amber-300 transition"
               >
                 <RefreshCw className="h-3 w-3" /> दोबारा प्रयास करें
@@ -726,28 +776,26 @@ export default function MandiBhavPage() {
                     </div>
                   </div>
 
-                  {/* Price Comparison Grid */}
-                  <div className="mt-3 grid grid-cols-3 gap-2 border-t border-slate-100 pt-3 text-center">
-                    <div className="rounded-xl bg-slate-50 p-2">
-                      <p className="text-[9px] font-bold text-slate-500">MSP</p>
-                      <p className="text-xs font-black text-slate-800 mt-0.5">
-                        {formatMandiPrice(row.mspPrice)}
-                      </p>
+                  <div className="mt-3 border-t border-slate-100 pt-3">
+                    <p className="mb-2 text-[10px] font-bold text-slate-500">Price (₹/Quintal)</p>
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      {[row.asOnPrice, row.yesterdayPrice, row.twoDaysAgoPrice].map((price, index) => (
+                        <div key={comparisonDateLabels[index]} className="rounded-xl bg-slate-50 p-2">
+                          <p className="text-[9px] font-bold text-slate-500">{comparisonDateLabels[index]}</p>
+                          <p className="mt-0.5 text-xs font-black text-slate-800">{formatMandiPrice(price)}</p>
+                        </div>
+                      ))}
                     </div>
-
-                    <div className="rounded-xl bg-slate-50 p-2">
-                      <p className="text-[9px] font-bold text-slate-500">1 दिन पूर्व</p>
-                      <p className="text-xs font-black text-slate-800 mt-0.5">
-                        {formatMandiPrice(row.yesterdayPrice)}
-                      </p>
+                    <p className="mb-2 mt-3 text-[10px] font-bold text-slate-500">Arrival (Metric Tonnes)</p>
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      {[row.arrival, row.yesterdayArrival, row.twoDaysAgoArrival].map((arrival, index) => (
+                        <div key={comparisonDateLabels[index]} className="rounded-xl bg-emerald-50 p-2">
+                          <p className="text-[9px] font-bold text-emerald-700">{comparisonDateLabels[index]}</p>
+                          <p className="mt-0.5 text-xs font-black text-emerald-800">{arrival != null ? arrival : "—"}</p>
+                        </div>
+                      ))}
                     </div>
-
-                    <div className="rounded-xl bg-slate-50 p-2">
-                      <p className="text-[9px] font-bold text-slate-500">आवक (MT)</p>
-                      <p className="text-xs font-black text-emerald-700 mt-0.5">
-                        {row.arrival != null ? `${row.arrival} MT` : "—"}
-                      </p>
-                    </div>
+                    <p className="mt-2 text-right text-[10px] font-semibold text-slate-500">MSP: {formatMandiPrice(row.mspPrice)}</p>
                   </div>
 
                   {/* Footer Meta: Date */}
@@ -769,59 +817,112 @@ export default function MandiBhavPage() {
             <table className="w-full table-fixed border-collapse text-left text-xs">
               <thead>
                 <tr className="bg-emerald-900/90 text-white border-b border-emerald-800 text-[11px] uppercase tracking-wider font-bold">
-                  <th className="w-[11%] px-2.5 py-3.5">दिनांक (Date)</th>
-                  <th className="w-[18%] px-2.5 py-3.5">फसल (Commodity)</th>
-                  <th className="w-[12%] px-2.5 py-3.5">ग्रुप</th>
-                  <th className="w-[11%] px-2.5 py-3.5">MSP भाव</th>
-                  <th className="w-[16%] px-2.5 py-3.5">वर्तमान मॉडल भाव</th>
-                  <th className="w-[14%] px-2.5 py-3.5">1 दिन पूर्व भाव</th>
-                  <th className="w-[10%] px-2.5 py-3.5">आवक (MT)</th>
-                  <th className="w-[8%] px-2.5 py-3.5 text-center">ट्रेंड</th>
+                  <th rowSpan={2} className="w-[13%] border-r border-white/20 px-2.5 py-3.5">Commodity Group</th>
+                  <th rowSpan={2} className="w-[17%] border-r border-white/20 px-2.5 py-3.5">Commodity</th>
+                  <th rowSpan={2} className="w-[11%] border-r border-white/30 px-2.5 py-3.5">MSP (₹/Quintal)</th>
+                  <th colSpan={3} className="w-[30%] border-x border-white/30 px-2.5 py-2 text-center">Price (₹/Quintal)</th>
+                  <th colSpan={3} className="w-[29%] border-l border-white/30 px-2.5 py-2 text-center">Arrival (Metric Tonnes)</th>
+                </tr>
+                <tr className="bg-emerald-800 text-white text-[10px] font-bold">
+                  {comparisonDateLabels.map((label) => <th key={`price-${label}`} className="border-r border-white/20 px-1.5 py-2 text-center">{label}</th>)}
+                  {comparisonDateLabels.map((label) => <th key={`arrival-${label}`} className="border-r border-white/20 px-1.5 py-2 text-center">{label}</th>)}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white">
                 {filteredRates.map((row) => (
                   <tr key={row.id} className="hover:bg-emerald-50/50 transition">
-                    <td className="whitespace-nowrap px-2.5 py-3.5 font-semibold text-slate-600">
-                      {formatMandiDateDisplay(row.date)}
-                    </td>
-                    <td className="break-words px-2.5 py-3.5">
+                    <td className="break-words border-r border-slate-200 px-2.5 py-3.5 text-slate-600 font-medium">{row.group || "—"}</td>
+                    <td className="break-words border-r border-slate-200 px-2.5 py-3.5">
                       <div className="flex items-center gap-2">
                         <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
                         <div>
                           <p className="font-black text-slate-900 text-sm">{row.commodity}</p>
-                          <p className="text-[10px] text-slate-400">{row.variety || "सामान्य"}</p>
+                          <p className="text-[10px] text-slate-400">{row.variety || "—"}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="break-words px-2.5 py-3.5 text-slate-600 font-medium">{row.group}</td>
-                    <td className="whitespace-nowrap px-2.5 py-3.5 font-bold text-slate-700">{formatMandiPrice(row.mspPrice)}</td>
-                    <td className="whitespace-nowrap px-2.5 py-3.5 font-black text-emerald-800 text-sm">
-                      <span className="rounded-xl bg-emerald-50 px-2.5 py-1 border border-emerald-200">
-                        {formatMandiPrice(row.modalPrice)}
-                      </span>
-                    </td>
-                    <td className="whitespace-nowrap px-2.5 py-3.5 font-semibold text-slate-600">{formatMandiPrice(row.yesterdayPrice)}</td>
-                    <td className="whitespace-nowrap px-2.5 py-3.5 font-bold text-slate-800">{row.arrival != null ? `${row.arrival} MT` : "—"}</td>
-                    <td className="px-2.5 py-3.5 text-center">
-                      {row.trend === "up" ? (
-                        <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-bold text-emerald-800">
-                          <ArrowUpRight className="h-3.5 w-3.5" /> वृद्धि
-                        </span>
-                      ) : row.trend === "down" ? (
-                        <span className="inline-flex items-center gap-0.5 rounded-full bg-rose-100 px-2.5 py-1 text-[10px] font-bold text-rose-800">
-                          <ArrowDownRight className="h-3.5 w-3.5" /> गिरावट
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-0.5 rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-600">
-                          <Minus className="h-3.5 w-3.5" /> स्थिर
-                        </span>
-                      )}
-                    </td>
+                    <td className="whitespace-nowrap border-r-2 border-slate-200 px-2.5 py-3.5 font-bold text-slate-700">{formatMandiPrice(row.mspPrice)}</td>
+                    {[row.asOnPrice, row.yesterdayPrice, row.twoDaysAgoPrice].map((price, index) => (
+                      <td key={`price-${index}`} className={`whitespace-nowrap border-r ${index === 2 ? "border-r-2 border-slate-200" : "border-slate-100"} px-2 py-3.5 text-center font-bold ${index === 0 ? "text-emerald-800" : "text-slate-600"}`}>
+                        {formatMandiPrice(price)}
+                      </td>
+                    ))}
+                    {[row.arrival, row.yesterdayArrival, row.twoDaysAgoArrival].map((arrival, index) => (
+                      <td key={`arrival-${index}`} className={`whitespace-nowrap border-r px-2 py-3.5 text-center font-semibold text-slate-700 ${index === 2 ? "border-slate-200" : "border-slate-100"}`}>
+                        {arrival != null ? arrival : "—"}
+                      </td>
+                    ))}
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {!loadingRates && rates.length > 0 && (
+          <div className="mt-5 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs font-medium text-slate-500">
+              {pagination.total != null
+                ? `${pagination.total.toLocaleString("en-IN")} कुल रिकॉर्ड`
+                : `${rates.length} रिकॉर्ड इस पेज पर`}
+              {` · पेज ${page}${pagination.totalPages ? ` / ${pagination.totalPages}` : ""}`}
+            </p>
+            <div className="flex flex-wrap items-center justify-between gap-3 sm:justify-end">
+              <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
+                Rows per page
+                <select
+                  value={pageSize}
+                  onChange={(event) => {
+                    setPage(1);
+                    setPageSize(Number(event.target.value));
+                  }}
+                  disabled={loadingRates}
+                  className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
+                >
+                  {[10, 20, 50].map((size) => (
+                    <option key={size} value={size}>{size}</option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="button"
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                disabled={loadingRates || page <= 1}
+                aria-label="पिछला पेज"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              {Array.from(
+                {
+                  length: Math.max(
+                    1,
+                    Math.min(5, (pagination.totalPages || (pagination.hasNext ? page + 1 : page)) - Math.max(1, page - 2) + 1)
+                  ),
+                },
+                (_, index) => Math.max(1, page - 2) + index
+              ).map((pageNumber) => (
+                <button
+                  key={pageNumber}
+                  type="button"
+                  onClick={() => setPage(pageNumber)}
+                  disabled={loadingRates}
+                  aria-current={pageNumber === page ? "page" : undefined}
+                  className={`inline-flex h-10 min-w-10 items-center justify-center rounded-xl px-3 text-sm font-bold transition ${pageNumber === page ? "bg-emerald-700 text-white" : "border border-slate-200 bg-white text-slate-700 hover:border-emerald-300 hover:bg-emerald-50"}`}
+                >
+                  {pageNumber}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setPage((current) => current + 1)}
+                disabled={loadingRates || !pagination.hasNext || (pagination.totalPages != null && page >= pagination.totalPages)}
+                aria-label="अगला पेज"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         )}
       </section>

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 import {
   Target,
@@ -19,7 +18,6 @@ import {
   MapPin,
   TrendingUp,
   HelpCircle,
-  Send,
   UserCheck,
 } from "lucide-react";
 
@@ -142,25 +140,14 @@ const cropData = {
 };
 
 export default function AboutPage() {
-  const router = useRouter();
   const [landAcres, setLandAcres] = useState(5);
   const [cropType, setCropType] = useState("wheat");
   const [openFaq, setOpenFaq] = useState(0);
-  const [feedback, setFeedback] = useState("");
 
   const crop = cropData[cropType];
 
   const estimatedSavings =
     Math.max(0, Number(landAcres) || 0) * crop.savingsPerAcre;
-
-  const submitFeedback = (e) => {
-    e.preventDefault();
-
-    if (!feedback.trim()) return;
-    router.push(
-      `/contact?type=Blog%20Feedback&message=${encodeURIComponent(feedback.trim())}`
-    );
-  };
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
@@ -218,7 +205,6 @@ export default function AboutPage() {
             ["#calculator", "लाभ कैलकुलेटर"],
             ["#features", "मुख्य जानकारी"],
             ["#faqs", "सामान्य सवाल"],
-            ["#feedback", "सुझाव भेजें"],
           ].map(([href, label]) => (
             <a key={href} href={href} className="shrink-0 rounded-full border border-slate-200 px-3.5 py-2 text-xs font-semibold text-slate-600 transition hover:border-green-300 hover:bg-green-50 hover:text-green-800">
               {label}
@@ -735,55 +721,6 @@ export default function AboutPage() {
             })}
           </div>
 
-        </div>
-      </section>
-
-      {/* =====================================================
-          FEEDBACK
-      ====================================================== */}
-      <section id="feedback" className="scroll-mt-20 bg-white">
-        <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
-
-          <div className="rounded-3xl bg-green-950 p-8 text-white sm:p-10">
-
-            <div className="flex items-center gap-3">
-              <MessageSquare size={25} />
-              <h2 className="text-2xl font-bold">
-                आपका सुझाव
-              </h2>
-            </div>
-
-            <p className="mt-3 text-green-100">
-              किसान ओजस को बेहतर बनाने के लिए आपका feedback महत्वपूर्ण है।
-            </p>
-
-            <form onSubmit={submitFeedback} className="mt-6">
-
-              <textarea
-                value={feedback}
-                onChange={(e) => setFeedback(e.target.value)}
-                rows={4}
-                maxLength={500}
-                placeholder="अपना सुझाव लिखें..."
-                className="w-full rounded-2xl border border-white/20 bg-white/10 px-4 py-4 text-white placeholder:text-green-100/60 outline-none focus:border-white"
-              />
-
-              <div className="mt-4 flex flex-wrap items-center gap-4">
-
-                <button
-                  type="submit"
-                  className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 font-semibold text-green-950 transition hover:bg-green-50"
-                >
-                  भेजें
-                  <Send size={18} />
-                </button>
-
-                <span className="text-xs text-green-200">{feedback.length}/500 • संपर्क फॉर्म में आपका सुझाव पहले से भरा होगा।</span>
-
-              </div>
-            </form>
-
-          </div>
         </div>
       </section>
 

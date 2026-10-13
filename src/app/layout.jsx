@@ -1,6 +1,7 @@
 import '@/app/globals.css';
 import Script from "next/script";
 import ConditionalWebsiteLayout from "@/components/ConditionalWebsiteLayout";
+import { SITE_NAME } from "@/lib/siteConfig";
 import {
   SITE_ORIGIN,
   createMetadata,
@@ -21,7 +22,7 @@ const adsenseClientId = /^ca-pub-\d{16}$/.test(
 
 export const metadata = {
   ...createMetadata({
-    title: "किसान ओजस | मध्य प्रदेश के किसानों के लिए कृषि जानकारी",
+    title: `${SITE_NAME} | मध्य प्रदेश के किसानों के लिए कृषि जानकारी`,
     description:
       "मध्य प्रदेश के किसानों के लिए फसल गाइड, मंडी भाव, मौसम, सरकारी योजनाएं, जैविक खेती और पशुपालन की जानकारी।",
     path: "/",
@@ -46,15 +47,15 @@ export const metadata = {
   }),
   metadataBase: SITE_ORIGIN ? new URL(SITE_ORIGIN) : undefined,
   title: {
-    default: "किसान ओजस | मध्य प्रदेश के किसानों के लिए कृषि जानकारी",
-    template: "%s | किसान ओजस",
+    default: `${SITE_NAME} | मध्य प्रदेश के किसानों के लिए कृषि जानकारी`,
+    template: `%s | ${SITE_NAME}`,
   },
-  applicationName: "किसान ओजस",
+  applicationName: SITE_NAME,
   category: "agriculture",
   manifest: "/manifest.json",
   other: {
     "theme-color": "#059669",
-    "apple-mobile-web-app-title": "किसान ओजस",
+    "apple-mobile-web-app-title": SITE_NAME,
   },
   verification: {
     google: process.env.GOOGLE_SITE_VERIFICATION || undefined,

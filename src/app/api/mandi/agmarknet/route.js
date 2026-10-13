@@ -63,6 +63,7 @@ export async function POST(request) {
     const grades = normalizeIdList(body.grades, [4]);
     const variety = normalizeId(body.variety, 100021);
     const state = normalizeId(body.state, 19);
+    const page = body.page === undefined ? 1 : Number(body.page);
     const limit = body.limit === undefined ? MAX_LIMIT : Number(body.limit);
 
     if (
@@ -73,6 +74,8 @@ export async function POST(request) {
       !grades ||
       variety === null ||
       state === null ||
+      !Number.isSafeInteger(page) ||
+      page < 1 ||
       !Number.isSafeInteger(limit) ||
       limit < 1 ||
       limit > MAX_LIMIT
@@ -93,6 +96,7 @@ export async function POST(request) {
       district,
       market,
       grades,
+      page,
       limit,
       format: "json",
     };
